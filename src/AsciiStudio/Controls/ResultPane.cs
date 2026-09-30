@@ -116,7 +116,7 @@ public sealed class ResultPane : Grid
 
     public void AddSettings(string label, FrameworkElement content, string automationId)
     {
-        var flyout = Ui.AdaptiveFlyout(content);
+        var flyout = Ui.AdaptiveFlyout(content, anchor: toolbar);
         var button = new AppBarButton { Label = label, Icon = new SymbolIcon(Symbol.Setting) };
         // Close the overflow before opening an editor so two light-dismiss
         // surfaces cannot compete for focus or consume the first input click.

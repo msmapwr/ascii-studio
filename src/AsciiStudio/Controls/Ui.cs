@@ -110,18 +110,30 @@ public static class Ui
         return grid;
     }
 
-    public static Flyout AdaptiveFlyout(FrameworkElement content, double preferredWidth = 420)
+    public static Flyout AdaptiveFlyout(FrameworkElement content, double preferredWidth = 420, FrameworkElement? anchor = null)
     {
         if (double.IsFinite(content.Width)) preferredWidth = content.Width;
         content.Width = double.NaN;
         var scroll = content as ScrollViewer ?? new ScrollViewer { Content = content, HorizontalScrollMode = ScrollMode.Disabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        if (string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(scroll)))
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(scroll, "AdaptiveSettingsScroll");
         var flyout = new Flyout { Content = scroll, ShowMode = Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowMode.Standard };
+        // The content owns scrolling; disable the presenter's second scroller.
+        var presenterStyle = new Style { TargetType = typeof(FlyoutPresenter) };
+        presenterStyle.Setters.Add(new Setter(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled));
+        presenterStyle.Setters.Add(new Setter(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled));
+        flyout.FlyoutPresenterStyle = presenterStyle;
         XamlRoot? activeRoot = null;
         void Resize()
         {
             if (activeRoot is null) return;
             scroll.Width = Math.Max(1, Math.Min(preferredWidth, activeRoot.Size.Width - 64));
             scroll.MaxHeight = Math.Max(80, activeRoot.Size.Height - 160);
+            if (activeRoot.Size.Width < 640 && anchor?.XamlRoot is not null)
+            {
+                var bottom = anchor.TransformToVisual(null).TransformPoint(new Windows.Foundation.Point(0, anchor.ActualHeight)).Y;
+                scroll.MaxHeight = Math.Max(80, Math.Min(scroll.MaxHeight, activeRoot.Size.Height - bottom - 32));
+            }
         }
         void RootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => Resize();
         flyout.Opened += (_, _) =>
