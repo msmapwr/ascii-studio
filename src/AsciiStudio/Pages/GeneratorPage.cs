@@ -22,7 +22,6 @@ public sealed class GeneratorPage : Grid
         parameters.Children.Add(Ui.SettingsGrid(Ui.Field("宽度", width), Ui.Field("高度", height), Ui.Field("边框 / 分隔线样式", style), Ui.Field("随机种子", seed)));
         parameters.Children.Add(Ui.Button("换一个随机种子", () => seed.Value = Random.Shared.Next(int.MaxValue)));
         result.AddSettings("生成参数", parameters, "GeneratorSettings");
-        p.Children.Add(Ui.Text("相同种子产生相同结果。迷宫尺寸最多 100 × 80 个单元，入口在左上，出口在右下。", 12, true));
         Children.Add(Ui.Page(Ui.Heading("生成器", "用几项参数，生成可编辑的字符作品。"), Ui.Workspace(Ui.Card(p), result)));
         kind.SelectionChanged += (_, _) => UpdateControls(); UpdateControls();
     }

@@ -28,6 +28,7 @@ public sealed class ResultPane : Grid
     private int renderVersion;
     private XamlRoot? previewRoot;
     private int previewDensity = 1;
+    private StudioSettings? appliedSettings;
     private readonly DispatcherTimer recoveryTimer = new() { Interval = TimeSpan.FromMilliseconds(800) };
     public AsciiDocument? Document { get; private set; }
     public Func<AsciiDocument, StudioProject>? ProjectFactory { get; set; }
@@ -57,7 +58,7 @@ public sealed class ResultPane : Grid
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(exportScale, "图片导出倍率");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportDimensions, "ExportDimensions");
         exportScale.SelectionChanged += (_, _) => UpdateDimensions();
-        editor = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), FontSize = 13, Padding = new Thickness(20), PlaceholderText = "转换结果将在这里显示。\n生成后可以直接编辑，再复制或导出。", HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
+        editor = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), FontSize = 13, Padding = new Thickness(20), PlaceholderText = "转换结果", HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
         ScrollViewer.SetHorizontalScrollBarVisibility(editor, ScrollBarVisibility.Auto);
         ScrollViewer.SetVerticalScrollBarVisibility(editor, ScrollBarVisibility.Auto);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(editor, "ResultEditor");
@@ -81,15 +82,30 @@ public sealed class ResultPane : Grid
         recoveryTimer.Tick += async (_, _) => { recoveryTimer.Stop(); await App.Window.Guard(SaveRecovery); };
         Loaded += (_, _) =>
         {
+            ApplySettings(WorkspaceService.Settings);
+            WorkspaceService.SettingsChanged += ApplySettings;
             previewRoot = XamlRoot;
             if (previewRoot is not null) previewRoot.Changed += OnPreviewRootChanged;
         };
         Unloaded += (_, _) =>
         {
             recoveryTimer.Stop();
+            WorkspaceService.SettingsChanged -= ApplySettings;
             if (previewRoot is not null) previewRoot.Changed -= OnPreviewRootChanged;
             previewRoot = null;
         };
+        ApplySettings(WorkspaceService.Settings);
+    }
+
+    private void ApplySettings(StudioSettings settings)
+    {
+        if (appliedSettings?.PreviewFontSize != settings.PreviewFontSize) fontSize.Value = settings.PreviewFontSize;
+        if (appliedSettings?.DefaultExportFormat != settings.DefaultExportFormat) format.SelectedItem = settings.DefaultExportFormat;
+        if (appliedSettings?.ExportScale != settings.ExportScale) exportScale.SelectedIndex = settings.ExportScale - 1;
+        editor.TextWrapping = settings.WordWrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        ScrollViewer.SetHorizontalScrollBarVisibility(editor, settings.WordWrap ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto);
+        stats.Visibility = settings.ShowStats ? Visibility.Visible : Visibility.Collapsed;
+        appliedSettings = settings;
     }
 
     private async void OnPreviewRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
@@ -99,7 +115,19 @@ public sealed class ResultPane : Grid
 
     public void AddSettings(string label, FrameworkElement content, string automationId)
     {
-        var button = new AppBarButton { Label = label, Icon = new SymbolIcon(Symbol.Setting), Flyout = Ui.AdaptiveFlyout(content) };
+        var flyout = Ui.AdaptiveFlyout(content);
+        var button = new AppBarButton { Label = label, Icon = new SymbolIcon(Symbol.Setting) };
+        // Close the overflow before opening an editor so two light-dismiss
+        // surfaces cannot compete for focus or consume the first input click.
+        button.Click += (_, _) =>
+        {
+            toolbar.IsOpen = false;
+            flyout.ShowAt(toolbar, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
+            {
+                ShowMode = Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowMode.Standard,
+                Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Bottom
+            });
+        };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, automationId);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
         toolbar.PrimaryCommands.Add(button);
@@ -174,7 +202,7 @@ public sealed class ResultPane : Grid
         if (Document is null) { App.Window.Message("先生成或输入一些内容。"); return; }
         var doc = Document; var kind = format.SelectedItem?.ToString() ?? "TXT";
         var ext = kind switch { "JPEG" => ".jpg", "ANSI" => ".ans", "Markdown" => ".md", _ => "." + kind.ToLowerInvariant() };
-        var picker = new FileSavePicker { SuggestedFileName = SafeName(doc.Title), SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
+        var picker = new FileSavePicker { SuggestedFileName = SafeName(WorkspaceService.Settings.FilePrefix + doc.Title), SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
         picker.FileTypeChoices.Add(kind, [ext]); App.Window.InitializePicker(picker);
         var file = await picker.PickSaveFileAsync(); if (file is null) return;
         var size = (float)fontSize.Value; var scale = exportScale.SelectedIndex + 1;

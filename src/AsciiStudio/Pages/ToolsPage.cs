@@ -13,7 +13,6 @@ public sealed class ToolsPage : Grid
     {
         var p = Ui.Stack(); p.Children.Add(Ui.Field("输入文字 / 字符画", input)); p.Children.Add(Ui.Field("处理方式", operation));
         p.Children.Add(Ui.AsyncButton("处理", Process, true));
-        p.Children.Add(Ui.Text("字符分析分别统计 Unicode 标量、字符簇和 UTF-16 单元。反转按字符簇进行，避免拆开 emoji 和组合字符。", 12, true));
         Children.Add(Ui.Page(Ui.Heading("文本工具", "检查字符、整理空白，或变换文字。"), Ui.Workspace(Ui.Card(p), result)));
     }
     private async Task Process()
@@ -21,9 +20,12 @@ public sealed class ToolsPage : Grid
         var text = input.Text; var normalized = TextUtilities.Normalize(text);
         var output = operation.SelectedIndex switch
         {
-            0 => TextUtilities.Analyze(text), 1 => TextUtilities.TrimCanvas(text),
-            2 => TextUtilities.Clean(text, false), 3 => TextUtilities.Clean(text, true),
-            4 => text.ToUpperInvariant(), 5 => text.ToLowerInvariant(),
+            0 => TextUtilities.Analyze(text),
+            1 => TextUtilities.TrimCanvas(text),
+            2 => TextUtilities.Clean(text, false),
+            3 => TextUtilities.Clean(text, true),
+            4 => text.ToUpperInvariant(),
+            5 => text.ToLowerInvariant(),
             6 => string.Join('\n', normalized.Split('\n').Select(Reverse)),
             7 => string.Join('\n', normalized.Split('\n').Reverse()),
             _ => normalized.Replace("\t", "    ")

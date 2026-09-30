@@ -17,7 +17,7 @@ public static class Ui
     public static StackPanel Heading(string title, string description)
     {
         var p = Stack(6); var t = Text(title, 30); t.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
-        p.Children.Add(t); p.Children.Add(Text(description, 13, true)); return p;
+        p.Children.Add(t); return p;
     }
     public static Border Card(UIElement child, Thickness? padding = null) => new()
     {
@@ -50,12 +50,44 @@ public static class Ui
     {
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(control, label);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(control, Id("Field", label));
-        if (control is NumberBox or Microsoft.UI.Xaml.Controls.Slider or ComboBox) ParameterWheel.Attach((FrameworkElement)control);
-        var p = Stack(6); p.Children.Add(Text(label, 12, true)); p.Children.Add(control); return p;
+        if (control is NumberBox number)
+        {
+            number.Loaded += (_, _) =>
+            {
+                if (FindDescendant<TextBox>(number) is not { } input) return;
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(input,
+                    Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(number) + "Input");
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(input, label);
+            };
+        }
+        var p = Stack(6);
+        if (control is Slider slider)
+        {
+            var header = new Grid();
+            header.Children.Add(Text(label, 12, true));
+            var value = Text(slider.Value.ToString("0.##"), 12, true);
+            value.HorizontalAlignment = HorizontalAlignment.Right;
+            value.Loaded += (_, _) => Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(value,
+                Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(slider) + "Value");
+            slider.ValueChanged += (_, _) => value.Text = slider.Value.ToString("0.##");
+            header.Children.Add(value); p.Children.Add(header);
+        }
+        else p.Children.Add(Text(label, 12, true));
+        p.Children.Add(control); return p;
     }
     public static Slider Slider(double min, double max, double value, double step = 1) => new Slider()
     { Minimum = min, Maximum = max, Value = value, StepFrequency = step, IsThumbToolTipEnabled = true };
     private static string Id(string prefix, string label) => prefix + "_" + new string(label.Where(char.IsLetterOrDigit).ToArray());
+    public static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T match) return match;
+            if (FindDescendant<T>(child) is { } nested) return nested;
+        }
+        return null;
+    }
     public static Grid SettingsGrid(params FrameworkElement[] fields)
     {
         var grid = new Grid { ColumnSpacing = 20, RowSpacing = 12 };
@@ -83,7 +115,7 @@ public static class Ui
         if (double.IsFinite(content.Width)) preferredWidth = content.Width;
         content.Width = double.NaN;
         var scroll = content as ScrollViewer ?? new ScrollViewer { Content = content, HorizontalScrollMode = ScrollMode.Disabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        var flyout = new Flyout { Content = scroll };
+        var flyout = new Flyout { Content = scroll, ShowMode = Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowMode.Standard };
         XamlRoot? activeRoot = null;
         void Resize()
         {
@@ -185,10 +217,10 @@ public static class Ui
         {
             var shortWindow = grid.ActualHeight < 420;
             grid.RowSpacing = shortWindow ? 12 : 24;
-            if (heading is StackPanel title && title.Children.Count >= 2)
+            if (heading is StackPanel title && title.Children.Count >= 1)
             {
                 if (title.Children[0] is TextBlock text) text.FontSize = grid.ActualWidth < 640 ? 24 : 30;
-                title.Children[1].Visibility = shortWindow ? Visibility.Collapsed : Visibility.Visible;
+                if (title.Children.Count >= 2) title.Children[1].Visibility = shortWindow ? Visibility.Collapsed : Visibility.Visible;
             }
         };
         return grid;
