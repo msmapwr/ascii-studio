@@ -9,6 +9,35 @@ namespace AsciiStudio.Services;
 
 public static class ImagingService
 {
+    public static byte[] Thumbnail(byte[] rgba, int width, int height)
+    {
+        using var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+        var locked = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+        try
+        {
+            var row = new byte[width * 4];
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var p = (y * width + x) * 4; var s = x * 4;
+                    row[s] = rgba[p + 2]; row[s + 1] = rgba[p + 1]; row[s + 2] = rgba[p]; row[s + 3] = rgba[p + 3];
+                }
+                Marshal.Copy(row, 0, locked.Scan0 + y * locked.Stride, row.Length);
+            }
+        }
+        finally { bitmap.UnlockBits(locked); }
+        var scale = Math.Min(1d, 300d / Math.Max(width, height));
+        using var preview = new Bitmap(Math.Max(1, (int)(width * scale)), Math.Max(1, (int)(height * scale)), PixelFormat.Format32bppArgb);
+        using (var graphics = Graphics.FromImage(preview))
+        {
+            graphics.CompositingMode = CompositingMode.SourceCopy;
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            graphics.DrawImage(bitmap, new Rectangle(0, 0, preview.Width, preview.Height));
+        }
+        using var stream = new MemoryStream(); preview.Save(stream, ImageFormat.Png); return stream.ToArray();
+    }
+
     public static (byte[] pixels, int width, int height) Decode(byte[] data)
     {
         using var stream = new MemoryStream(data);
@@ -19,10 +48,14 @@ public static class ImagingService
             var value = original.GetPropertyItem(0x112)?.Value;
             if (value is { Length: >= 2 }) original.RotateFlip(BitConverter.ToUInt16(value) switch
             {
-                2 => RotateFlipType.RotateNoneFlipX, 3 => RotateFlipType.Rotate180FlipNone,
-                4 => RotateFlipType.Rotate180FlipX, 5 => RotateFlipType.Rotate90FlipX,
-                6 => RotateFlipType.Rotate90FlipNone, 7 => RotateFlipType.Rotate270FlipX,
-                8 => RotateFlipType.Rotate270FlipNone, _ => RotateFlipType.RotateNoneFlipNone
+                2 => RotateFlipType.RotateNoneFlipX,
+                3 => RotateFlipType.Rotate180FlipNone,
+                4 => RotateFlipType.Rotate180FlipX,
+                5 => RotateFlipType.Rotate90FlipX,
+                6 => RotateFlipType.Rotate90FlipNone,
+                7 => RotateFlipType.Rotate270FlipX,
+                8 => RotateFlipType.Rotate270FlipNone,
+                _ => RotateFlipType.RotateNoneFlipNone
             });
         }
         var scale = Math.Min(1d, 2400d / Math.Max(original.Width, original.Height));
@@ -76,22 +109,22 @@ public static class ImagingService
         return (result, bitmap.Width, bitmap.Height);
     }
 
-    public static (int Width,int Height) RenderSize(AsciiDocument document,float size=14,int padding=20,int scale=1)
+    public static (int Width, int Height) RenderSize(AsciiDocument document, float size = 14, int padding = 20, int scale = 1)
     {
         document.Validate();
-        if(!float.IsFinite(size)||size is <1 or >120||scale is <1 or >4||padding is <0 or >200)throw new ArgumentException("导出字号或倍率无效。");
-        using var font=new Font("Consolas",size*scale,FontStyle.Regular,GraphicsUnit.Pixel);
-        using var measure=new Bitmap(1,1);using var g=Graphics.FromImage(measure);
-        var cell=g.MeasureString("M",font,new PointF(0,0),StringFormat.GenericTypographic).Width;
-        var width=Math.Max(1,checked((int)Math.Ceiling(document.Width*cell)+padding*scale*2));
-        var height=Math.Max(1,checked((int)Math.Ceiling(document.Height*font.GetHeight(g))+padding*scale*2));
-        if((long)width*height>40_000_000||width>32767||height>32767)throw new ArgumentException("输出图片超过 4000 万像素或单边 32767 像素，请降低字号、倍率或字符网格尺寸。");
-        return(width,height);
+        if (!float.IsFinite(size) || size is < 1 or > 120 || scale is < 1 or > 4 || padding is < 0 or > 200) throw new ArgumentException("导出字号或倍率无效。");
+        using var font = new Font("Consolas", size * scale, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var measure = new Bitmap(1, 1); using var g = Graphics.FromImage(measure);
+        var cell = g.MeasureString("M", font, new PointF(0, 0), StringFormat.GenericTypographic).Width;
+        var width = Math.Max(1, checked((int)Math.Ceiling(document.Width * cell) + padding * scale * 2));
+        var height = Math.Max(1, checked((int)Math.Ceiling(document.Height * font.GetHeight(g)) + padding * scale * 2));
+        if ((long)width * height > 40_000_000 || width > 32767 || height > 32767) throw new ArgumentException("输出图片超过 4000 万像素或单边 32767 像素，请降低字号、倍率或字符网格尺寸。");
+        return (width, height);
     }
-    public static byte[] Render(AsciiDocument document, float size = 14, int padding = 20, bool transparent = false, ImageFormat? format = null, int scale=1)
+    public static byte[] Render(AsciiDocument document, float size = 14, int padding = 20, bool transparent = false, ImageFormat? format = null, int scale = 1)
     {
         document.Validate();
-        var dimensions=RenderSize(document,size,padding,scale);size*=scale;padding*=scale;
+        var dimensions = RenderSize(document, size, padding, scale); size *= scale; padding *= scale;
         using var font = new Font("Consolas", size, FontStyle.Regular, GraphicsUnit.Pixel);
         using var measure = new Bitmap(1, 1); using var mg = Graphics.FromImage(measure);
         var cell = mg.MeasureString("M", font, new PointF(0, 0), StringFormat.GenericTypographic).Width;
