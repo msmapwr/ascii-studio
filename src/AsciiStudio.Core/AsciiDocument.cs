@@ -10,13 +10,13 @@ public sealed record AsciiDocument
 
     public void Validate()
     {
-        if (Width < 0 || Height < 0 || (long)Width * Height > 2_000_000)
+        if (Width < 0 || Height < 0 || (long)Width * Height > 4_000_000)
             throw new ArgumentException("字符画尺寸超出安全范围。");
         if (Colors is not null && Colors.Length != Width * Height)
             throw new ArgumentException("颜色网格与字符画尺寸不一致。");
         if(Text is null || Text.Contains('\r'))throw new ArgumentException("字符画必须使用 LF 换行。");
         var lines = Text.Split('\n');
-        if (Text.Length > 4_000_000 || (Text.Length > 0 && (lines.Length != Height || lines.Any(x => x.Length > Width))))
+        if (Text.Length > 8_000_000 || (Text.Length > 0 && (lines.Length != Height || lines.Any(x => x.Length > Width))))
             throw new ArgumentException("字符画文本与网格尺寸不一致。");
     }
 
@@ -35,6 +35,8 @@ public enum DitherMode { None, FloydSteinberg, JarvisJudiceNinke, Stucki, Atkins
 public sealed record ConversionOptions
 {
     public int Columns { get; init; } = 120;
+    /// <summary>Zero derives rows from source aspect ratio and CellAspect.</summary>
+    public int Rows { get; init; }
     public double CellAspect { get; init; } = 0.5;
     public string Characters { get; init; } = " .:-=+*#%@";
     public double Brightness { get; init; } = 1;

@@ -24,7 +24,9 @@ public static class WorkspaceService
     {
         if(project.Document is null)throw new InvalidDataException("项目缺少字符画。");
         project.Document.Validate();
-        await AtomicWrite(path, JsonSerializer.SerializeToUtf8Bytes(project));
+        var bytes=await Task.Run(()=>JsonSerializer.SerializeToUtf8Bytes(project));
+        if(bytes.Length>100_000_000)throw new InvalidDataException("项目超过 100MB，请降低字符画尺寸或输入图片大小。");
+        await AtomicWrite(path,bytes);
         await SetSettings(Settings with { RecentFiles = new[] { path }.Concat(Settings.RecentFiles ?? []).Distinct(StringComparer.OrdinalIgnoreCase).Take(15).ToArray() });
     }
 

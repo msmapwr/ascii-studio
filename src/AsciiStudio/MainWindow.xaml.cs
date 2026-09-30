@@ -12,6 +12,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent(); Title = "AsciiStudio — 字符创作工作室";
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory,"Assets","AsciiStudio.ico"));
         var work=Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(AppWindow.Id,Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
         AppWindow.Resize(new Windows.Graphics.SizeInt32(Math.Min(1680,work.Width-40),Math.Min(1080,work.Height-40)));
         Root.RequestedTheme = WorkspaceService.Settings.Theme switch { "Light" => ElementTheme.Light, "System" => ElementTheme.Default, _ => ElementTheme.Dark };
@@ -30,12 +31,20 @@ public sealed partial class MainWindow : Window
     { Notice.Message = text; Notice.Severity = error ? InfoBarSeverity.Error : InfoBarSeverity.Success; Notice.IsOpen = true; }
     private static async Task Log(Exception ex)
     {
-        try { Directory.CreateDirectory(WorkspaceService.DataDirectory); await File.AppendAllTextAsync(Path.Combine(WorkspaceService.DataDirectory, "errors.log"), $"{DateTimeOffset.Now:O} {ex.GetType().Name}: {ex.Message}\n"); }
+        try { Directory.CreateDirectory(WorkspaceService.DataDirectory); await File.AppendAllTextAsync(Path.Combine(WorkspaceService.DataDirectory, "errors.log"), $"{DateTimeOffset.Now:O} {ex}\n"); }
         catch (IOException) { }
     }
     private void OnNavigationChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         var key = args.IsSettingsSelected ? "settings" : (args.SelectedItem as NavigationViewItem)?.Tag?.ToString() ?? "home";
+        // Leave UI Automation's synchronous selection callback before building
+        // and attaching the next page; WinUI disallows reentrant tree changes.
+        DispatcherQueue.TryEnqueue(()=>ShowPage(key));
+    }
+    private void ShowPage(string key)
+    {
+        try
+        {
         Notice.IsOpen = false;
         if (key is "library" or "settings") pages.Remove(key);
         if (!pages.TryGetValue(key, out var page))
@@ -49,6 +58,8 @@ public sealed partial class MainWindow : Window
             pages[key] = page;
         }
         PageHost.Content = page;
+        }
+        catch(Exception ex){Message(ex.Message,true);_ = Log(ex);}
     }
     public void Navigate(string key)
     { foreach (var item in Navigation.MenuItems.OfType<NavigationViewItem>()) if (item.Tag?.ToString() == key) Navigation.SelectedItem = item; }

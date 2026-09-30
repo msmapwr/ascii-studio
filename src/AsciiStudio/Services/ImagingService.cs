@@ -76,15 +76,28 @@ public static class ImagingService
         return (result, bitmap.Width, bitmap.Height);
     }
 
-    public static byte[] Render(AsciiDocument document, float size = 14, int padding = 20, bool transparent = false, ImageFormat? format = null)
+    public static (int Width,int Height) RenderSize(AsciiDocument document,float size=14,int padding=20,int scale=1)
     {
         document.Validate();
+        if(!float.IsFinite(size)||size is <1 or >120||scale is <1 or >4||padding is <0 or >200)throw new ArgumentException("导出字号或倍率无效。");
+        using var font=new Font("Consolas",size*scale,FontStyle.Regular,GraphicsUnit.Pixel);
+        using var measure=new Bitmap(1,1);using var g=Graphics.FromImage(measure);
+        var cell=g.MeasureString("M",font,new PointF(0,0),StringFormat.GenericTypographic).Width;
+        var width=Math.Max(1,checked((int)Math.Ceiling(document.Width*cell)+padding*scale*2));
+        var height=Math.Max(1,checked((int)Math.Ceiling(document.Height*font.GetHeight(g))+padding*scale*2));
+        if((long)width*height>40_000_000||width>32767||height>32767)throw new ArgumentException("输出图片超过 4000 万像素或单边 32767 像素，请降低字号、倍率或字符网格尺寸。");
+        return(width,height);
+    }
+    public static byte[] Render(AsciiDocument document, float size = 14, int padding = 20, bool transparent = false, ImageFormat? format = null, int scale=1)
+    {
+        document.Validate();
+        var dimensions=RenderSize(document,size,padding,scale);size*=scale;padding*=scale;
         using var font = new Font("Consolas", size, FontStyle.Regular, GraphicsUnit.Pixel);
         using var measure = new Bitmap(1, 1); using var mg = Graphics.FromImage(measure);
         var cell = mg.MeasureString("M", font, new PointF(0, 0), StringFormat.GenericTypographic).Width;
         var lineHeight = font.GetHeight(mg);
-        var width = Math.Max(1, (int)Math.Ceiling(document.Width * cell) + padding * 2);
-        var height = Math.Max(1, (int)Math.Ceiling(document.Height * lineHeight) + padding * 2);
+        var width = dimensions.Width;
+        var height = dimensions.Height;
         if ((long)width * height > 40_000_000) throw new ArgumentException("输出图片超过 4000 万像素，请降低字号或字符画尺寸。");
         using var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(bitmap))

@@ -5,15 +5,15 @@
   <Grid.RowDefinitions><RowDefinition Height="64"/><RowDefinition Height="*"/></Grid.RowDefinitions>
   <Grid Padding="24,0" ColumnSpacing="12">
    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-   <Border Background="#8570FF" CornerRadius="10" Width="36" Height="36"><TextBlock Text="A" Foreground="White" FontWeight="Bold" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+   <Image Source="ms-appx:///Assets/Logo128.png" Width="44" Height="44" AutomationProperties.Name="AsciiStudio Logo" AutomationProperties.AutomationId="BrandLogo"/>
    <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="AsciiStudio" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="用字符，表达更多。" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
    <TextBlock Grid.Column="2" Text="本地创作 · 离线可用" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
   </Grid>
   <NavigationView x:Name="Navigation" Grid.Row="1" PaneDisplayMode="Left" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="True" OpenPaneLength="210" SelectionChanged="OnNavigationChanged">
    <NavigationView.MenuItems>
-    <NavigationViewItem Content="开始创作" Tag="home" Icon="Home"/>
-    <NavigationViewItem Content="图片转换" Tag="image" Icon="Pictures"/>
-    <NavigationViewItem Content="文字转换" Tag="text" Icon="Font"/>
+    <NavigationViewItem Content="开始创作" Tag="home" Icon="Home" AutomationProperties.AutomationId="NavHome"/>
+    <NavigationViewItem Content="图片转换" Tag="image" Icon="Pictures" AutomationProperties.AutomationId="NavImage"/>
+    <NavigationViewItem Content="文字转换" Tag="text" Icon="Font" AutomationProperties.AutomationId="NavText"/>
     <NavigationViewItemSeparator/>
     <NavigationViewItem Content="生成器" Tag="generators" Icon="Shuffle"/>
     <NavigationViewItem Content="文本工具" Tag="tools" Icon="Edit"/>

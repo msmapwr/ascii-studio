@@ -14,3 +14,7 @@
 .DS_Store
 Thumbs.db
 artifacts/
+*.pfx
+*.cer
+*.msix
+*.msixbundle

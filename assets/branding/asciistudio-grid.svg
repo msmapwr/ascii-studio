@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+ <title id="title">AsciiStudio — Character Portal</title>
+ <defs><linearGradient id="g" x1="80" y1="70" x2="440" y2="440" gradientUnits="userSpaceOnUse"><stop stop-color="#BC8BFF"/><stop offset=".45" stop-color="#7653EB"/><stop offset="1" stop-color="#26B8F3"/></linearGradient></defs>
+ <rect x="64" y="64" width="384" height="384" rx="100" fill="url(#g)"/>
+ <path d="M182 179 L116 256 L182 333 M330 179 L396 256 L330 333" fill="none" stroke="#FFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+ <g fill="#FFF"><rect x="237" y="153" width="38" height="38" rx="8"/><rect x="237" y="218" width="38" height="38" rx="8" opacity=".88"/><rect x="237" y="283" width="38" height="38" rx="8" opacity=".72"/><rect x="237" y="348" width="38" height="22" rx="6" opacity=".5"/></g>
+</svg>

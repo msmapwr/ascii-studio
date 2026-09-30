@@ -9,7 +9,7 @@ public static class ImageConverter
     {
         if (width <= 0 || height <= 0 || (long)width * height * 4 != rgba.LongLength)
             throw new ArgumentException("图片像素数据无效。");
-        if (options.Columns is < 8 or > 600 || !double.IsFinite(options.CellAspect) || options.CellAspect is <= 0 or > 2 || !double.IsFinite(options.Gamma) || options.Gamma is <= 0 or > 5)
+        if (options.Columns is < 8 or > 2000 || options.Rows is < 0 or > 2000 || !double.IsFinite(options.CellAspect) || options.CellAspect is <= 0 or > 2 || !double.IsFinite(options.Gamma) || options.Gamma is <= 0 or > 5)
             throw new ArgumentOutOfRangeException(nameof(options), "输出尺寸、比例或 Gamma 无效。");
         if(!new[]{options.Brightness,options.Contrast,options.Saturation,options.Hue,options.Grayscale,options.Sepia,options.Sharpness}.All(double.IsFinite) || options.Brightness is <0 or >5 || options.Contrast is <0 or >5 || options.Saturation is <0 or >5 || options.Grayscale is <0 or >1 || options.Sepia is <0 or >1 || options.Sharpness is <0 or >10 || options.ThresholdValue is <0 or >255 || !Enum.IsDefined(options.Dither))
             throw new ArgumentException("图片调整参数无效。");
@@ -17,7 +17,10 @@ public static class ImageConverter
         if (chars.Length < 2 || chars.Any(char.IsControl) || chars.Any(char.IsSurrogate))
             throw new ArgumentException("字符集至少需要两个不同的单字符，且不能包含控制字符或 emoji。");
         var columns = options.Columns;
-        var rows = Math.Clamp((int)Math.Round(columns * (double)height / width * options.CellAspect), 1, 600);
+        var requestedRows = options.Rows == 0 ? Math.Max(1, Math.Round(columns * (double)height / width * options.CellAspect)) : options.Rows;
+        if(requestedRows > 2000 || columns * requestedRows > 4_000_000)
+            throw new ArgumentException("输出分辨率超过 2000 行或 400 万字符，请降低列数或指定行数。");
+        var rows = (int)requestedRows;
         var luminance = new double[rows * columns];
         var colors = options.Color ? new uint[rows * columns] : null;
         double br = (options.Background >> 16) & 255, bg = (options.Background >> 8) & 255, bb = options.Background & 255;

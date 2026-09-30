@@ -12,8 +12,10 @@
 - 基础 Unicode / ASCII 分析、裁边、控制字符清理、大小写、按字符簇反转和 Tab 转换。
 - 可编辑结果、复制、图像预览；TXT / PNG / JPEG / 静态 GIF / HTML / SVG / ANSI / JSON / Markdown 导出。
 - `.asciiproj` 项目、嵌入图片、文字生成参数、最近项目、结果恢复与主题设置。
+- 独立 SVG Logo、窗口 / 任务栏 ICO、MSIX 图标资源；分辨率预设和自定义列 / 行，位图导出 1–4 倍。
 
 这是首个可运行开发版，尚未覆盖网站的完整功能。详细边界见 [开发进度](docs/DEVELOPMENT_STATUS.md)。
+最新迭代的 Logo、滚轮、分辨率和验证状态见 [v0.2 记录](docs/ITERATION_02.md)。
 
 ## 开发环境
 
@@ -21,14 +23,14 @@
 - .NET SDK **10.0.401**，由 `global.json` 固定。
 - Visual Studio 2026，WinUI 工作负载与 Windows SDK 26100；组件清单在 `.vsconfig`。
 - Windows App SDK **2.5.1**；依赖版本及锁文件随源码管理。
+- WinApp CLI **0.7.0** 与已安装的 `microsoft/win-dev-skills`。开发约定见 `AGENTS.md`。
 
 ## 构建与运行
 
 在仓库目录运行：
 
 ```powershell
-dotnet build .\src\AsciiStudio\AsciiStudio.csproj -c Debug
-.\scripts\run.ps1
+.\BuildAndRun.ps1 .\src\AsciiStudio\AsciiStudio.csproj --detach
 ```
 
 或者打开 `AsciiStudio.slnx`，选择 `AsciiStudio` 项目启动。
@@ -40,12 +42,13 @@ dotnet build .\src\AsciiStudio\AsciiStudio.csproj -c Debug
 ```
 
 程序按 x64、自包含 .NET 和 Windows App SDK 配置。复制发布时必须保留整个输出目录；安装包、文件关联、干净机器验证尚未完成。
+使用 `.\scripts\package.ps1` 生成未签名 MSIX；传入 `-CertificatePath` 可使用已有证书签名。本次已生成未签名包，未安装证书或安装包。签名、信任和干净机器验证仍待完成。
 
 ## 数据与限制
 
 设置、最近项目、恢复文件和错误日志保存在 `%LOCALAPPDATA%\AsciiStudio`。最近项目记录是本机文件路径。恢复文件保存最近一次结果，编辑后延迟约 800ms 写入；频繁更新时等待输入停止。图库与多文档工作区尚未实现。
 
-图片文件最大 40MB，源图最大 8000 万像素，处理时最长边缩至 2400；输出最多 600 列 / 600 行，位图导出最大 4000 万像素。FIGlet 输入限制 ASCII；中文使用系统字体模式。Unicode 网格仍以 UTF-16 单元作为宽度，复杂宽字符的网格排版尚待完善。GIF 当前为静态图片。
+图片文件最大 40MB，源图最大 8000 万像素，处理时最长边缩至 2400；图片转换最多 2000 列 / 2000 行及 400 万字符，自动比例超限时提示而不截断。1920 × 1080 预设是字符网格，固定行数可能拉伸原图。位图导出最大 4000 万像素、单边 32767 像素；高分辨率网格可导出 TXT 等格式，位图可能需要更小的网格和字号。FIGlet 输入限制 ASCII；中文使用系统字体模式。Unicode 网格仍以 UTF-16 单元作为宽度，复杂宽字符的网格排版尚待完善。GIF 当前为静态图片。
 
 ## 完整计划
 

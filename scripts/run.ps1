@@ -1,6 +1,5 @@
 param([ValidateSet('Debug','Release')][string]$Configuration = 'Debug')
 $ErrorActionPreference = 'Stop'
-& "$PSScriptRoot/build.ps1" -Configuration $Configuration
 $taskRoot = Split-Path $PSScriptRoot -Parent
-$taskExe = Join-Path $taskRoot "src/AsciiStudio/bin/$Configuration/net10.0-windows10.0.26100.0/win-x64/AsciiStudio.exe"
-Start-Process -FilePath $taskExe
+& (Get-Process -Id $PID).Path -NoProfile -File (Join-Path $taskRoot 'BuildAndRun.ps1') (Join-Path $taskRoot 'src/AsciiStudio/AsciiStudio.csproj') -c $Configuration --arch x64 --detach
+if($LASTEXITCODE -ne 0){throw "Run failed: $LASTEXITCODE"}

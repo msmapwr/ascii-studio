@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 700" role="img"><title>AsciiStudio</title><g transform="translate(64 0)"><defs>
+    <linearGradient id="sheet" x1="170" y1="66" x2="435" y2="387" gradientUnits="userSpaceOnUse"><stop stop-color="#85F0FF"/><stop offset=".42" stop-color="#32AEFF"/><stop offset="1" stop-color="#3754D9"/></linearGradient>
+    <linearGradient id="edge" x1="210" y1="82" x2="432" y2="406" gradientUnits="userSpaceOnUse"><stop stop-color="#387AE8"/><stop offset="1" stop-color="#172873"/></linearGradient>
+    <linearGradient id="tile" x1="76" y1="158" x2="332" y2="438" gradientUnits="userSpaceOnUse"><stop stop-color="#D59CFF"/><stop offset=".25" stop-color="#A55AF2"/><stop offset=".67" stop-color="#7741D8"/><stop offset="1" stop-color="#443095"/></linearGradient>
+    <linearGradient id="light" x1="94" y1="173" x2="293" y2="398" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF" stop-opacity=".5"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></linearGradient>
+  </defs>
+  <path fill="#192650" opacity=".14" d="M104 200 Q104 169 138 169 H384 Q439 169 450 211 L453 384 Q453 427 409 435 L161 462 Q109 462 104 421Z"/>
+  <path fill="url(#edge)" d="M199 83 Q199 49 234 53 L413 74 Q449 79 449 116 V348 Q449 386 413 393 L233 417 Q199 421 199 384Z"/>
+  <path fill="url(#sheet)" d="M183 69 Q183 37 218 41 L397 62 Q433 67 433 104 V336 Q433 374 397 381 L217 405 Q183 409 183 372Z"/>
+  <path fill="#D9FAFF" opacity=".62" d="M218 41 L397 62 Q433 67 433 104 V109 Q431 76 395 72 L219 51 Q193 48 183 69 Q183 37 218 41Z"/>
+  <g fill="#E9FCFF">
+    <rect x="231" y="111" width="31" height="31" rx="7" opacity=".96"/><rect x="277" y="111" width="31" height="31" rx="7" opacity=".83"/><rect x="323" y="111" width="31" height="31" rx="7" opacity=".64"/><rect x="369" y="111" width="22" height="31" rx="7" opacity=".42"/>
+    <rect x="277" y="160" width="31" height="31" rx="7" opacity=".82"/><rect x="323" y="160" width="31" height="31" rx="7" opacity=".64"/><rect x="369" y="160" width="22" height="31" rx="7" opacity=".44"/>
+    <rect x="323" y="209" width="31" height="31" rx="7" opacity=".67"/><rect x="369" y="209" width="22" height="31" rx="7" opacity=".47"/>
+    <rect x="369" y="258" width="22" height="31" rx="7" opacity=".5"/>
+  </g>
+  <rect x="85" y="168" width="255" height="280" rx="58" fill="#252269" opacity=".27"/>
+  <rect x="69" y="153" width="255" height="280" rx="58" fill="url(#tile)"/>
+  <rect x="70" y="154" width="253" height="278" rx="57" fill="none" stroke="url(#light)" stroke-width="2"/>
+  <path fill="#FFF" fill-rule="evenodd" d="M173 223 Q176 216 184 216 H208 Q216 216 219 223 L275 368 H237 L225 333 H167 L155 368 H117Z M179 301 H214 L197 250Z"/>
+</g><text x="320" y="626" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="76" font-weight="600" fill="#33284E">AsciiStudio</text></svg>

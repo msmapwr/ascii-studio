@@ -3,5 +3,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <StudioWinUIAnalyzerDir>$(USERPROFILE)\.codex\skills\winui-dev-workflow\analyzer</StudioWinUIAnalyzerDir>
   </PropertyGroup>
+  <!-- Visual Studio and build-only runs use the same Microsoft skill analyzer.
+       BuildAndRun.ps1 supplies it itself through CustomAfterDirectoryBuildProps. -->
+  <ItemGroup Condition="'$(CustomAfterDirectoryBuildProps)' == '' And Exists('$(StudioWinUIAnalyzerDir)\Microsoft.WindowsAppSDK.Analyzers.dll')">
+    <Analyzer Include="$(StudioWinUIAnalyzerDir)\Microsoft.WindowsAppSDK.Analyzers.dll" />
+  </ItemGroup>
+  <Import Project="$(StudioWinUIAnalyzerDir)\Microsoft.WindowsAppSDK.Analyzers.targets" Condition="'$(CustomAfterDirectoryBuildProps)' == '' And Exists('$(StudioWinUIAnalyzerDir)\Microsoft.WindowsAppSDK.Analyzers.targets')" />
 </Project>

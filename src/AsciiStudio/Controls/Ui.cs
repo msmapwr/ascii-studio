@@ -25,6 +25,7 @@ public static class Ui
     public static Button Button(string label, Action action, bool accent = false)
     {
         var b = new Button { Content = label, HorizontalAlignment = HorizontalAlignment.Stretch };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(b,Id("Button",label));
         if (accent) b.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
         b.Click += (_, _) => action(); return b;
     }
@@ -42,16 +43,21 @@ public static class Ui
     }
     public static FrameworkElement Field(string label, UIElement control)
     {
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(control,label);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(control,Id("Field",label));
+        if(control is NumberBox or Microsoft.UI.Xaml.Controls.Slider or ComboBox)ParameterWheel.Attach((FrameworkElement)control);
         var p = Stack(6); p.Children.Add(Text(label, 12, true)); p.Children.Add(control); return p;
     }
-    public static Slider Slider(double min, double max, double value, double step = 1) => new()
+    public static Slider Slider(double min, double max, double value, double step = 1) => new Slider()
     { Minimum = min, Maximum = max, Value = value, StepFrequency = step, IsThumbToolTipEnabled = true };
+    private static string Id(string prefix,string label)=>prefix+"_"+new string(label.Where(char.IsLetterOrDigit).ToArray());
     public static Grid Workspace(UIElement input, FrameworkElement result)
     {
         var g = new Grid { ColumnSpacing = 20 };
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(280) });
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        var scroller = new ScrollViewer { Content = input, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        var scroller = new ScrollViewer { Content = input, HorizontalScrollMode=ScrollMode.Disabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(scroller,"ParameterScroll");
         g.Children.Add(scroller); Grid.SetColumn(result, 1); g.Children.Add(result); return g;
     }
     public static Grid Page(UIElement heading, FrameworkElement content)

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+ <title id="title">AsciiStudio — Folded A</title>
+ <defs><linearGradient id="left" x1="100" y1="400" x2="275" y2="80" gradientUnits="userSpaceOnUse"><stop stop-color="#5034AD"/><stop offset=".55" stop-color="#A65FF0"/><stop offset="1" stop-color="#EDBCFF"/></linearGradient><linearGradient id="right" x1="260" y1="100" x2="400" y2="420" gradientUnits="userSpaceOnUse"><stop stop-color="#88F0FF"/><stop offset=".6" stop-color="#3689EF"/><stop offset="1" stop-color="#354FA9"/></linearGradient></defs>
+ <path d="M78 401 L206 103 Q218 74 253 74 H281 L147 417 Q138 439 114 439 H97 Q65 439 78 401Z" fill="url(#left)"/>
+ <path d="M253 74 H281 Q302 74 310 98 L439 405 Q454 439 414 439 H376 L243 113Z" fill="url(#right)"/>
+ <path d="M173 295 H333 L355 351 H150Z" fill="#DDACFF"/>
+ <path d="M173 295 H333 L344 323 H161Z" fill="#F4DFFF" opacity=".5"/>
+ <g fill="#7047C8"><rect x="205" y="301" width="22" height="22" rx="4"/><rect x="245" y="301" width="22" height="22" rx="4"/><rect x="285" y="301" width="22" height="22" rx="4"/></g>
+</svg>

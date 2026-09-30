@@ -15,7 +15,7 @@ public sealed class TextPage : Grid
     private readonly ComboBox mode=Ui.Choice(["FIGlet 艺术字","系统字体 → 字符画（支持中文）"]);
     private readonly ComboBox figFont;
     private readonly ComboBox systemFont=Ui.Choice(["Microsoft YaHei UI","Segoe UI","Arial","Consolas","SimSun"]);
-    private readonly NumberBox columns=new(){Value=120,Minimum=16,Maximum=600};
+    private readonly NumberBox columns=new NumberBox(){Value=120,Minimum=16,Maximum=600};
     private readonly ComboBox border=Ui.Choice(["无边框","ASCII 线框","双线框","星号边框"]);
     private readonly CheckBox trim=new(){Content="裁掉外围空白",IsChecked=true};
     private readonly TextBox replacement=new(){PlaceholderText="留空则保留空格",MaxLength=1};
@@ -26,7 +26,8 @@ public sealed class TextPage : Grid
     public TextPage()
     {
         figFont=Ui.Choice(fonts.Select(f=>f.Name),Math.Max(0,Array.FindIndex(fonts,p=>p.Name=="Standard")));
-        var p=Ui.Stack();p.Children.Add(Ui.Field("文字内容",input));p.Children.Add(Ui.Field("转换方式",mode));p.Children.Add(Ui.Field($"FIGlet 字体 · {fonts.Length} 款",figFont));p.Children.Add(Ui.Field("系统字体",systemFont));p.Children.Add(Ui.Field("字符画列数（系统字体模式）",columns));p.Children.Add(Ui.Field("边框",border));p.Children.Add(trim);p.Children.Add(Ui.Field("替换空格",replacement));p.Children.Add(Ui.AsyncButton("生成字符画",Generate,true));
+        var generate=Ui.AsyncButton("生成字符画",Generate,true);Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(generate,"TextGenerate");
+        var p=Ui.Stack();p.Children.Add(Ui.Field("文字内容",input));p.Children.Add(Ui.Field("转换方式",mode));p.Children.Add(Ui.Field($"FIGlet 字体 · {fonts.Length} 款",figFont));p.Children.Add(Ui.Field("系统字体",systemFont));p.Children.Add(Ui.Field("字符画列数（系统字体模式）",columns));p.Children.Add(Ui.Field("边框",border));p.Children.Add(trim);p.Children.Add(Ui.Field("替换空格",replacement));p.Children.Add(generate);
         p.Children.Add(Ui.Text("中文请选择系统字体模式。FIGlet 字体通常以拉丁字符为主。修改结果时，复制和导出使用修改后的内容。",12,true));
         Children.Add(Ui.Page(Ui.Heading("文字转换","把一句话变成标题、签名，或一幅文字作品。"),Ui.Workspace(Ui.Card(p),result)));
         mode.SelectionChanged+=(_,_)=>{figFont.IsEnabled=mode.SelectedIndex==0;systemFont.IsEnabled=mode.SelectedIndex==1;columns.IsEnabled=mode.SelectedIndex==1;};systemFont.IsEnabled=false;columns.IsEnabled=false;
