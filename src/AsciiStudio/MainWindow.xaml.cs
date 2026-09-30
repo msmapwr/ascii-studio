@@ -223,7 +223,12 @@ public sealed partial class MainWindow : Window
         var p = Ui.Stack(12); p.Children.Add(Ui.AsyncButton("打开项目", PickProject, true));
         foreach (var path in WorkspaceService.Settings.RecentFiles ?? [])
         {
-            var file = path; var row = Ui.Stack(6); row.Children.Add(Ui.Text(Path.GetFileNameWithoutExtension(file), 17)); row.Children.Add(Ui.Text(file, 12, true)); row.Children.Add(Ui.AsyncButton("打开", () => OpenProject(file))); p.Children.Add(Ui.Card(row));
+            var file = path; var row = Ui.Stack(6); row.Children.Add(Ui.Text(Path.GetFileNameWithoutExtension(file), 17)); row.Children.Add(Ui.Text(file, 12, true));
+            var open = Ui.AsyncButton("打开", () => OpenProject(file));
+            var identity = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(file.ToUpperInvariant())))[..12];
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(open, "RecentProject_" + identity);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(open, "打开项目：" + Path.GetFileNameWithoutExtension(file));
+            row.Children.Add(open); p.Children.Add(Ui.Card(row));
         }
         if ((WorkspaceService.Settings.RecentFiles?.Length ?? 0) == 0) p.Children.Add(Ui.Text("还没有最近项目。生成结果后点击“保存项目”，即可在这里找到。", 14, true));
         return Ui.Page(Ui.Heading("最近项目", "本机保存的创作，随时接着做。"), new ScrollViewer { Content = p });
