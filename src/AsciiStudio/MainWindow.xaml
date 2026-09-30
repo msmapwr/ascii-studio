@@ -7,19 +7,19 @@
    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
    <Image Source="ms-appx:///Assets/Logo128.png" Width="44" Height="44" AutomationProperties.Name="AsciiStudio Logo" AutomationProperties.AutomationId="BrandLogo"/>
    <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="AsciiStudio" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="用字符，表达更多。" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
-   <TextBlock Grid.Column="2" Text="本地创作 · 离线可用" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+   <TextBlock x:Name="OfflineLabel" Grid.Column="2" Text="本地创作 · 离线可用" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
   </Grid>
-  <NavigationView x:Name="Navigation" Grid.Row="1" PaneDisplayMode="Left" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="True" OpenPaneLength="210" SelectionChanged="OnNavigationChanged">
+  <NavigationView x:Name="Navigation" Grid.Row="1" PaneDisplayMode="Auto" CompactModeThresholdWidth="640" ExpandedModeThresholdWidth="1008" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="True" OpenPaneLength="210" SelectionChanged="OnNavigationChanged" AutomationProperties.AutomationId="AppNavigation">
    <NavigationView.MenuItems>
     <NavigationViewItem Content="开始创作" Tag="home" Icon="Home" AutomationProperties.AutomationId="NavHome"/>
     <NavigationViewItem Content="图片转换" Tag="image" Icon="Pictures" AutomationProperties.AutomationId="NavImage"/>
     <NavigationViewItem Content="文字转换" Tag="text" Icon="Font" AutomationProperties.AutomationId="NavText"/>
     <NavigationViewItemSeparator/>
-    <NavigationViewItem Content="生成器" Tag="generators" Icon="Shuffle"/>
-    <NavigationViewItem Content="文本工具" Tag="tools" Icon="Edit"/>
-    <NavigationViewItem Content="最近项目" Tag="library" Icon="Folder"/>
+    <NavigationViewItem Content="生成器" Tag="generators" Icon="Shuffle" AutomationProperties.AutomationId="NavGenerator"/>
+    <NavigationViewItem Content="文本工具" Tag="tools" Icon="Edit" AutomationProperties.AutomationId="NavTools"/>
+    <NavigationViewItem Content="最近项目" Tag="library" Icon="Folder" AutomationProperties.AutomationId="NavLibrary"/>
    </NavigationView.MenuItems>
-   <Grid Padding="24,12,24,20">
+   <Grid x:Name="PageContainer" Padding="24,12,24,20">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
     <InfoBar x:Name="Notice" IsOpen="False" IsClosable="True" Margin="0,0,0,12"/>
     <ContentControl x:Name="PageHost" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>

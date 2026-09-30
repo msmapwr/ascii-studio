@@ -21,12 +21,14 @@ public sealed class ResultPane : Grid
     private readonly ToggleSwitch colorToggle = new() { Header = "图像预览", IsOn = false };
     private readonly ComboBox format = Ui.Choice(["TXT", "PNG", "JPEG", "GIF", "HTML", "SVG", "ANSI", "JSON", "Markdown"]);
     private readonly NumberBox fontSize = new NumberBox() { Minimum = 8, Maximum = 30, Value = 13, Width = 90, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
-    private readonly ComboBox exportScale=Ui.Choice(["1×","2×","3×","4×"]);
-    private readonly TextBlock exportDimensions=Ui.Text("生成后显示图片分辨率",12,true);
+    private readonly ComboBox exportScale = Ui.Choice(["1×", "2×", "3×", "4×"]);
+    private readonly TextBlock exportDimensions = Ui.Text("生成后显示图片分辨率", 12, true);
     private readonly CommandBar toolbar = new() { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, IsDynamicOverflowEnabled = true };
     private bool updating;
     private int renderVersion;
-    private readonly DispatcherTimer recoveryTimer = new() { Interval=TimeSpan.FromMilliseconds(800) };
+    private XamlRoot? previewRoot;
+    private int previewDensity = 1;
+    private readonly DispatcherTimer recoveryTimer = new() { Interval = TimeSpan.FromMilliseconds(800) };
     public AsciiDocument? Document { get; private set; }
     public Func<AsciiDocument, StudioProject>? ProjectFactory { get; set; }
 
@@ -51,20 +53,20 @@ public sealed class ResultPane : Grid
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(colorToggle, "ResultImagePreview");
         AddSettings("显示", displaySettings, "DisplaySettings");
         Children.Add(toolbar);
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportScale,"ExportScale");
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(exportScale,"图片导出倍率");
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportDimensions,"ExportDimensions");
-        exportScale.SelectionChanged+=(_,_)=>UpdateDimensions();
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportScale, "ExportScale");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(exportScale, "图片导出倍率");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportDimensions, "ExportDimensions");
+        exportScale.SelectionChanged += (_, _) => UpdateDimensions();
         editor = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), FontSize = 13, Padding = new Thickness(20), PlaceholderText = "转换结果将在这里显示。\n生成后可以直接编辑，再复制或导出。", HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
         ScrollViewer.SetHorizontalScrollBarVisibility(editor, ScrollBarVisibility.Auto);
         ScrollViewer.SetVerticalScrollBarVisibility(editor, ScrollBarVisibility.Auto);
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(editor,"ResultEditor");
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(editor,"字符画结果编辑器");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(editor, "ResultEditor");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(editor, "字符画结果编辑器");
         editor.TextChanged += (_, _) =>
         {
             if (updating) return;
-            try { Document = AsciiDocument.FromText(editor.Text, Document?.Title ?? "Untitled"); UpdateStats("已编辑 · 颜色已重置");recoveryTimer.Stop();recoveryTimer.Start(); }
-            catch (ArgumentException ex) { updating=true;editor.Text=Document?.Text??"";updating=false;App.Window.Message(ex.Message, true); }
+            try { Document = AsciiDocument.FromText(editor.Text, Document?.Title ?? "Untitled"); UpdateStats("已编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
+            catch (ArgumentException ex) { updating = true; editor.Text = Document?.Text ?? ""; updating = false; App.Window.Message(ex.Message, true); }
         };
         var canvas = new Grid(); canvas.Children.Add(editor);
         imageScroll = new ScrollViewer { Content = preview, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Visibility = Visibility.Collapsed };
@@ -72,17 +74,32 @@ public sealed class ResultPane : Grid
         var footer = new Grid { ColumnSpacing = 12 };
         footer.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
         stats = Ui.Text("尚未生成结果", 12, true); stats.VerticalAlignment = VerticalAlignment.Center; footer.Children.Add(stats);
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(stats,"ResultStats");
-        fontSize.ValueChanged += async (_, _) => { if (double.IsFinite(fontSize.Value)) { editor.FontSize = fontSize.Value;UpdateDimensions(); if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); } };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(stats, "ResultStats");
+        fontSize.ValueChanged += async (_, _) => { if (double.IsFinite(fontSize.Value)) { editor.FontSize = fontSize.Value; UpdateDimensions(); if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); } };
         colorToggle.Toggled += async (_, _) => { imageScroll.Visibility = colorToggle.IsOn ? Visibility.Visible : Visibility.Collapsed; editor.Visibility = colorToggle.IsOn ? Visibility.Collapsed : Visibility.Visible; if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); };
         Grid.SetRow(footer, 2); Children.Add(footer);
-        recoveryTimer.Tick+=async (_,_)=>{recoveryTimer.Stop();await App.Window.Guard(SaveRecovery);};
-        Unloaded+=(_,_)=>recoveryTimer.Stop();
+        recoveryTimer.Tick += async (_, _) => { recoveryTimer.Stop(); await App.Window.Guard(SaveRecovery); };
+        Loaded += (_, _) =>
+        {
+            previewRoot = XamlRoot;
+            if (previewRoot is not null) previewRoot.Changed += OnPreviewRootChanged;
+        };
+        Unloaded += (_, _) =>
+        {
+            recoveryTimer.Stop();
+            if (previewRoot is not null) previewRoot.Changed -= OnPreviewRootChanged;
+            previewRoot = null;
+        };
+    }
+
+    private async void OnPreviewRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
+    {
+        if (colorToggle.IsOn && previewDensity != (int)Math.Ceiling(sender.RasterizationScale)) await App.Window.Guard(RenderPreview);
     }
 
     public void AddSettings(string label, FrameworkElement content, string automationId)
     {
-        var button = new AppBarButton { Label = label, Icon = new SymbolIcon(Symbol.Setting), Flyout = new Flyout { Content = content } };
+        var button = new AppBarButton { Label = label, Icon = new SymbolIcon(Symbol.Setting), Flyout = Ui.AdaptiveFlyout(content) };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, automationId);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
         toolbar.PrimaryCommands.Add(button);
@@ -100,37 +117,46 @@ public sealed class ResultPane : Grid
     {
         document.Validate(); Document = document; updating = true; editor.Text = document.Text; updating = false;
         UpdateStats(suffix); if (colorToggle.IsOn) await RenderPreview();
-        recoveryTimer.Stop();recoveryTimer.Start();
+        recoveryTimer.Stop(); recoveryTimer.Start();
     }
     private async Task SaveRecovery()
     {
-        if(Document is null)return;
-        var snapshot=ProjectFactory?.Invoke(Document)??new StudioProject(1,Document,null,null,null,"snapshot");
-        var bytes=await Task.Run(()=>System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(snapshot));
-        if(bytes.Length>100_000_000)throw new InvalidDataException("恢复项目超过 100MB，请降低字符画尺寸或输入图片大小。");
-        await WorkspaceService.AtomicWrite(Path.Combine(WorkspaceService.DataDirectory,"recovery.asciiproj"),bytes);
+        if (Document is null) return;
+        var snapshot = ProjectFactory?.Invoke(Document) ?? new StudioProject(1, Document, null, null, null, "snapshot");
+        var bytes = await Task.Run(() => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(snapshot));
+        if (bytes.Length > 100_000_000) throw new InvalidDataException("恢复项目超过 100MB，请降低字符画尺寸或输入图片大小。");
+        await WorkspaceService.AtomicWrite(Path.Combine(WorkspaceService.DataDirectory, "recovery.asciiproj"), bytes);
     }
 
     private void UpdateStats(string suffix = "")
     {
-        stats.Text=Document is null ? "尚未生成结果" : $"{Document.Width} × {Document.Height} · {Document.Text.Length:N0} 字符{(suffix.Length > 0 ? " · " + suffix : "")}";
+        stats.Text = Document is null ? "尚未生成结果" : $"{Document.Width} × {Document.Height} · {Document.Text.Length:N0} 字符{(suffix.Length > 0 ? " · " + suffix : "")}";
         UpdateDimensions();
     }
     private void UpdateDimensions()
     {
-        if(Document is null)return;
-        try{var size=ImagingService.RenderSize(Document,(float)fontSize.Value,scale:exportScale.SelectedIndex+1);exportDimensions.Text=$"{size.Width} × {size.Height} px · PNG / JPEG / GIF";}
-        catch(ArgumentException ex){exportDimensions.Text=ex.Message;}
+        if (Document is null) return;
+        try { var size = ImagingService.RenderSize(Document, (float)fontSize.Value, scale: exportScale.SelectedIndex + 1); exportDimensions.Text = $"{size.Width} × {size.Height} px · PNG / JPEG / GIF"; }
+        catch (ArgumentException ex) { exportDimensions.Text = ex.Message; }
     }
     private async Task RenderPreview()
     {
         if (Document is null) return;
         var current = ++renderVersion; var document = Document; var size = (float)fontSize.Value;
-        var bytes = await Task.Run(() => ImagingService.Render(document, size));
+        var density = Math.Max(1, (int)Math.Ceiling(XamlRoot?.RasterizationScale ?? 1));
+        var dimensions = ImagingService.RenderSize(document, size, scale: density);
+        var bytes = await Task.Run(() => ImagingService.Render(document, size, scale: density));
         using var stream = new InMemoryRandomAccessStream();
         using (var writer = new DataWriter(stream.GetOutputStreamAt(0))) { writer.WriteBytes(bytes); await writer.StoreAsync(); }
         stream.Seek(0); var source = new BitmapImage(); await source.SetSourceAsync(stream);
-        if (current == renderVersion) preview.Source = source;
+        if (current == renderVersion)
+        {
+            previewDensity = density;
+            preview.Stretch = Stretch.Fill;
+            preview.Width = dimensions.Width / (double)density;
+            preview.Height = dimensions.Height / (double)density;
+            preview.Source = source;
+        }
     }
 
     private async Task SaveProject()
@@ -151,20 +177,24 @@ public sealed class ResultPane : Grid
         var picker = new FileSavePicker { SuggestedFileName = SafeName(doc.Title), SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
         picker.FileTypeChoices.Add(kind, [ext]); App.Window.InitializePicker(picker);
         var file = await picker.PickSaveFileAsync(); if (file is null) return;
-        var size = (float)fontSize.Value;var scale=exportScale.SelectedIndex+1;
+        var size = (float)fontSize.Value; var scale = exportScale.SelectedIndex + 1;
         var bytes = await Task.Run(() => kind switch
         {
-            "PNG" => ImagingService.Render(doc, size,scale:scale), "JPEG" => ImagingService.Render(doc, size, format: ImageFormat.Jpeg,scale:scale),
-            "GIF" => ImagingService.Render(doc, size, format: ImageFormat.Gif,scale:scale),
-            "HTML" => Encoding.UTF8.GetBytes(ExportService.Html(doc)), "SVG" => Encoding.UTF8.GetBytes(ExportService.Svg(doc)),
-            "ANSI" => Encoding.UTF8.GetBytes(ExportService.Ansi(doc)), "JSON" => Encoding.UTF8.GetBytes(ExportService.Json(doc)),
-            "Markdown" => Encoding.UTF8.GetBytes(ExportService.Markdown(doc)), _ => Encoding.UTF8.GetBytes(doc.Text.Replace("\n", "\r\n"))
+            "PNG" => ImagingService.Render(doc, size, scale: scale),
+            "JPEG" => ImagingService.Render(doc, size, format: ImageFormat.Jpeg, scale: scale),
+            "GIF" => ImagingService.Render(doc, size, format: ImageFormat.Gif, scale: scale),
+            "HTML" => Encoding.UTF8.GetBytes(ExportService.Html(doc)),
+            "SVG" => Encoding.UTF8.GetBytes(ExportService.Svg(doc)),
+            "ANSI" => Encoding.UTF8.GetBytes(ExportService.Ansi(doc)),
+            "JSON" => Encoding.UTF8.GetBytes(ExportService.Json(doc)),
+            "Markdown" => Encoding.UTF8.GetBytes(ExportService.Markdown(doc)),
+            _ => Encoding.UTF8.GetBytes(doc.Text.Replace("\n", "\r\n"))
         });
         await WorkspaceService.AtomicWrite(file.Path, bytes); App.Window.Message($"已导出 {kind}：{Path.GetFileName(file.Path)}");
     }
     private static string SafeName(string? title)
     {
-        var name=new string((title??"Untitled").Select(c=>Path.GetInvalidFileNameChars().Contains(c)?'_':c).Take(80).ToArray()).Trim().TrimEnd('.');
-        return string.IsNullOrWhiteSpace(name)?"Untitled":name;
+        var name = new string((title ?? "Untitled").Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c).Take(80).ToArray()).Trim().TrimEnd('.');
+        return string.IsNullOrWhiteSpace(name) ? "Untitled" : name;
     }
 }
