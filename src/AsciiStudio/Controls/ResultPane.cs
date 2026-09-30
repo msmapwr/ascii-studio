@@ -65,8 +65,9 @@ public sealed class ResultPane : Grid
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(editor, "字符画结果编辑器");
         editor.TextChanged += (_, _) =>
         {
-            if (updating) return;
-            try { Document = AsciiDocument.FromText(editor.Text, Document?.Title ?? "Untitled"); UpdateStats("已编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
+            var text = editor.Text.Replace("\r\n", "\n").Replace('\r', '\n');
+            if (updating || text == Document?.Text || (Document is null && text.Length == 0)) return;
+            try { Document = AsciiDocument.FromText(text, Document?.Title ?? "Untitled"); UpdateStats("已编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
             catch (ArgumentException ex) { updating = true; editor.Text = Document?.Text ?? ""; updating = false; App.Window.Message(ex.Message, true); }
         };
         var canvas = new Grid(); canvas.Children.Add(editor);
