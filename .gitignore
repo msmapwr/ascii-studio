@@ -1,0 +1,16 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# Packages
+*.nupkg
+
+# OS
+.DS_Store
+Thumbs.db
+artifacts/

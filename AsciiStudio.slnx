@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/AsciiStudio.Core/AsciiStudio.Core.csproj" />
+  <Project Path="src/AsciiStudio/AsciiStudio.csproj" />
+</Solution>
