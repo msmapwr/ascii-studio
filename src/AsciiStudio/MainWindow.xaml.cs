@@ -12,6 +12,7 @@ public sealed partial class MainWindow : Window
     private readonly Dictionary<string, UIElement> pages = [];
     private WindowPlacement? normalPlacement;
     private bool placementMaximized;
+    private int themeVersion;
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
     public MainWindow()
@@ -28,7 +29,8 @@ public sealed partial class MainWindow : Window
         AppWindow.Changed += (_, _) => CapturePlacement();
         Closed += (_, _) =>
         {
-            if (normalPlacement is null) return;
+            WorkspaceService.SettingsChanged -= OnSettingsChanged;
+            if (normalPlacement is null || !WorkspaceService.Settings.RememberWindow) return;
             try
             {
                 WindowPlacementService.Save(normalPlacement with { Maximized = placementMaximized });
@@ -37,14 +39,13 @@ public sealed partial class MainWindow : Window
         };
         Root.SizeChanged += (_, _) =>
         {
-            var compact = Root.ActualWidth < 640;
-            OfflineLabel.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
-            PageContainer.Padding = compact ? new Thickness(12, 48, 12, 12) : new Thickness(24, 12, 24, 20);
+            ApplyDensity();
         };
         Root.Loaded += (_, _) => Root.XamlRoot.Changed += (_, _) => UpdateMinimumSize(Root.XamlRoot.RasterizationScale);
         Root.RequestedTheme = WorkspaceService.Settings.Theme switch { "Light" => ElementTheme.Light, "System" => ElementTheme.Default, _ => ElementTheme.Dark };
         if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported()) SystemBackdrop = new Microsoft.UI.Xaml.Media.MicaBackdrop();
         Navigation.SelectedItem = Navigation.MenuItems[0];
+        WorkspaceService.SettingsChanged += OnSettingsChanged;
     }
 
     private void CapturePlacement()
@@ -58,6 +59,7 @@ public sealed partial class MainWindow : Window
 
     private void RestorePlacement()
     {
+        if (!WorkspaceService.Settings.RememberWindow) return;
         var saved = WindowPlacementService.Load();
         if (saved is null) return;
         var area = Microsoft.UI.Windowing.DisplayArea.GetFromPoint(new Windows.Graphics.PointInt32(saved.X, saved.Y), Microsoft.UI.Windowing.DisplayAreaFallback.Nearest).WorkArea;
@@ -69,6 +71,45 @@ public sealed partial class MainWindow : Window
         AppWindow.Move(new Windows.Graphics.PointInt32(Math.Clamp(saved.X, area.X, area.X + Math.Max(0, area.Width - width)), Math.Clamp(saved.Y, area.Y, area.Y + Math.Max(0, area.Height - height))));
         CapturePlacement();
         if (saved.Maximized && AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter) presenter.Maximize();
+    }
+
+    private void ApplyDensity()
+    {
+        var compact = Root.ActualWidth < 640;
+        var dense = WorkspaceService.Settings.CompactLayout;
+        Root.RowDefinitions[0].Height = new GridLength(dense ? 48 : 64);
+        PageContainer.Padding = compact ? new Thickness(12, 48, 12, 12) : dense ? new Thickness(16, 8, 16, 12) : new Thickness(24, 12, 24, 20);
+    }
+
+    private async void OnSettingsChanged(StudioSettings settings)
+    {
+        ApplyDensity();
+        var theme = settings.Theme switch { "Light" => ElementTheme.Light, "System" => ElementTheme.Default, _ => ElementTheme.Dark };
+        await Guard(() => ChangeTheme(theme));
+    }
+
+    private async Task ChangeTheme(ElementTheme theme)
+    {
+        var version = ++themeVersion;
+        if (Root.RequestedTheme == theme) { ThemeSnapshot.Visibility = Visibility.Collapsed; ThemeSnapshot.Source = null; return; }
+        ThemeSnapshot.Visibility = Visibility.Collapsed;
+        if (!MotionService.Enabled || Root.XamlRoot is null) { Root.RequestedTheme = theme; ThemeSnapshot.Source = null; return; }
+        var bitmap = new Microsoft.UI.Xaml.Media.Imaging.RenderTargetBitmap();
+        try
+        {
+            var scale = Root.XamlRoot.RasterizationScale;
+            await bitmap.RenderAsync(Root, (int)Math.Ceiling(Root.ActualWidth * scale), (int)Math.Ceiling(Root.ActualHeight * scale));
+        }
+        catch (Exception ex) when (ex is COMException or ArgumentException)
+        {
+            if (version == themeVersion) Root.RequestedTheme = theme;
+            System.Diagnostics.Debug.WriteLine(ex); return;
+        }
+        if (version != themeVersion) return;
+        Root.RequestedTheme = theme;
+        ThemeSnapshot.Source = bitmap; ThemeSnapshot.Visibility = Visibility.Visible;
+        try { await MotionService.Fade(ThemeSnapshot, 1, 0, 200); }
+        finally { if (version == themeVersion) { ThemeSnapshot.Visibility = Visibility.Collapsed; ThemeSnapshot.Source = null; } }
     }
 
     private void UpdateMinimumSize(double scale)
@@ -122,6 +163,7 @@ public sealed partial class MainWindow : Window
                 pages[key] = page;
             }
             PageHost.Content = page;
+            _ = Guard(() => MotionService.Fade(PageHost, 0, 1));
         }
         catch (Exception ex) { Message(ex.Message, true); _ = Log(ex); }
     }
@@ -133,7 +175,6 @@ public sealed partial class MainWindow : Window
         var content = Ui.Stack(24);
         var welcome = Ui.Stack(12);
         welcome.Children.Add(Ui.Text("从一张图片，一句话开始。", 25));
-        welcome.Children.Add(Ui.Text("把日常灵感变成字符作品。调整、编辑、保存，所有处理都在你的电脑上完成。", 15, true));
         var art = Ui.Text("   /\\_/\\       ___   ____   ____ ___ ___\n  ( o.o )     / _ \\ / ___| / ___|_ _|_ _|\n   > ^ <     / ___ \\___ \\| |    | | | |\n            /_/   \\_\\____/ \\____|___|___|", 17);
         art.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas"); welcome.Children.Add(art);
         welcome.SizeChanged += (_, _) => art.Visibility = welcome.ActualWidth < 560 ? Visibility.Collapsed : Visibility.Visible;
@@ -142,7 +183,7 @@ public sealed partial class MainWindow : Window
         var labels = new[] { ("图片转换", "照片、插画、Logo。用密度和颜色保留细节。", "image"), ("文字转换", "FIGlet 艺术字，或支持中文的字体转换。", "text"), ("生成器", "边框、分隔线、迷宫、夜空与图案。", "generators") };
         for (var i = 0; i < labels.Length; i++)
         {
-            var item = labels[i]; var p = Ui.Stack(); p.Children.Add(Ui.Text(item.Item1, 20)); p.Children.Add(Ui.Text(item.Item2, 13, true)); p.Children.Add(Ui.Button("开始创作 →", () => Navigate(item.Item3)));
+            var item = labels[i]; var p = Ui.Stack(); p.Children.Add(Ui.Text(item.Item1, 20)); p.Children.Add(Ui.Button("开始创作 →", () => Navigate(item.Item3)));
             var card = Ui.Card(p);
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(card, "HomeCard_" + item.Item3);
             cards.Add(card);
@@ -187,16 +228,5 @@ public sealed partial class MainWindow : Window
         if ((WorkspaceService.Settings.RecentFiles?.Length ?? 0) == 0) p.Children.Add(Ui.Text("还没有最近项目。生成结果后点击“保存项目”，即可在这里找到。", 14, true));
         return Ui.Page(Ui.Heading("最近项目", "本机保存的创作，随时接着做。"), new ScrollViewer { Content = p });
     }
-    private UIElement SettingsPage()
-    {
-        var p = Ui.Stack(20); var theme = Ui.Choice(["深色", "浅色", "跟随系统"], WorkspaceService.Settings.Theme switch { "Light" => 1, "System" => 2, _ => 0 });
-        theme.SelectionChanged += async (_, _) => await Guard(async () =>
-        {
-            var name = theme.SelectedIndex switch { 1 => "Light", 2 => "System", _ => "Dark" }; Root.RequestedTheme = theme.SelectedIndex switch { 1 => ElementTheme.Light, 2 => ElementTheme.Default, _ => ElementTheme.Dark }; await WorkspaceService.SetSettings(WorkspaceService.Settings with { Theme = name });
-        });
-        p.Children.Add(Ui.Card(Ui.Field("界面主题", theme))); p.Children.Add(Ui.Card(Ui.Text("隐私\n图片和文字在本地处理。应用没有账号系统，不上传创作内容。", 15)));
-        p.Children.Add(Ui.AsyncButton("清空最近项目记录", () => WorkspaceService.SetSettings(WorkspaceService.Settings with { RecentFiles = [] })));
-        p.Children.Add(Ui.Card(Ui.Text("AsciiStudio · 开发版\n当前提供图片/文字转换、基础生成器、文本工具及项目导出。摄像头、3D、绘画工作室、动画和完整素材库仍在开发计划中。", 14, true)));
-        return Ui.Page(Ui.Heading("设置", "让工作室适合你的习惯。"), new ScrollViewer { Content = p });
-    }
+    private UIElement SettingsPage() => new Pages.SettingsPage();
 }

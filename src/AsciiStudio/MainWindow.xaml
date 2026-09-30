@@ -6,8 +6,7 @@
   <Grid Padding="24,0" ColumnSpacing="12">
    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
    <Image Source="ms-appx:///Assets/Logo128.png" Width="44" Height="44" AutomationProperties.Name="AsciiStudio Logo" AutomationProperties.AutomationId="BrandLogo"/>
-   <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="AsciiStudio" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="用字符，表达更多。" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
-   <TextBlock x:Name="OfflineLabel" Grid.Column="2" Text="本地创作 · 离线可用" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+   <TextBlock Grid.Column="1" Text="AsciiStudio" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center"/>
   </Grid>
   <NavigationView x:Name="Navigation" Grid.Row="1" PaneDisplayMode="Auto" CompactModeThresholdWidth="640" ExpandedModeThresholdWidth="1008" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="True" OpenPaneLength="210" SelectionChanged="OnNavigationChanged" AutomationProperties.AutomationId="AppNavigation">
    <NavigationView.MenuItems>
@@ -25,5 +24,6 @@
     <ContentControl x:Name="PageHost" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
    </Grid>
   </NavigationView>
+  <Image x:Name="ThemeSnapshot" Grid.RowSpan="2" Stretch="Fill" Visibility="Collapsed" IsHitTestVisible="False" AutomationProperties.AutomationId="ThemeTransitionOverlay"/>
  </Grid>
 </Window>
