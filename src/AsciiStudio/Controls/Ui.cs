@@ -51,6 +51,18 @@ public static class Ui
     public static Slider Slider(double min, double max, double value, double step = 1) => new Slider()
     { Minimum = min, Maximum = max, Value = value, StepFrequency = step, IsThumbToolTipEnabled = true };
     private static string Id(string prefix,string label)=>prefix+"_"+new string(label.Where(char.IsLetterOrDigit).ToArray());
+    public static Grid SettingsGrid(params FrameworkElement[] fields)
+    {
+        var grid = new Grid { Width = 420, ColumnSpacing = 20, RowSpacing = 12 };
+        grid.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
+        for (var i = 0; i < fields.Length; i++)
+        {
+            if (i % 2 == 0) grid.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            Grid.SetRow(fields[i], i / 2); Grid.SetColumn(fields[i], i % 2); grid.Children.Add(fields[i]);
+        }
+        return grid;
+    }
     public static Grid Workspace(UIElement input, FrameworkElement result)
     {
         var g = new Grid { ColumnSpacing = 20 };

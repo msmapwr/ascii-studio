@@ -27,7 +27,13 @@ public sealed class TextPage : Grid
     {
         figFont=Ui.Choice(fonts.Select(f=>f.Name),Math.Max(0,Array.FindIndex(fonts,p=>p.Name=="Standard")));
         var generate=Ui.AsyncButton("生成字符画",Generate,true);Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(generate,"TextGenerate");
-        var p=Ui.Stack();p.Children.Add(Ui.Field("文字内容",input));p.Children.Add(Ui.Field("转换方式",mode));p.Children.Add(Ui.Field($"FIGlet 字体 · {fonts.Length} 款",figFont));p.Children.Add(Ui.Field("系统字体",systemFont));p.Children.Add(Ui.Field("字符画列数（系统字体模式）",columns));p.Children.Add(Ui.Field("边框",border));p.Children.Add(trim);p.Children.Add(Ui.Field("替换空格",replacement));p.Children.Add(generate);
+        var p=Ui.Stack();p.Children.Add(Ui.Field("文字内容",input));p.Children.Add(Ui.Field("转换方式",mode));p.Children.Add(generate);
+        var fontSettings=Ui.Stack();fontSettings.Width=340;
+        fontSettings.Children.Add(Ui.Field($"FIGlet 字体 · {fonts.Length} 款",figFont));fontSettings.Children.Add(Ui.Field("系统字体",systemFont));fontSettings.Children.Add(Ui.Field("字符画列数（系统字体模式）",columns));
+        result.AddSettings("字体与尺寸",fontSettings,"TextFontSettings");
+        var layoutSettings=Ui.Stack();layoutSettings.Width=260;
+        layoutSettings.Children.Add(Ui.Field("边框",border));layoutSettings.Children.Add(trim);layoutSettings.Children.Add(Ui.Field("替换空格",replacement));
+        result.AddSettings("排版",layoutSettings,"TextLayoutSettings");
         p.Children.Add(Ui.Text("中文请选择系统字体模式。FIGlet 字体通常以拉丁字符为主。修改结果时，复制和导出使用修改后的内容。",12,true));
         Children.Add(Ui.Page(Ui.Heading("文字转换","把一句话变成标题、签名，或一幅文字作品。"),Ui.Workspace(Ui.Card(p),result)));
         mode.SelectionChanged+=(_,_)=>{figFont.IsEnabled=mode.SelectedIndex==0;systemFont.IsEnabled=mode.SelectedIndex==1;columns.IsEnabled=mode.SelectedIndex==1;};systemFont.IsEnabled=false;columns.IsEnabled=false;

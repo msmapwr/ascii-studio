@@ -23,6 +23,7 @@ public sealed class ResultPane : Grid
     private readonly NumberBox fontSize = new NumberBox() { Minimum = 8, Maximum = 30, Value = 13, Width = 90, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
     private readonly ComboBox exportScale=Ui.Choice(["1×","2×","3×","4×"]);
     private readonly TextBlock exportDimensions=Ui.Text("生成后显示图片分辨率",12,true);
+    private readonly CommandBar toolbar = new() { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, IsDynamicOverflowEnabled = true };
     private bool updating;
     private int renderVersion;
     private readonly DispatcherTimer recoveryTimer = new() { Interval=TimeSpan.FromMilliseconds(800) };
@@ -35,12 +36,21 @@ public sealed class ResultPane : Grid
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = new GridLength(1, GridUnitType.Star) });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        actions.Children.Add(Ui.AsyncButton("复制", () => { if (Document is not null) { var package = new DataPackage(); package.SetText(Document.Text); Clipboard.SetContent(package); App.Window.Message("已复制到剪贴板"); } return Task.CompletedTask; }));
-        actions.Children.Add(Ui.AsyncButton("保存项目", SaveProject));
-        format.Width = 118; actions.Children.Add(format); actions.Children.Add(Ui.AsyncButton("导出", Export, true));
-        var toolbar=Ui.Stack(8);toolbar.Children.Add(actions);
-        var resolutionRow=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12};resolutionRow.Children.Add(Ui.Text("图片导出倍率",12,true));exportScale.Width=80;resolutionRow.Children.Add(exportScale);resolutionRow.Children.Add(exportDimensions);toolbar.Children.Add(resolutionRow);Children.Add(toolbar);
+        AddAction("复制", Symbol.Copy, "Button_复制", () => { if (Document is not null) { var package = new DataPackage(); package.SetText(Document.Text); Clipboard.SetContent(package); App.Window.Message("已复制到剪贴板"); } return Task.CompletedTask; });
+        AddAction("保存项目", Symbol.Save, "Button_保存项目", SaveProject);
+        AddAction("导出", Symbol.Download, "Button_导出", Export);
+        var exportSettings = Ui.Stack();
+        exportSettings.Width = 300;
+        exportSettings.Children.Add(Ui.Field("导出格式", format));
+        exportSettings.Children.Add(Ui.Field("图片导出倍率", exportScale));
+        exportSettings.Children.Add(exportDimensions);
+        AddSettings("导出设置", exportSettings, "ExportSettings");
+        var displaySettings = Ui.Stack(); displaySettings.Width = 240;
+        displaySettings.Children.Add(Ui.Field("字号 · 同时用于图片导出", fontSize));
+        displaySettings.Children.Add(colorToggle);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(colorToggle, "ResultImagePreview");
+        AddSettings("显示", displaySettings, "DisplaySettings");
+        Children.Add(toolbar);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportScale,"ExportScale");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(exportScale,"图片导出倍率");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportDimensions,"ExportDimensions");
@@ -60,15 +70,30 @@ public sealed class ResultPane : Grid
         imageScroll = new ScrollViewer { Content = preview, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Visibility = Visibility.Collapsed };
         canvas.Children.Add(imageScroll); var card = Ui.Card(canvas, new Thickness(0)); Grid.SetRow(card, 1); Children.Add(card);
         var footer = new Grid { ColumnSpacing = 12 };
-        footer.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) }); footer.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); footer.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        footer.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
         stats = Ui.Text("尚未生成结果", 12, true); stats.VerticalAlignment = VerticalAlignment.Center; footer.Children.Add(stats);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(stats,"ResultStats");
-        Grid.SetColumn(fontSize, 1); footer.Children.Add(fontSize); Grid.SetColumn(colorToggle, 2); footer.Children.Add(colorToggle);
         fontSize.ValueChanged += async (_, _) => { if (double.IsFinite(fontSize.Value)) { editor.FontSize = fontSize.Value;UpdateDimensions(); if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); } };
         colorToggle.Toggled += async (_, _) => { imageScroll.Visibility = colorToggle.IsOn ? Visibility.Visible : Visibility.Collapsed; editor.Visibility = colorToggle.IsOn ? Visibility.Collapsed : Visibility.Visible; if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); };
         Grid.SetRow(footer, 2); Children.Add(footer);
         recoveryTimer.Tick+=async (_,_)=>{recoveryTimer.Stop();await App.Window.Guard(SaveRecovery);};
         Unloaded+=(_,_)=>recoveryTimer.Stop();
+    }
+
+    public void AddSettings(string label, FrameworkElement content, string automationId)
+    {
+        var button = new AppBarButton { Label = label, Icon = new SymbolIcon(Symbol.Setting), Flyout = new Flyout { Content = content } };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, automationId);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
+        toolbar.PrimaryCommands.Add(button);
+    }
+
+    private void AddAction(string label, Symbol icon, string automationId, Func<Task> action)
+    {
+        var button = new AppBarButton { Label = label, Icon = new SymbolIcon(icon) };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, automationId);
+        button.Click += async (_, _) => { button.IsEnabled = false; try { await App.Window.Guard(action); } finally { button.IsEnabled = true; } };
+        toolbar.PrimaryCommands.Add(button);
     }
 
     public async Task SetDocument(AsciiDocument document, string suffix = "")
