@@ -15,7 +15,7 @@
 - 独立 SVG Logo、窗口 / 任务栏 ICO、MSIX 图标资源；分辨率预设和自定义列 / 行，位图导出 1–4 倍。
 
 这是首个可运行开发版，尚未覆盖网站的完整功能。详细边界见 [开发进度](docs/DEVELOPMENT_STATUS.md)。
-当前版本 **0.4.0**：字体搜索与预览、设置、动画和次要参数编辑修复见 [本轮记录](docs/ITERATION_05.md)。高 DPI 与响应式布局见 [v0.3](docs/ITERATION_04.md)。
+当前版本 **0.5.0**：图片裁剪、方向调整、几何撤销与项目恢复见 [本轮记录](docs/ITERATION_06.md)。字体预览、设置和动画见 [v0.4](docs/ITERATION_05.md)，高 DPI 与响应式布局见 [v0.3](docs/ITERATION_04.md)。
 
 ## 开发环境
 
