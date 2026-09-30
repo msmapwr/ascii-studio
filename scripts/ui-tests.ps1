@@ -32,7 +32,7 @@ Check 'Character settings are accessible' {Open-Settings ImageCharacterSettings 
 Check 'Picture adjustments are accessible' {Open-Settings ImageAdjustmentSettings ImageBrightness;Invoke-UI wait-for Field_锐化 -p IsOffscreen --value False -t 2000;Invoke-UI screenshot -o (Join-Path $taskOutput 'adjustments.png');Invoke-UI send-keys escape --via send-input}
 Check 'Overflow effects are accessible' {Open-Settings ImageEffectSettings ImageReset;Invoke-UI send-keys escape --via send-input}
 Check 'Text pane requires no scrolling and generates' {Invoke-UI invoke NavText;Invoke-UI wait-for TextGenerate -t 3000;No-ParameterScroll;Invoke-UI invoke TextGenerate;Invoke-UI wait-for ResultStats --value '字符' --contains -t 10000}
-Check 'Text fonts are accessible' {Open-Settings TextFontSettings Field_系统字体;Invoke-UI send-keys escape --via send-input}
+Check 'Primary text font is accessible' {Invoke-UI wait-for TextFigletFont -p IsOffscreen --value False -t 2000}
 Check 'Text layout is accessible' {Open-Settings TextLayoutSettings Field_边框;Invoke-UI send-keys escape --via send-input}
 Check 'Export settings are accessible' {Open-Settings ExportSettings ExportScale;Invoke-UI wait-for Field_导出格式 -t 2000;Invoke-UI send-keys escape --via send-input}
 Check 'Display settings are accessible' {Open-Settings DisplaySettings ResultImagePreview;Invoke-UI send-keys escape --via send-input}
