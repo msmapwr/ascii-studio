@@ -40,6 +40,7 @@ public sealed class ResultPane : Grid
     public event Action<string>? CharacterFontChanged;
     public AsciiDocument? Document { get; private set; }
     public Func<AsciiDocument, StudioProject>? ProjectFactory { get; set; }
+    public void ShowColorPreview(bool enabled) => colorToggle.IsOn = enabled;
 
     public ResultPane()
     {
@@ -121,6 +122,7 @@ public sealed class ResultPane : Grid
             WorkspaceService.SettingsChanged += ApplySettings;
             previewRoot = XamlRoot;
             if (previewRoot is not null) previewRoot.Changed += OnPreviewRootChanged;
+            if (colorToggle.IsOn && previewDensity != (int)Math.Ceiling(previewRoot?.RasterizationScale ?? 1)) _ = App.Window.Guard(RenderPreview);
         };
         Unloaded += (_, _) =>
         {
@@ -295,7 +297,12 @@ public sealed class ResultPane : Grid
         if (Document is null) return;
         var current = ++renderVersion; var document = Document; var size = (float)fontSize.Value;
         var density = Math.Max(1, (int)Math.Ceiling(XamlRoot?.RasterizationScale ?? 1));
-        var dimensions = ImagingService.RenderSize(document, size, scale: density);
+        (int Width, int Height) dimensions;
+        try { dimensions = ImagingService.RenderSize(document, size, scale: density); }
+        catch (ArgumentException ex)
+        {
+            preview.Source = null; colorToggle.IsOn = false; App.Window.Message(ex.Message + " 已切换到文本视图。", true); return;
+        }
         var bytes = await Task.Run(() => ImagingService.Render(document, size, scale: density));
         using var stream = new InMemoryRandomAccessStream();
         using (var writer = new DataWriter(stream.GetOutputStreamAt(0))) { writer.WriteBytes(bytes); await writer.StoreAsync(); }

@@ -6,6 +6,7 @@ public sealed record AsciiDocument
     public int Height { get; init; }
     public string Text { get; init; } = "";
     public uint[]? Colors { get; init; }
+    public uint[]? BackgroundColors { get; init; }
     public string Title { get; init; } = "Untitled";
     public string FontFamily { get; init; } = "Consolas";
     public double CellWidth { get; init; } = 9;
@@ -19,6 +20,8 @@ public sealed record AsciiDocument
             throw new ArgumentException("字符画尺寸超出安全范围。");
         if (Colors is not null && Colors.Length != Width * Height)
             throw new ArgumentException("颜色网格与字符画尺寸不一致。");
+        if (BackgroundColors is not null && BackgroundColors.Length != Width * Height)
+            throw new ArgumentException("背景颜色网格与字符画尺寸不一致。");
         if (Text is null || Text.Contains('\r')) throw new ArgumentException("字符画必须使用 LF 换行。");
         var lines = Text.Split('\n');
         if (Text.Length > 8_000_000 || (Text.Length > 0 && (lines.Length != Height || lines.Any(x => x.Length > Width))))

@@ -140,6 +140,15 @@ public static class ImagingService
             var lines = document.Text.Split('\n');
             for (var y = 0; y < lines.Length; y++)
             {
+                if (document.BackgroundColors is not null)
+                    for (var x = 0; x < document.Width;)
+                    {
+                        var start = x; var color = document.BackgroundColors[y * document.Width + x];
+                        while (x < document.Width && document.BackgroundColors[y * document.Width + x] == color) x++;
+                        using var brush = new SolidBrush(Color.FromArgb(unchecked((int)color)));
+                        var left = padding + start * cell; var right = padding + x * cell;
+                        g.FillRectangle(brush, (float)Math.Floor(left), (float)Math.Floor(padding + y * lineHeight), (float)Math.Ceiling(right) - (float)Math.Floor(left), (float)Math.Ceiling(padding + (y + 1) * lineHeight) - (float)Math.Floor(padding + y * lineHeight));
+                    }
                 if (document.Colors is null)
                 {
                     using var brush = new SolidBrush(Color.FromArgb(231, 237, 247));
