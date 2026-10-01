@@ -25,6 +25,34 @@ function Select-Choice([string]$Selector,[string]$Value){
  UI invoke $Selector --action collapse|Out-Null
 }
 switch($Module){
+ 'assist'{
+  Check 'Comment preview replace and restore original' {
+   UI invoke NavText;UI set-value ResultEditor '  abc'
+   try{$taskMore=(UI get-property CommentSettings --json|ConvertFrom-Json).element.isOffscreen}catch{$taskMore=$true}
+   if($taskMore){UI invoke MoreButton}
+   UI invoke CommentSettings;UI invoke Button_生成注释预览
+   UI wait-for CommentPreview --contains --value '//   abc' -t 2000
+   UI invoke Button_替换结果;UI wait-for PrimaryButton -t 2000;UI invoke PrimaryButton
+   UI wait-for ResultEditor --contains --value '//   abc' -t 2000
+   UI invoke NavCrypto;UI invoke NavText
+   try{$taskMore=(UI get-property CommentSettings --json|ConvertFrom-Json).element.isOffscreen}catch{$taskMore=$true}
+   if($taskMore){UI invoke MoreButton}
+   UI invoke CommentSettings;UI invoke Button_恢复注释前原文
+   UI wait-for ResultEditor --contains --value '  abc' -t 2000
+  }
+  Check 'Tutorial beginner help and UI font preferences' {
+   UI invoke NavTutorial;UI invoke TutorialBeginner --action toggle-on
+   UI wait-for Help_新手模式 -p IsOffscreen --value False -t 2000
+   UI invoke SettingsItem;UI wait-for SettingsUiFontInput -t 2000
+   UI set-value SettingsUiFontInput 'Arial';UI set-value SettingsUiFontSize '16'
+   Start-Sleep -Milliseconds 500
+   $taskSettings=Get-Content (Join-Path $PSScriptRoot '../artifacts/enhancement-test-data/settings.json') -Raw|ConvertFrom-Json
+   if(-not $taskSettings.BeginnerMode -or $taskSettings.UiFontFamily -ne 'Arial' -or $taskSettings.UiFontSize -ne 16){throw 'UI preferences were not saved'}
+   UI set-value SettingsUiFontInput 'Segoe UI';UI set-value SettingsUiFontSize '14'
+   UI invoke NavTutorial;UI invoke TutorialBeginner --action toggle-off
+   UI invoke NavHome;UI screenshot -o (Join-Path $PSScriptRoot '../artifacts/home-alignment.png')
+  }
+ }
  'crypto'{
   Check 'Digest generation and irreversible mode' {
    UI invoke NavCrypto;Select-Choice CryptoCategory '不可逆摘要'
