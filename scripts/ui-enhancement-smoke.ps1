@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][int]$AppPid,[ValidateSet('zoom','conversion','crypto','assist')][string]$Module='zoom')
+param([Parameter(Mandatory)][int]$AppPid,[ValidateSet('zoom','conversion','crypto','assist','ansi')][string]$Module='zoom')
 $ErrorActionPreference='Stop'
 $env:Path=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User')
 $taskHwnd=(& winapp ui list-windows -a $AppPid --json|ConvertFrom-Json|Where-Object ownerHwnd -eq 0|Select-Object -First 1).hwnd
@@ -25,6 +25,30 @@ function Select-Choice([string]$Selector,[string]$Value){
  UI invoke $Selector --action collapse|Out-Null
 }
 switch($Module){
+ 'ansi'{
+  Check 'ANSI colors and recovery retain original parameters' {
+   UI invoke NavAnsi;UI invoke Button_载入彩色示例
+   UI wait-for AnsiStatus --contains --value '80 × 6' -t 5000
+   Start-Sleep -Milliseconds 1200
+   $taskProject=Get-Content (Join-Path $PSScriptRoot '../artifacts/enhancement-test-data/recovery.asciiproj') -Raw|ConvertFrom-Json
+   if($taskProject.Mode -ne 'ansi' -or $taskProject.Document.BackgroundColors[80] -ne 4278190250 -or $taskProject.SourceText -notmatch 'ASCII STUDIO'){throw 'ANSI colors or source were not saved'}
+   UI screenshot -o (Join-Path $PSScriptRoot '../artifacts/ansi-colors.png')
+   UI invoke NavHome;UI invoke Button_恢复最近一次结果
+   UI wait-for AnsiStatus --contains --value '项目已恢复' -t 5000
+   UI invoke AnsiRender;UI wait-for AnsiStatus --contains --value '80 × 6' -t 5000
+  }
+  Check 'Unknown commands are reported and invalid input preserves result' {
+   UI set-value AnsiInput "abc$([char]27)[?25l";UI invoke AnsiRender
+   UI wait-for AnsiStatus --contains --value '忽略 1' -t 4000
+   UI invoke DisplaySettings;UI invoke ResultImagePreview --action toggle-off
+   $taskBefore=(UI get-value ResultEditor --json|ConvertFrom-Json).text
+   UI invoke NavHome;UI invoke NavAnsi
+   UI set-value AnsiInput "$([char]27)[2001;1Hx";UI invoke AnsiRender
+   Start-Sleep -Milliseconds 500
+   $taskAfter=(UI get-value ResultEditor --json|ConvertFrom-Json).text
+   if($taskBefore -ne $taskAfter){throw 'Parser error replaced the previous document'}
+  }
+ }
  'assist'{
   Check 'Comment preview replace and restore original' {
    UI invoke NavText;UI set-value ResultEditor '  abc'
