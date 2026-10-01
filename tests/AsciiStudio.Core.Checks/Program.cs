@@ -246,4 +246,23 @@ Check("generator invalid project parameters rejected", () =>
     var normal = new GeneratorRecipe().ToParameters();
     Assert(GeneratorRecipe.FromParameters(normal, "a\r\nb").Text == "a\nb", "Project line endings were not normalized");
 });
+Check("bounded creation history merge undo redo and divergence", () =>
+{
+    var history = new BoundedHistory<string>(text => text.Length * 2, 3, 1024);
+    history.Push("initial"); history.Push("a"); history.Push("ab", merge: true);
+    Assert(history.Count == 2 && history.Undo() == "initial", "Typing transaction did not merge");
+    Assert(history.Redo() == "ab", "Redo failed"); history.Undo(); history.Push("different");
+    Assert(!history.CanRedo && history.PeekUndo() == "initial", "Divergent change retained redo");
+    history.Push("three"); history.Push("four"); history.Push("five");
+    Assert(history.Count == 4 && history.Undo() == "four", "Step limit changed current state");
+});
+Check("bounded creation history budgets retain usable current state", () =>
+{
+    var history = new BoundedHistory<string>(text => text.Length * 2, 100, 12);
+    history.Push("one"); history.Push("two"); history.Push("six");
+    Assert(history.Count == 2 && history.RetainedBytes == 12, "Budget was not enforced");
+    history.Push(new string('x', 20));
+    Assert(history.Count == 1 && !history.CanUndo && history.Current.Length == 20, "Oversized current state lost");
+    try { history.Undo(); throw new Exception("Empty undo accepted"); } catch (InvalidOperationException) { }
+});
 Console.WriteLine($"{passed} checks passed.");
