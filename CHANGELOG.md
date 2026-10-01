@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.6.0-alpha.2] - 2026-10-01
+
+### Added
+
+- GitHub Actions 自动编译 Windows x64 自包含版并执行核心检查；main、PR 和手动运行上传 ZIP 产物。
+- 推送版本标签自动发布 Release；支持预发布标记、SHA-256 校验、版本一致性校验及失败后继续 Draft。
+
 ## [0.6.0-alpha.1] - 2026-10-01
 
 ### Added

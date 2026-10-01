@@ -27,6 +27,8 @@
 
 ## 构建与运行
 
+GitHub Actions 自动编译及版本标签发布说明见 [CI 与 Release](docs/CI_RELEASE.md)。
+
 在仓库目录运行：
 
 ```powershell
