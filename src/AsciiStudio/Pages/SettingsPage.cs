@@ -17,6 +17,12 @@ public sealed class SettingsPage : Grid
         var common = Group(content, "常用与外观");
         Choice(common, "主题", "SettingsTheme", ["深色", "浅色", "跟随系统"], s => s.Theme switch { "Light" => 1, "System" => 2, _ => 0 }, (s, i) => s with { Theme = i switch { 1 => "Light", 2 => "System", _ => "Dark" } });
         Toggle(common, "动画（遵循 Windows 设置）", "SettingsAnimations", s => s.Animations, (s, v) => s with { Animations = v });
+        Toggle(common, "新手模式", "SettingsBeginner", s => s.BeginnerMode, (s, v) => s with { BeginnerMode = v });
+        var uiFont = new FontPicker("SettingsUiFont");
+        common.Children.Add(Field("界面字体", "SettingsUiFontContainer", uiFont));
+        refresh.Add(s => uiFont.Select(s.UiFontFamily));
+        uiFont.Changed += async family => { if (!refreshing) await Save(s => s with { UiFontFamily = family }); };
+        Number(common, "界面字号", "SettingsUiFontSize", 12, 24, s => s.UiFontSize, (s, v) => s with { UiFontSize = v });
         Toggle(common, "紧凑布局", "SettingsCompact", s => s.CompactLayout, (s, v) => s with { CompactLayout = v });
         Toggle(common, "记住窗口尺寸与位置", "SettingsRememberWindow", s => s.RememberWindow, (s, v) => s with { RememberWindow = v });
         var editing = Group(content, "编辑");
@@ -60,7 +66,7 @@ public sealed class SettingsPage : Grid
     }
     private void Toggle(StackPanel group, string label, string id, Func<StudioSettings, bool> read, Func<StudioSettings, bool, StudioSettings> write)
     {
-        var control = new ToggleSwitch { Header = label }; AutomationProperties.SetAutomationId(control, id); group.Children.Add(control);
+        var control = new ToggleSwitch { Header = label }; AutomationProperties.SetAutomationId(control, id); group.Children.Add(Ui.WithHelp(control, label));
         refresh.Add(s => control.IsOn = read(s));
         control.Toggled += async (_, _) => { if (!refreshing) { var value = control.IsOn; await Save(s => write(s, value)); } };
     }

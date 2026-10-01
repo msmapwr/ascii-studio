@@ -6,7 +6,7 @@
   <Grid Padding="24,0" ColumnSpacing="12">
    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
    <Image Source="ms-appx:///Assets/Logo128.png" Width="44" Height="44" AutomationProperties.Name="AsciiStudio Logo" AutomationProperties.AutomationId="BrandLogo"/>
-   <TextBlock Grid.Column="1" Text="AsciiStudio" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center"/>
+   <TextBlock x:Name="BrandTitle" Grid.Column="1" Text="AsciiStudio" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center"/>
   </Grid>
   <NavigationView x:Name="Navigation" Grid.Row="1" PaneDisplayMode="Auto" CompactModeThresholdWidth="640" ExpandedModeThresholdWidth="1008" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="True" OpenPaneLength="210" SelectionChanged="OnNavigationChanged" AutomationProperties.AutomationId="AppNavigation">
    <NavigationView.MenuItems>
@@ -19,6 +19,9 @@
     <NavigationViewItem Content="加密与编码" Tag="crypto" Icon="Permissions" AutomationProperties.AutomationId="NavCrypto"/>
     <NavigationViewItem Content="最近项目" Tag="library" Icon="Folder" AutomationProperties.AutomationId="NavLibrary"/>
    </NavigationView.MenuItems>
+   <NavigationView.FooterMenuItems>
+    <NavigationViewItem Content="使用教程" Tag="tutorial" Icon="Help" AutomationProperties.AutomationId="NavTutorial"/>
+   </NavigationView.FooterMenuItems>
    <Grid x:Name="PageContainer" Padding="24,12,24,20">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
     <InfoBar x:Name="Notice" IsOpen="False" IsClosable="True" Margin="0,0,0,12"/>

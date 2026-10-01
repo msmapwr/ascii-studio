@@ -13,6 +13,8 @@ public sealed partial class MainWindow : Window
     private WindowPlacement? normalPlacement;
     private bool placementMaximized;
     private int themeVersion;
+    private string? appliedUiFont;
+    private double appliedUiSize;
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
     public MainWindow()
@@ -46,6 +48,7 @@ public sealed partial class MainWindow : Window
         if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported()) SystemBackdrop = new Microsoft.UI.Xaml.Media.MicaBackdrop();
         Navigation.SelectedItem = Navigation.MenuItems[0];
         WorkspaceService.SettingsChanged += OnSettingsChanged;
+        Root.Loaded += (_, _) => ApplyUiFont();
     }
 
     private void CapturePlacement()
@@ -84,6 +87,7 @@ public sealed partial class MainWindow : Window
     private async void OnSettingsChanged(StudioSettings settings)
     {
         ApplyDensity();
+        ApplyUiFont();
         var theme = settings.Theme switch { "Light" => ElementTheme.Light, "System" => ElementTheme.Default, _ => ElementTheme.Dark };
         await Guard(() => ChangeTheme(theme));
     }
@@ -110,6 +114,18 @@ public sealed partial class MainWindow : Window
         ThemeSnapshot.Source = bitmap; ThemeSnapshot.Visibility = Visibility.Visible;
         try { await MotionService.Fade(ThemeSnapshot, 1, 0, 200); }
         finally { if (version == themeVersion) { ThemeSnapshot.Visibility = Visibility.Collapsed; ThemeSnapshot.Source = null; } }
+    }
+
+    private void ApplyUiFont()
+    {
+        var settings = WorkspaceService.Settings;
+        if (appliedUiFont == settings.UiFontFamily && appliedUiSize == settings.UiFontSize) return;
+        appliedUiFont = settings.UiFontFamily; appliedUiSize = settings.UiFontSize;
+        var family = new Microsoft.UI.Xaml.Media.FontFamily(settings.UiFontFamily);
+        Navigation.FontFamily = family; PageHost.FontFamily = family; BrandTitle.FontFamily = family;
+        Navigation.FontSize = PageHost.FontSize = settings.UiFontSize; BrandTitle.FontSize = 19 * settings.UiFontSize / 14;
+        Navigation.OpenPaneLength = Math.Clamp(210 * settings.UiFontSize / 14, 210, 360);
+        Ui.ApplyTypeface(Root);
     }
 
     private void UpdateMinimumSize(double scale)
@@ -157,6 +173,7 @@ public sealed partial class MainWindow : Window
                     "generators" => new Pages.GeneratorPage(),
                     "tools" => new Pages.ToolsPage(),
                     "crypto" => new Pages.CryptoPage(),
+                    "tutorial" => new Pages.TutorialPage(),
                     "library" => LibraryPage(),
                     "settings" => SettingsPage(),
                     _ => HomePage()
@@ -169,14 +186,22 @@ public sealed partial class MainWindow : Window
         catch (Exception ex) { Message(ex.Message, true); _ = Log(ex); }
     }
     public void Navigate(string key)
-    { foreach (var item in Navigation.MenuItems.OfType<NavigationViewItem>()) if (item.Tag?.ToString() == key) Navigation.SelectedItem = item; }
+    { foreach (var item in Navigation.MenuItems.Concat(Navigation.FooterMenuItems).OfType<NavigationViewItem>()) if (item.Tag?.ToString() == key) Navigation.SelectedItem = item; }
 
     private UIElement HomePage()
     {
         var content = Ui.Stack(24);
         var welcome = Ui.Stack(12);
         welcome.Children.Add(Ui.Text("从一张图片，一句话开始。", 25));
-        var art = Ui.Text("   /\\_/\\       ___   ____   ____ ___ ___\n  ( o.o )     / _ \\ / ___| / ___|_ _|_ _|\n   > ^ <     / ___ \\___ \\| |    | | | |\n            /_/   \\_\\____/ \\____|___|___|", 17);
+        var letters = new[] {
+            new[] { "   ___   ", "  / _ \\  ", " / ___ \\ ", "/_/   \\_\\" },
+            new[] { " ____ ", "/ ___|", "\\___ \\", "|____/" },
+            new[] { "  ____ ", " / ___|", "| |    ", " \\____|" },
+            new[] { " ___ ", "|_ _|", " | | ", "|___|" },
+            new[] { " ___ ", "|_ _|", " | | ", "|___|" } };
+        var cat = new[] { " /\\_/\\ ", "( o.o )", " > ^ < ", "" };
+        var art = new TextBlock { Text = string.Join('\n', Enumerable.Range(0, 4).Select(row => cat[row].PadRight(12) + string.Join(' ', letters.Select(letter => letter[row])))), FontSize = 17, LineHeight = 22, TextWrapping = TextWrapping.NoWrap };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(art, "HomeWelcomeArt");
         art.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas"); welcome.Children.Add(art);
         welcome.SizeChanged += (_, _) => art.Visibility = welcome.ActualWidth < 560 ? Visibility.Collapsed : Visibility.Visible;
         content.Children.Add(Ui.Card(welcome, new Thickness(30)));

@@ -59,8 +59,8 @@ public sealed class ImagePage : Grid
         input.Children.Add(progress);
         var sizeSettings = Ui.Stack();
         sizeSettings.Children.Add(Ui.SettingsGrid(Ui.Field("字符网格宽度（列）", columns), Ui.Field("字符网格高度（行）", rows)));
-        sizeSettings.Children.Add(autoRows);
-        sizeSettings.Children.Add(fontAspect);
+        sizeSettings.Children.Add(Ui.WithHelp(autoRows, "保持原图比例（自动计算行数）"));
+        sizeSettings.Children.Add(Ui.WithHelp(fontAspect, "按字体实际宽高补偿比例"));
         sizeSettings.Children.Add(Ui.Field("字符宽高比 · 默认 0.5", cellAspect));
         sizeSettings.Children.Add(Ui.Text("最高 2000 × 2000 字符。字体补偿保留图像比例；自定义固定宽高可能拉伸。原图尺寸按处理图片和 13px 字体换算，像素尺寸为近似值。", 12, true));
         result.AddSettings("分辨率", sizeSettings, "ImageSizeSettings");
@@ -70,10 +70,10 @@ public sealed class ImagePage : Grid
         characterSettings.Children.Add(Ui.Field("抖动算法", dither));
         result.AddSettings("字符", characterSettings, "ImageCharacterSettings");
         var adjustments = Ui.Stack();
-        adjustments.Children.Add(Ui.SettingsGrid(Ui.Field("亮度", brightness), Ui.Field("对比度", contrast), Ui.Field("Gamma", gamma), Ui.Field("饱和度", saturation), Ui.Field("色相", hue), Ui.Field("灰度", gray), Ui.Field("棕褐色", sepia), Ui.Field("锐化", sharpness), color, invert));
+        adjustments.Children.Add(Ui.SettingsGrid(Ui.Field("亮度", brightness), Ui.Field("对比度", contrast), Ui.Field("Gamma", gamma), Ui.Field("饱和度", saturation), Ui.Field("色相", hue), Ui.Field("灰度", gray), Ui.Field("棕褐色", sepia), Ui.Field("锐化", sharpness), Ui.WithHelp(color, "保留原图颜色"), Ui.WithHelp(invert, "反转亮暗")));
         result.AddSettings("画面", adjustments, "ImageAdjustmentSettings");
         var effects = Ui.Stack(); effects.Width = 300;
-        effects.Children.Add(edges); effects.Children.Add(threshold); effects.Children.Add(Ui.Field("阈值", thresholdValue));
+        effects.Children.Add(Ui.WithHelp(edges, "边缘检测")); effects.Children.Add(Ui.WithHelp(threshold, "二值化")); effects.Children.Add(Ui.Field("阈值", thresholdValue));
         var reset = Ui.Button("重置全部图片参数", Reset); Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(reset, "ImageReset"); effects.Children.Add(reset);
         result.AddSettings("效果", effects, "ImageEffectSettings");
         result.AddSettings("裁剪与方向", geometry, "ImageGeometrySettings");

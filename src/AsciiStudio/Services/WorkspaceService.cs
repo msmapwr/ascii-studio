@@ -8,7 +8,7 @@ public sealed record StudioSettings(string Theme = "Dark", double PreviewFontSiz
     bool Animations = true, bool WordWrap = false, bool ShowStats = true, bool CompactLayout = false,
     string DefaultExportFormat = "TXT", int ExportScale = 1, string FilePrefix = "",
     bool AutoConvert = true, int ConversionDelay = 180, int DefaultColumns = 120, bool RememberWindow = true,
-    double PreviewZoom = 1);
+    double PreviewZoom = 1, bool BeginnerMode = false, string UiFontFamily = "Segoe UI", double UiFontSize = 14);
 
 public static class WorkspaceService
 {
@@ -72,6 +72,8 @@ public static class WorkspaceService
         Theme = settings.Theme is "Light" or "Dark" or "System" ? settings.Theme : "Dark",
         PreviewFontSize = double.IsFinite(settings.PreviewFontSize) ? Math.Clamp(settings.PreviewFontSize, 8, 30) : 13,
         PreviewZoom = double.IsFinite(settings.PreviewZoom) ? Math.Clamp(settings.PreviewZoom, .25, 4) : 1,
+        UiFontSize = double.IsFinite(settings.UiFontSize) ? Math.Clamp(settings.UiFontSize, 12, 24) : 14,
+        UiFontFamily = !string.IsNullOrWhiteSpace(settings.UiFontFamily) && settings.UiFontFamily.Length <= 128 && !settings.UiFontFamily.Any(char.IsControl) ? settings.UiFontFamily : "Segoe UI",
         ExportScale = Math.Clamp(settings.ExportScale, 1, 4),
         DefaultColumns = Math.Clamp(settings.DefaultColumns, 8, 2000),
         ConversionDelay = Math.Clamp(settings.ConversionDelay, 0, 1000),
