@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.0-alpha.4] - 2026-10-01
+
+### Added
+
+- 本地加密与编码页，35 种方法分为现代加密、摘要、编码与传统教学；支持当前字符画或任意文本。
+- AES-GCM/CCM、ChaCha20-Poly1305、AES-CBC+HMAC、RSA 混合加密；随机盐、nonce 与口令密钥派生。
+- RSA 3072 位密钥生成、PEM 导入与公私钥导出，私钥导出前明确确认；密钥不保存到项目或偏好。
+- SHA-2/SHA-3/SHAKE、HMAC、PBKDF2、旧式摘要；Base64/Base32/Hex/URL/二进制与传统密码教学。
+
 ## [0.6.0-alpha.3] - 2026-10-01
 
 ### Added

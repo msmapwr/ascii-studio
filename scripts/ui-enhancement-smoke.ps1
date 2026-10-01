@@ -25,6 +25,20 @@ function Select-Choice([string]$Selector,[string]$Value){
  UI invoke $Selector --action collapse|Out-Null
 }
 switch($Module){
+ 'crypto'{
+  Check 'Digest generation and irreversible mode' {
+   UI invoke NavCrypto;Select-Choice CryptoCategory '不可逆摘要'
+   UI set-value CryptoInput 'abc';UI invoke CryptoEncrypt
+   UI wait-for CryptoOutput --value 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad' -t 3000
+   UI wait-for CryptoDecrypt -p IsEnabled --value False -t 2000
+  }
+  Check 'Encoding round trip and failure preserves result' {
+   Select-Choice CryptoCategory '编码';UI set-value CryptoInput 'abc';UI invoke CryptoEncrypt
+   UI wait-for CryptoOutput --value 'YWJj' -t 2000
+   UI set-value CryptoInput 'YWJj';UI invoke CryptoDecrypt;UI wait-for CryptoOutput --value 'abc' -t 2000
+   UI set-value CryptoInput '!!!';UI invoke CryptoDecrypt;UI wait-for CryptoOutput --value 'abc' -t 2000
+  }
+ }
  'conversion'{
   Check 'Selected font drives aspect compensation and is saved' {
    UI invoke NavLibrary;UI invoke '打开项目：geometry-fixture';UI wait-for ImageSourceInfo --contains --value '80 × 40' -t 3000
