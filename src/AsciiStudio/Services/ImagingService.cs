@@ -113,7 +113,7 @@ public static class ImagingService
     {
         document.Validate();
         if (!float.IsFinite(size) || size is < 1 or > 120 || scale is < 1 or > 4 || padding is < 0 or > 200) throw new ArgumentException("导出字号或倍率无效。");
-        using var font = new Font("Consolas", size * scale, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var font = new Font(document.FontFamily, size * scale, FontStyle.Regular, GraphicsUnit.Pixel);
         using var measure = new Bitmap(1, 1); using var g = Graphics.FromImage(measure);
         var cell = g.MeasureString("M", font, new PointF(0, 0), StringFormat.GenericTypographic).Width;
         var width = Math.Max(1, checked((int)Math.Ceiling(document.Width * cell) + padding * scale * 2));
@@ -125,7 +125,7 @@ public static class ImagingService
     {
         document.Validate();
         var dimensions = RenderSize(document, size, padding, scale); size *= scale; padding *= scale;
-        using var font = new Font("Consolas", size, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var font = new Font(document.FontFamily, size, FontStyle.Regular, GraphicsUnit.Pixel);
         using var measure = new Bitmap(1, 1); using var mg = Graphics.FromImage(measure);
         var cell = mg.MeasureString("M", font, new PointF(0, 0), StringFormat.GenericTypographic).Width;
         var lineHeight = font.GetHeight(mg);

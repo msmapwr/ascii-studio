@@ -35,6 +35,9 @@ public sealed class ResultPane : Grid
     private double zoom = 1;
     private double readableScale = 1;
     private double previewWidth, previewHeight;
+    private readonly FontPicker characterFont = new("ResultFont", true);
+    public string CharacterFontFamily => characterFont.SelectedFont;
+    public event Action<string>? CharacterFontChanged;
     public AsciiDocument? Document { get; private set; }
     public Func<AsciiDocument, StudioProject>? ProjectFactory { get; set; }
 
@@ -56,6 +59,7 @@ public sealed class ResultPane : Grid
         var displaySettings = Ui.Stack(); displaySettings.Width = 240;
         displaySettings.Children.Add(Ui.Field("字号 · 同时用于图片导出", fontSize));
         displaySettings.Children.Add(colorToggle);
+        displaySettings.Children.Add(Ui.Field("字符画字体", characterFont));
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(colorToggle, "ResultImagePreview");
         AddSettings("显示", displaySettings, "DisplaySettings");
         Children.Add(toolbar);
@@ -64,6 +68,13 @@ public sealed class ResultPane : Grid
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportDimensions, "ExportDimensions");
         exportScale.SelectionChanged += (_, _) => UpdateDimensions();
         editor = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), FontSize = 13, Padding = new Thickness(20), PlaceholderText = "转换结果", HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
+        characterFont.Changed += async family =>
+        {
+            editor.FontFamily = new FontFamily(family);
+            if (Document is not null) { var metrics = FontCatalog.Measure(family); Document = Document with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height }; UpdateDimensions(); recoveryTimer.Stop(); recoveryTimer.Start(); }
+            CharacterFontChanged?.Invoke(family);
+            if (colorToggle.IsOn) await App.Window.Guard(RenderPreview);
+        };
         ScrollViewer.SetHorizontalScrollBarVisibility(editor, ScrollBarVisibility.Auto);
         ScrollViewer.SetVerticalScrollBarVisibility(editor, ScrollBarVisibility.Auto);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(editor, "ResultEditor");
@@ -72,7 +83,7 @@ public sealed class ResultPane : Grid
         {
             var text = editor.Text.Replace("\r\n", "\n").Replace('\r', '\n');
             if (updating || text == Document?.Text || (Document is null && text.Length == 0)) return;
-            try { Document = AsciiDocument.FromText(text, Document?.Title ?? "Untitled"); UpdateStats("已编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
+            try { var metrics = FontCatalog.Measure(CharacterFontFamily); Document = AsciiDocument.FromText(text, Document?.Title ?? "Untitled") with { FontFamily = CharacterFontFamily, CellWidth = metrics.Width, CellHeight = metrics.Height }; UpdateStats("已编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
             catch (ArgumentException ex) { updating = true; editor.Text = Document?.Text ?? ""; updating = false; App.Window.Message(ex.Message, true); }
         };
         var canvas = new Grid(); canvas.Children.Add(editor);
@@ -214,7 +225,7 @@ public sealed class ResultPane : Grid
 
     public async Task SetDocument(AsciiDocument document, string suffix = "")
     {
-        document.Validate(); Document = document; updating = true; editor.Text = document.Text; updating = false;
+        document.Validate(); Document = document; characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily); updating = true; editor.Text = document.Text; updating = false;
         UpdateStats(suffix); if (colorToggle.IsOn) await RenderPreview();
         recoveryTimer.Stop(); recoveryTimer.Start();
     }

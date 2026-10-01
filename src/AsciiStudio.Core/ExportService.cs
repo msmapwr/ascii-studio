@@ -21,25 +21,28 @@ public static class ExportService
             }
             if (y < lines.Length - 1) content.Append('\n');
         }
-        return $"<!doctype html><html lang=\"zh\"><meta charset=\"utf-8\"><title>{WebUtility.HtmlEncode(document.Title)}</title><style>body{{background:#121822;color:#e7edf7;padding:24px}}pre{{font-family:Consolas,monospace;font-size:14px;line-height:1.2;white-space:pre}}</style><pre>{content}</pre></html>";
+        var family = WebUtility.HtmlEncode("'" + document.FontFamily.Replace("\\", "\\\\").Replace("'", "\\'") + "',monospace");
+        var lineHeight = document.CellHeight.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        return $"<!doctype html><html lang=\"zh\"><meta charset=\"utf-8\"><title>{WebUtility.HtmlEncode(document.Title)}</title><style>body{{background:#121822;color:#e7edf7;padding:24px}}pre{{font-size:13px;line-height:{lineHeight}px;white-space:pre}}</style><pre style=\"font-family:{family}\">{content}</pre></html>";
     }
 
     public static string Svg(AsciiDocument document)
     {
-        document.Validate(); const int cw = 9, ch = 18, pad = 20;
-        var result = new StringBuilder($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{document.Width * cw + 2 * pad}\" height=\"{document.Height * ch + 2 * pad}\"><rect width=\"100%\" height=\"100%\" fill=\"#121822\"/><g font-family=\"Consolas,monospace\" font-size=\"15\" fill=\"#e7edf7\" xml:space=\"preserve\">");
+        document.Validate(); var cw = document.CellWidth; var ch = document.CellHeight; const int pad = 20;
+        string Number(double value) => value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        var result = new StringBuilder($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{Number(document.Width * cw + 2 * pad)}\" height=\"{Number(document.Height * ch + 2 * pad)}\"><rect width=\"100%\" height=\"100%\" fill=\"#121822\"/><g font-family=\"{WebUtility.HtmlEncode(document.FontFamily)},monospace\" font-size=\"13\" fill=\"#e7edf7\" xml:space=\"preserve\">");
         var lines = document.Text.Split('\n');
         for (var y = 0; y < lines.Length; y++)
         {
-            if (document.Colors is null) result.Append($"<text x=\"{pad}\" y=\"{pad + (y + 1) * ch}\">{WebUtility.HtmlEncode(lines[y])}</text>");
-            else for (var x = 0; x < lines[y].Length; x++) result.Append($"<text x=\"{pad + x*cw}\" y=\"{pad + (y+1)*ch}\" fill=\"#{document.Colors[y*document.Width+x] & 0xFFFFFF:X6}\">{WebUtility.HtmlEncode(lines[y][x].ToString())}</text>");
+            if (document.Colors is null) result.Append($"<text x=\"{pad}\" y=\"{Number(pad + (y + 1) * ch)}\">{WebUtility.HtmlEncode(lines[y])}</text>");
+            else for (var x = 0; x < lines[y].Length; x++) result.Append($"<text x=\"{Number(pad + x * cw)}\" y=\"{Number(pad + (y + 1) * ch)}\" fill=\"#{document.Colors[y * document.Width + x] & 0xFFFFFF:X6}\">{WebUtility.HtmlEncode(lines[y][x].ToString())}</text>");
         }
         return result.Append("</g></svg>").ToString();
     }
 
     public static string Ansi(AsciiDocument document)
     {
-        document.Validate(); if (document.Colors is null) return TextUtilities.Clean(document.Text,false).Replace("\x1b", "");
+        document.Validate(); if (document.Colors is null) return TextUtilities.Clean(document.Text, false).Replace("\x1b", "");
         var result = new StringBuilder(); uint previous = 0; var lines = document.Text.Split('\n');
         for (var y = 0; y < lines.Length; y++)
         {
@@ -56,9 +59,9 @@ public static class ExportService
 
     public static string Markdown(AsciiDocument document)
     {
-        document.Validate();var longest=0;var run=0;
-        foreach(var c in document.Text){run=c=='`'?run+1:0;longest=Math.Max(longest,run);}
-        var fence=new string('`',Math.Max(3,longest+1));return fence+"text\n"+document.Text+"\n"+fence+"\n";
+        document.Validate(); var longest = 0; var run = 0;
+        foreach (var c in document.Text) { run = c == '`' ? run + 1 : 0; longest = Math.Max(longest, run); }
+        var fence = new string('`', Math.Max(3, longest + 1)); return fence + "text\n" + document.Text + "\n" + fence + "\n";
     }
-    public static string Json(AsciiDocument document) { document.Validate();return JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true }); }
+    public static string Json(AsciiDocument document) { document.Validate(); return JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true }); }
 }

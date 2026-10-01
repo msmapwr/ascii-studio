@@ -7,14 +7,19 @@ public sealed record AsciiDocument
     public string Text { get; init; } = "";
     public uint[]? Colors { get; init; }
     public string Title { get; init; } = "Untitled";
+    public string FontFamily { get; init; } = "Consolas";
+    public double CellWidth { get; init; } = 9;
+    public double CellHeight { get; init; } = 18;
 
     public void Validate()
     {
+        if (string.IsNullOrWhiteSpace(FontFamily) || FontFamily.Length > 128 || FontFamily.Any(char.IsControl)) throw new ArgumentException("字体名称无效。");
+        if (!double.IsFinite(CellWidth) || !double.IsFinite(CellHeight) || CellWidth is <= 0 or > 200 || CellHeight is <= 0 or > 200) throw new ArgumentException("字符尺寸无效。");
         if (Width < 0 || Height < 0 || (long)Width * Height > 4_000_000)
             throw new ArgumentException("字符画尺寸超出安全范围。");
         if (Colors is not null && Colors.Length != Width * Height)
             throw new ArgumentException("颜色网格与字符画尺寸不一致。");
-        if(Text is null || Text.Contains('\r'))throw new ArgumentException("字符画必须使用 LF 换行。");
+        if (Text is null || Text.Contains('\r')) throw new ArgumentException("字符画必须使用 LF 换行。");
         var lines = Text.Split('\n');
         if (Text.Length > 8_000_000 || (Text.Length > 0 && (lines.Length != Height || lines.Any(x => x.Length > Width))))
             throw new ArgumentException("字符画文本与网格尺寸不一致。");
