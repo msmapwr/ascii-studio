@@ -221,4 +221,29 @@ Check("ANSI background export and document JSON compatibility", () =>
     Assert(AsciiDocument.FromText("abc").BackgroundColors is null, "Legacy document background changed");
     try { (original with { BackgroundColors = [0] }).Validate(); throw new Exception("Invalid background grid accepted"); } catch (ArgumentException) { }
 });
+Check("generator recipes restore all seven sources", () =>
+{
+    for (var kind = 0; kind < 7; kind++)
+    {
+        var recipe = new GeneratorRecipe(kind, 2, "first\nsecond", 32, 12, 1234);
+        var restored = GeneratorRecipe.FromParameters(recipe.ToParameters(), recipe.Text);
+        Assert(restored == recipe && restored.Generate() == recipe.Generate(), "Generator source round trip changed output");
+        AsciiDocument.FromText(restored.Generate()).Validate();
+    }
+});
+Check("generator invalid project parameters rejected", () =>
+{
+    void Rejected(Action action) { try { action(); throw new Exception("Invalid generator parameters accepted"); } catch (ArgumentException) { } }
+    Rejected(() => GeneratorRecipe.FromParameters(null, ""));
+    var parameters = new GeneratorRecipe().ToParameters(); parameters["schema"] = "2";
+    Rejected(() => GeneratorRecipe.FromParameters(parameters, ""));
+    parameters["schema"] = "1"; parameters["seed"] = "1.5";
+    Rejected(() => GeneratorRecipe.FromParameters(parameters, ""));
+    Rejected(() => new GeneratorRecipe(Kind: 7).Generate());
+    Rejected(() => new GeneratorRecipe(Kind: 2, Width: 101).Generate());
+    Rejected(() => new GeneratorRecipe(Text: new string('x', 2001)).Generate());
+    Rejected(() => new GeneratorRecipe(Seed: -1).Generate());
+    var normal = new GeneratorRecipe().ToParameters();
+    Assert(GeneratorRecipe.FromParameters(normal, "a\r\nb").Text == "a\nb", "Project line endings were not normalized");
+});
 Console.WriteLine($"{passed} checks passed.");
