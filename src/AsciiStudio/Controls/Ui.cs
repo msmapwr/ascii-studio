@@ -125,6 +125,10 @@ public static class Ui
             "左（%）" or "上（%）" or "左侧 %" or "顶部 %" => "裁剪起点占原图尺寸的百分比。",
             "宽（%）" or "高（%）" or "宽度 %" or "高度 %" => "裁剪区域占原图尺寸的百分比，不能超出图像边界。",
             "算法" => "现代加密可以还原；摘要不能解密；编码和传统方法不提供现代安全保护。",
+            "ANSI 文本编码" => "自动尝试严格 UTF-8，失败后使用 CP437。经典作品乱码时可手动切换；粘贴文字已经是 Unicode。",
+            "ANSI 换行列数" => "经典作品通常为 80 列。列数不匹配会改变折行和光标定位后的排列。",
+            "iCE 高亮背景" => "将 ANSI 闪烁标志解释为高亮背景色。关闭时静态显示，不播放闪烁。",
+            "ANSI 原文" => "转义序列只用于解析显示，不执行链接、命令或系统操作。修改后点击查看更新结果。",
             "口令 / 参数" or "口令 / 密钥 / 教学参数" => "现代加密使用口令派生密钥，不会保存口令；传统方法使用各自的参数。",
             "RSA 公钥（PEM）" => "加密使用公钥，可以导入或在应用内生成。",
             "RSA 私钥（PEM，仅用于解密）" => "解密需要对应私钥。私钥不写入项目或偏好，请自行保管。",
@@ -142,7 +146,7 @@ public static class Ui
     public static void ApplyTypeface(DependencyObject root)
     {
         var settings = WorkspaceService.Settings;
-        if (Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(root) is "ResultEditor" or "CommentPreview" or "CryptoOutput") return;
+        if (Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(root) is "ResultEditor" or "CommentPreview" or "CryptoOutput" or "AnsiInput") return;
         if (root is Control control)
         {
             control.FontFamily = new FontFamily(settings.UiFontFamily); control.FontSize = settings.UiFontSize;

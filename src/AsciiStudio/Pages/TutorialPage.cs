@@ -24,6 +24,7 @@ public sealed class TutorialPage : Grid
         Add("4. 保存、导出与套注释", "保存项目可以继续调整原图和参数。导出选择 TXT、PNG、HTML 等格式；位图倍率独立设置。注释工具先预览再复制或替换，当前会话可恢复原文。", "library");
         Add("5. 加密、摘要和编码", "使用当前字符画或粘贴文本。现代加密需要口令，可还原；摘要不可还原；编码和传统方法用于格式转换或教学。RSA 解密需要对应私钥，请自行妥善保管。", "crypto");
         Add("6. 图案与文本处理", "生成器提供边框、分隔线和图案；文本工具可以反转、整理和处理已有字符画。", "generators");
+        Add("7. 查看 ANSI 作品", "打开文件或载入彩色示例。乱码时在 ANSI 设置切换 UTF-8/CP437；经典作品通常为 80 列。保存项目保留原文，重新查看会解析原文并替换结果。", "ansi");
         content.Children.Add(Ui.Text("在设置中调整界面字体和字号；字符画字体仍在结果栏的“显示”中调整。新手模式可随时关闭。", 14));
         Children.Add(Ui.Page(Ui.Heading("使用教程", ""), new ScrollViewer { Content = content }));
         void Add(string title, string description, string target)

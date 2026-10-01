@@ -13,6 +13,7 @@
     <NavigationViewItem Content="开始创作" Tag="home" Icon="Home" AutomationProperties.AutomationId="NavHome"/>
     <NavigationViewItem Content="图片转换" Tag="image" Icon="Pictures" AutomationProperties.AutomationId="NavImage"/>
     <NavigationViewItem Content="文字转换" Tag="text" Icon="Font" AutomationProperties.AutomationId="NavText"/>
+    <NavigationViewItem Content="ANSI 查看器" Tag="ansi" Icon="View" AutomationProperties.AutomationId="NavAnsi"/>
     <NavigationViewItemSeparator/>
     <NavigationViewItem Content="生成器" Tag="generators" Icon="Shuffle" AutomationProperties.AutomationId="NavGenerator"/>
     <NavigationViewItem Content="文本工具" Tag="tools" Icon="Edit" AutomationProperties.AutomationId="NavTools"/>

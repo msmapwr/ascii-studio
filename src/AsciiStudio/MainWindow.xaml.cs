@@ -170,6 +170,7 @@ public sealed partial class MainWindow : Window
                 {
                     "image" => new Pages.ImagePage(),
                     "text" => new Pages.TextPage(),
+                    "ansi" => new Pages.AnsiPage(),
                     "generators" => new Pages.GeneratorPage(),
                     "tools" => new Pages.ToolsPage(),
                     "crypto" => new Pages.CryptoPage(),
@@ -237,6 +238,10 @@ public sealed partial class MainWindow : Window
         else if (project.Mode == "text")
         {
             var page = new Pages.TextPage(); await page.LoadProject(project); pages["text"] = page; Navigate("text"); PageHost.Content = page;
+        }
+        else if (project.Mode == "ansi")
+        {
+            var page = new Pages.AnsiPage(); await page.LoadProject(project); pages["ansi"] = page; Navigate("ansi"); PageHost.Content = page;
         }
         else
         {
