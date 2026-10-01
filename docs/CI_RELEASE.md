@@ -14,8 +14,9 @@
 先完成代码、版本号与 Changelog，再合并 main。确认 main 的 Build and Release 成功后：
 
 ```powershell
-git tag v0.6.0-alpha.2
-git push origin v0.6.0-alpha.2
+$releaseVersion = ([xml](Get-Content ./src/AsciiStudio/AsciiStudio.csproj -Raw)).Project.PropertyGroup.Version
+git tag "v$releaseVersion"
+git push origin "v$releaseVersion"
 ```
 
 正式发布时使用正式版本标签，例如 `v0.6.0`。不要把未完成的功能标为正式版本。手动 Run workflow 只编译选中的 ref，不发布 Release。
@@ -35,7 +36,8 @@ Get-FileHash ./AsciiStudio-<版本>-win-x64.zip -Algorithm SHA256
 ```powershell
 ./scripts/ci-build.ps1
 # 标签校验也可在本机复现
-./scripts/ci-build.ps1 -Tag v0.6.0-alpha.2
+$releaseVersion = ([xml](Get-Content ./src/AsciiStudio/AsciiStudio.csproj -Raw)).Project.PropertyGroup.Version
+./scripts/ci-build.ps1 -Tag "v$releaseVersion"
 ```
 
 这仅执行构建、检查和 ZIP 生成，不启动程序，也不发布 GitHub Release。日常 WinUI 开发继续使用 BuildAndRun.ps1 注入分析器。
