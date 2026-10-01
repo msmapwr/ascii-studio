@@ -62,6 +62,7 @@ public sealed class ResultPane : Grid
         displaySettings.Children.Add(Ui.Field("字符画字体", characterFont));
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(colorToggle, "ResultImagePreview");
         AddSettings("显示", displaySettings, "DisplaySettings");
+        AddCommentSettings();
         Children.Add(toolbar);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportScale, "ExportScale");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(exportScale, "图片导出倍率");
@@ -229,6 +230,46 @@ public sealed class ResultPane : Grid
         UpdateStats(suffix); if (colorToggle.IsOn) await RenderPreview();
         recoveryTimer.Stop(); recoveryTimer.Start();
     }
+    private void AddCommentSettings()
+    {
+        var content = Ui.Stack(); content.Width = 420;
+        var language = Ui.Choice(CommentTools.Languages.Select(l => l.Name));
+        var style = Ui.Choice(["优先行注释", "块注释"]);
+        var sample = new TextBox { AcceptsReturn = true, IsReadOnly = true, Height = 180, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas") };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(sample, "CommentPreview");
+        content.Children.Add(Ui.Field("注释语言", language)); content.Children.Add(Ui.Field("注释形式", style)); content.Children.Add(sample);
+        AsciiDocument? original = null, wrapped = null;
+        string? prepared = null;
+        void Prepare()
+        {
+            if (Document is null) throw new ArgumentException("先生成或输入一些内容。");
+            if (Document != wrapped) original = Document;
+            var text = CommentTools.Wrap(original!.Text, language.SelectedItem?.ToString() ?? "C", style.SelectedIndex == 1);
+            sample.Text = text; prepared = text;
+        }
+        void Invalidate() { prepared = null; sample.Text = ""; }
+        language.SelectionChanged += (_, _) => Invalidate(); style.SelectionChanged += (_, _) => Invalidate();
+        content.Children.Add(Ui.AsyncButton("生成注释预览", () => { Prepare(); return Task.CompletedTask; }));
+        content.Children.Add(Ui.AsyncButton("复制注释", () =>
+        {
+            Prepare(); var package = new DataPackage(); package.SetText(prepared!); Clipboard.SetContent(package); App.Window.Message("已复制注释"); return Task.CompletedTask;
+        }));
+        content.Children.Add(Ui.AsyncButton("替换结果", async () =>
+        {
+            Prepare();
+            var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "用注释替换结果？", Content = "本次原文可通过“恢复注释前原文”恢复。", PrimaryButtonText = "替换", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close };
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+            var next = AsciiDocument.FromText(prepared!, original!.Title) with { FontFamily = original.FontFamily, CellWidth = original.CellWidth, CellHeight = original.CellHeight };
+            await SetDocument(next, "已套注释"); wrapped = Document;
+        }));
+        content.Children.Add(Ui.AsyncButton("恢复注释前原文", async () =>
+        {
+            if (original is null || Document != wrapped) throw new ArgumentException("当前结果没有可恢复的注释原文。");
+            await SetDocument(original); wrapped = null; Invalidate();
+        }));
+        AddSettings("注释", content, "CommentSettings");
+    }
+
     private async Task SaveRecovery()
     {
         if (Document is null) return;
