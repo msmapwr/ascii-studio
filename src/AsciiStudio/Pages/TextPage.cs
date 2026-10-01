@@ -21,6 +21,7 @@ public sealed class TextPage : Grid
     private readonly TextBlock previewSample = Ui.Text("abc", 18);
     private readonly TextBlock fontPreview = new() { FontFamily = new FontFamily("Consolas"), FontSize = 8, TextWrapping = TextWrapping.NoWrap };
     private readonly Dictionary<string, string> previewCache = [];
+    private readonly ScrollViewer fontPreviewScroll;
     private readonly ComboBox systemFont = Ui.Choice(["Microsoft YaHei UI", "Segoe UI", "Arial", "Consolas", "SimSun"]);
     private readonly NumberBox columns = new NumberBox() { Value = 120, Minimum = 16, Maximum = 600 };
     private readonly ComboBox border = Ui.Choice(["无边框", "ASCII 线框", "双线框", "星号边框"]);
@@ -58,7 +59,8 @@ public sealed class TextPage : Grid
         var systemFontField = Ui.Field("系统字体", systemFont);
         p.Children.Add(figFontField); p.Children.Add(systemFontField);
         var sample = Ui.Stack(4); sample.Children.Add(previewSample);
-        sample.Children.Add(new ScrollViewer { Content = fontPreview, Height = 70, HorizontalScrollMode = ScrollMode.Enabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        fontPreviewScroll = new ScrollViewer { Content = fontPreview, Height = 100, HorizontalScrollMode = ScrollMode.Enabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        sample.Children.Add(fontPreviewScroll);
         p.Children.Add(sample); p.Children.Add(generate);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(previewSample, "FontPreviewSample");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(fontPreview, "FontPreviewArt");
@@ -106,7 +108,7 @@ public sealed class TextPage : Grid
             {
                 if (!chinese) return ((FiggleFont)font.GetValue(null)!).Render("abc").TrimEnd('\r', '\n');
                 var raster = ImagingService.RasterizeText("测试", family, 96, true);
-                return ImageConverter.Convert(raster.pixels, raster.width, raster.height, new ConversionOptions { Columns = 24 }).Text;
+                return ImageConverter.Convert(raster.pixels, raster.width, raster.height, new ConversionOptions { Columns = 48 }).Text;
             });
             previewCache[key] = rendered;
         }
@@ -114,6 +116,8 @@ public sealed class TextPage : Grid
         previewSample.Text = chinese ? "测试" : "abc";
         previewSample.FontFamily = new FontFamily(chinese ? family : "Segoe UI");
         fontPreview.Text = rendered;
+        fontPreview.FontSize = chinese ? 12 : 8;
+        fontPreviewScroll.Height = chinese ? 180 : 100;
         await MotionService.Fade(fontPreview, 0, 1, 140);
     }
     private async Task Generate()
@@ -137,6 +141,7 @@ public sealed class TextPage : Grid
         if (replace.Length == 1) output = output.Replace(' ', replace[0]);
         if (selectedBorder > 0) output = Generators.Border(output, selectedBorder);
         generatedSource = text; generatedColumns = col; generatedParameters = new() { ["mode"] = selectedMode.ToString(), ["font"] = fonts[selectedFont].Name, ["systemFont"] = family, ["border"] = selectedBorder.ToString(), ["trim"] = crop.ToString(), ["replacement"] = replace };
+        result.SetReadablePreview(selectedMode == 1);
         await result.SetDocument(AsciiDocument.FromText(output, text.Split('\n')[0].Length > 32 ? text[..32] : text.Split('\n')[0]));
     }
     public async Task LoadProject(StudioProject project)
@@ -152,6 +157,7 @@ public sealed class TextPage : Grid
             if (p.TryGetValue("trim", out var t) && bool.TryParse(t, out var tr)) trim.IsChecked = tr;
             if (p.TryGetValue("replacement", out var r)) replacement.Text = r.Length <= 1 ? r : "";
         }
+        result.SetReadablePreview(mode.SelectedIndex == 1);
         await result.SetDocument(project.Document);
     }
 }
