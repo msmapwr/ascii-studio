@@ -83,7 +83,7 @@ public sealed class ResultPane : Grid
         {
             var text = editor.Text.Replace("\r\n", "\n").Replace('\r', '\n');
             if (updating || text == Document?.Text || (Document is null && text.Length == 0)) return;
-            try { var metrics = FontCatalog.Measure(CharacterFontFamily); Document = AsciiDocument.FromText(text, Document?.Title ?? "Untitled") with { FontFamily = CharacterFontFamily, CellWidth = metrics.Width, CellHeight = metrics.Height }; UpdateStats("已编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
+            try { var metrics = FontCatalog.Measure(CharacterFontFamily); Document = AsciiDocument.FromText(text, Document?.Title ?? "Untitled") with { FontFamily = CharacterFontFamily, CellWidth = metrics.Width, CellHeight = metrics.Height }; WorkspaceService.CurrentArt = Document; UpdateStats("已编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
             catch (ArgumentException ex) { updating = true; editor.Text = Document?.Text ?? ""; updating = false; App.Window.Message(ex.Message, true); }
         };
         var canvas = new Grid(); canvas.Children.Add(editor);
@@ -225,7 +225,7 @@ public sealed class ResultPane : Grid
 
     public async Task SetDocument(AsciiDocument document, string suffix = "")
     {
-        document.Validate(); Document = document; characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily); updating = true; editor.Text = document.Text; updating = false;
+        document.Validate(); Document = document; WorkspaceService.CurrentArt = document; characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily); updating = true; editor.Text = document.Text; updating = false;
         UpdateStats(suffix); if (colorToggle.IsOn) await RenderPreview();
         recoveryTimer.Stop(); recoveryTimer.Start();
     }

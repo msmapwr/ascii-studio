@@ -12,6 +12,7 @@ public sealed record StudioSettings(string Theme = "Dark", double PreviewFontSiz
 
 public static class WorkspaceService
 {
+    public static AsciiDocument? CurrentArt { get; set; }
     public static string DataDirectory { get; } = Environment.GetEnvironmentVariable("ASCIISTUDIO_DATA_DIRECTORY") is { Length: > 0 } directory
         ? Path.GetFullPath(directory) : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AsciiStudio");
     public static StudioSettings Settings { get; private set; } = LoadSettings();

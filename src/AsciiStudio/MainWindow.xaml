@@ -16,6 +16,7 @@
     <NavigationViewItemSeparator/>
     <NavigationViewItem Content="生成器" Tag="generators" Icon="Shuffle" AutomationProperties.AutomationId="NavGenerator"/>
     <NavigationViewItem Content="文本工具" Tag="tools" Icon="Edit" AutomationProperties.AutomationId="NavTools"/>
+    <NavigationViewItem Content="加密与编码" Tag="crypto" Icon="Permissions" AutomationProperties.AutomationId="NavCrypto"/>
     <NavigationViewItem Content="最近项目" Tag="library" Icon="Folder" AutomationProperties.AutomationId="NavLibrary"/>
    </NavigationView.MenuItems>
    <Grid x:Name="PageContainer" Padding="24,12,24,20">

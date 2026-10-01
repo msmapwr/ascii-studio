@@ -156,6 +156,7 @@ public sealed partial class MainWindow : Window
                     "text" => new Pages.TextPage(),
                     "generators" => new Pages.GeneratorPage(),
                     "tools" => new Pages.ToolsPage(),
+                    "crypto" => new Pages.CryptoPage(),
                     "library" => LibraryPage(),
                     "settings" => SettingsPage(),
                     _ => HomePage()
