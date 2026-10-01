@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][int]$AppPid,[ValidateSet('zoom','conversion','crypto','assist','ansi','generator','history')][string]$Module='zoom')
+param([Parameter(Mandatory)][int]$AppPid,[ValidateSet('zoom','conversion','crypto','assist','ansi','generator','history','transactions')][string]$Module='zoom')
 $ErrorActionPreference='Stop'
 $env:Path=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User')
 $taskHwnd=(& winapp ui list-windows -a $AppPid --json|ConvertFrom-Json|Where-Object ownerHwnd -eq 0|Select-Object -First 1).hwnd
@@ -25,6 +25,21 @@ function Select-Choice([string]$Selector,[string]$Value){
  UI invoke $Selector --action collapse|Out-Null
 }
 switch($Module){
+ 'transactions'{
+  Check 'Consecutive image parameter conversions undo as one transaction' {
+   UI invoke NavLibrary;UI wait-for '打开项目：geometry-fixture' -t 3000
+   UI invoke '打开项目：geometry-fixture';UI wait-for ImageSourceInfo --contains --value '80 × 40' -t 5000
+   UI invoke Button_转换;UI wait-for ResultStats --contains --value '120 × 30' -t 5000
+   try{$taskMore=(UI get-property ImageSizeSettings --json|ConvertFrom-Json).element.isOffscreen}catch{$taskMore=$true}
+   if($taskMore){UI invoke MoreButton}
+   UI invoke ImageSizeSettings;UI wait-for ImageColumns -t 2000
+   UI set-value ImageColumns 200;UI wait-for ResultStats --contains --value '200 × 50' -t 5000
+   Start-Sleep -Milliseconds 180
+   UI set-value ImageColumns 240;UI wait-for ResultStats --contains --value '240 × 60' -t 5000
+   UI invoke ResultUndo;UI wait-for ResultStats --contains --value '120 × 30' -t 5000
+   UI invoke ResultRedo;UI wait-for ResultStats --contains --value '240 × 60' -t 5000
+  }
+ }
  'history'{
   Check 'Manual edits undo redo and divergent changes' {
    UI invoke NavGenerator;UI set-value Field_边框内容 'history source';UI invoke GeneratorGenerate

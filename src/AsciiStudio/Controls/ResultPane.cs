@@ -1,4 +1,5 @@
 using System.Text;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using AsciiStudio.Core;
 using AsciiStudio.Services;
@@ -14,6 +15,7 @@ namespace AsciiStudio.Controls;
 
 public sealed class ResultPane : Grid
 {
+    private static readonly TimeSpan GeneratedMergeWindow = TimeSpan.FromMilliseconds(900);
     private readonly TextBox editor;
     private readonly TextBlock stats;
     private readonly Image preview = new() { Stretch = Stretch.None, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
@@ -44,6 +46,8 @@ public sealed class ResultPane : Grid
     private bool restoring;
     private long lastEdit;
     private string? editGroup;
+    private long lastGeneratedPush;
+    private bool lastPushWasGenerated;
     private readonly string recoveryId = Guid.NewGuid().ToString("N");
     public Func<StudioProject, Task>? RestoreProject { get; set; }
     private readonly TextBox generatedPreview = new() { IsReadOnly = true, AcceptsReturn = true, Height = 240, TextWrapping = TextWrapping.NoWrap };
@@ -270,7 +274,14 @@ public sealed class ResultPane : Grid
                 candidate = next; protection.Message = "新结果已准备好。可更新当前结果并保留撤销，或保存为独立版本。"; protection.IsOpen = true;
                 return;
             }
-            history.Push(next); editGroup = null; candidate = null; protection.IsOpen = false;
+            var now = Stopwatch.GetTimestamp();
+            var merge = preserveEdits && history.HasCurrent && lastPushWasGenerated
+                && Stopwatch.GetElapsedTime(lastGeneratedPush, now) <= GeneratedMergeWindow
+                && CanMergeGenerated(history.Current.Project, next.Project);
+            history.Push(next, merge);
+            lastPushWasGenerated = preserveEdits;
+            lastGeneratedPush = now;
+            editGroup = null; candidate = null; protection.IsOpen = false;
         }
         var scroll = colorToggle.IsOn ? imageScroll : Ui.FindDescendant<ScrollViewer>(editor);
         var offsetX = scroll?.HorizontalOffset ?? 0; var offsetY = scroll?.VerticalOffset ?? 0;
@@ -310,13 +321,14 @@ public sealed class ResultPane : Grid
         restoring = true;
         try { await SetDocument(project.Document); }
         finally { restoring = false; }
-        history.Push(snapshot); candidate = null; protection.IsOpen = false; editGroup = null; UpdateHistoryButtons(); recoveryTimer.Stop(); recoveryTimer.Start();
+        history.Push(snapshot); candidate = null; protection.IsOpen = false; editGroup = null; lastPushWasGenerated = false; UpdateHistoryButtons(); recoveryTimer.Stop(); recoveryTimer.Start();
         if (snapshot.Edited) UpdateStats("已恢复手工编辑");
     }
 
     private void RecordEdit(string group, bool edited)
     {
         if (restoring || Document is null) return;
+        lastPushWasGenerated = false;
         if (!history.HasCurrent) history.Push(CreationSnapshot.Capture(new(1, AsciiDocument.FromText(""), null, null, null, "snapshot"), false, null));
         var previous = history.Current;
         WorkspaceService.CurrentArt = Document;
@@ -324,6 +336,17 @@ public sealed class ResultPane : Grid
         var now = Environment.TickCount64;
         history.Push(next, editGroup == group && now - lastEdit < 500);
         editGroup = group; lastEdit = now; UpdateHistoryButtons();
+    }
+
+    private static bool CanMergeGenerated(StudioProject previous, StudioProject next)
+    {
+        if (!string.Equals(previous.Mode, next.Mode, StringComparison.Ordinal)
+            || !string.Equals(previous.SourceImage, next.SourceImage, StringComparison.Ordinal)
+            || !string.Equals(previous.SourceText, next.SourceText, StringComparison.Ordinal)) return false;
+
+        // Only merge consecutive parameter-generated states that still point to
+        // the same input. Imported sources and document edits remain boundaries.
+        return next.Mode is "image" or "text" or "generator" or "ansi";
     }
 
     private async Task RestoreHistory(bool redo)
@@ -339,7 +362,7 @@ public sealed class ResultPane : Grid
                 if (RestoreProject is not null && target.Project.Mode != "snapshot") await RestoreProject(target.Project);
                 else await SetDocument(target.Project.Document);
                 if (redo) history.Redo(); else history.Undo();
-                candidate = null; protection.IsOpen = false; editGroup = null;
+                candidate = null; protection.IsOpen = false; editGroup = null; lastPushWasGenerated = false;
                 UpdateStats(target.Edited ? "已手工编辑" : redo ? "已重做" : "已撤销");
             }
             catch
@@ -364,7 +387,7 @@ public sealed class ResultPane : Grid
             {
                 if (RestoreProject is not null) await RestoreProject(next.Project);
                 else await SetDocument(next.Project.Document);
-                history.Push(next); editGroup = null; candidate = null; protection.IsOpen = false; UpdateStats("已更新 · 可撤销");
+                history.Push(next); editGroup = null; lastPushWasGenerated = false; candidate = null; protection.IsOpen = false; UpdateStats("已更新 · 可撤销");
             }
             finally { restoring = false; UpdateHistoryButtons(); recoveryTimer.Stop(); recoveryTimer.Start(); }
         }
