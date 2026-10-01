@@ -1,61 +1,60 @@
 # AsciiStudio
 
-原生 WinUI 3 字符创作程序。图片、文字和导出全部在本机处理。
+<p align="center">
+  <img src="assets/branding/asciistudio-horizontal.svg" alt="AsciiStudio" width="420" />
+</p>
 
-## 当前开发版
+AsciiStudio 是一款原生 Windows 字符创作工具。你可以把图片和文字转成字符画，编辑结果，保存项目，再导出为常见格式。转换和导出在本机完成。
 
-- 图片选择、拖放、剪贴板导入；PNG / JPEG / BMP / GIF 第一帧 / TIFF。
-- 输出列数、预设与自定义字符集、亮度、对比度、Gamma、颜色、反转、饱和度、色相、灰度、棕褐色、锐化、边缘检测、二值化。
-- Floyd–Steinberg、Jarvis–Judice–Ninke、Stucki、Atkinson 误差扩散。
-- FIGlet 字体艺术字；系统字体栅格化用于中文；裁边、空格替换、三种边框。
-- 基础边框、分隔线、矩形迷宫、星空、棋盘、斜纹、密度图案；随机种子与可继续编辑的生成器项目。
-- 基础 Unicode / ASCII 分析、裁边、控制字符清理、大小写、按字符簇反转和 Tab 转换。
-- 可编辑结果、复制、图像预览；TXT / PNG / JPEG / 静态 GIF / HTML / SVG / ANSI / JSON / Markdown 导出。
-- `.asciiproj` 项目、嵌入图片、文字生成参数、最近项目、结果恢复与主题设置。
-- 独立 SVG Logo、窗口 / 任务栏 ICO、MSIX 图标资源；分辨率预设和自定义列 / 行，位图导出 1–4 倍。
+> [!WARNING]
+> 当前版本为 `0.9.0-alpha.1`。这是仍在开发中的预发布版本，完整路线和未完成项目见 [0.9.0 实施计划](docs/V0_9_IMPLEMENTATION.md)。
 
-这是首个可运行开发版，尚未覆盖网站的完整功能。详细边界见 [开发进度](docs/DEVELOPMENT_STATUS.md)。
-当前版本 **0.8.0**：生成器项目恢复见 [本轮计划](docs/ITERATION_09_PLAN.md)；预览缩放、字体扩展、中文风格与比例补偿见 [本轮计划](docs/ITERATION_07_PLAN.md)；35 种加密、摘要和编码见 [加密工具](docs/CRYPTO_TOOLS.md)；注释、教程、新手模式和界面字体见 [创作辅助](docs/CREATION_ASSISTANCE.md)。自动编译和发布见 [CI 与 Release](docs/CI_RELEASE.md)。图片裁剪与恢复见 [v0.5](docs/ITERATION_06.md)。
+## 功能
 
-ANSI 文件查看、SAUCE、颜色和原文恢复见 [ANSI 查看器](docs/ITERATION_08_PLAN.md)。
+- 图片转字符画：打开或粘贴图片，调整字符集、尺寸、比例、亮度、对比度、颜色和抖动方式。支持 PNG、JPEG、BMP、GIF 第一帧和 TIFF。
+- 文字转字符画：使用 FIGlet 字体或系统字体生成文字作品，支持中文字体风格和字体搜索。
+- 生成器：制作文字边框、分隔线、迷宫、星空、棋盘、斜纹和密度渐变；随机图案可用种子复现。
+- ANSI 查看器：查看 ANSI 文件或粘贴转义序列，读取常见颜色、编码和 SAUCE 信息。
+- 编辑与整理：编辑字符画、调整预览缩放、撤销和重做。手工修改后可选择更新结果或保留独立版本。
+- 文本与加密工具：处理文本、生成代码注释，并使用本地加密、摘要和编码工具。
+- 项目与导出：保存 `.asciiproj` 项目并恢复创作来源。可导出 TXT、PNG、JPEG、静态 GIF、HTML、SVG、ANSI、JSON 和 Markdown。
 
-## 开发环境
+结果历史最多保存 100 步，并受 64 MB 预算限制。有关支持格式和模块边界的细节见[开发状态](docs/DEVELOPMENT_STATUS.md)。
 
-- Windows x64；最低系统目标为 Windows 10 1809，当前仅在此 Windows 11 开发机启动。
-- .NET SDK **10.0.401**，由 `global.json` 固定。
-- Visual Studio 2026，WinUI 工作负载与 Windows SDK 26100；组件清单在 `.vsconfig`。
-- Windows App SDK **2.5.1**；依赖版本及锁文件随源码管理。
-- WinApp CLI **0.7.0** 与已安装的 `microsoft/win-dev-skills`。开发约定见 `AGENTS.md`。
+## 获取与运行
 
-## 构建与运行
+### 环境要求
 
-GitHub Actions 自动编译及版本标签发布说明见 [CI 与 Release](docs/CI_RELEASE.md)。
+- Windows x64，最低目标为 Windows 10 1809
+- .NET SDK `10.0.401`（由 `global.json` 固定）
+- Visual Studio 2026、WinUI 工作负载和 Windows SDK 26100
+- Windows App SDK `2.5.1`
+- WinApp CLI `0.7.0` 和项目要求的 `microsoft/win-dev-skills`
 
-在仓库目录运行：
+克隆仓库后，在项目目录启动：
 
 ```powershell
 .\BuildAndRun.ps1 .\src\AsciiStudio\AsciiStudio.csproj --detach
 ```
 
-或者打开 `AsciiStudio.slnx`，选择 `AsciiStudio` 项目启动。
-
-生成 Release 输出：
+也可以打开 `AsciiStudio.slnx`，将 `AsciiStudio` 设为启动项目。生成 Release 构建：
 
 ```powershell
 .\scripts\build.ps1 -Configuration Release
 ```
 
-程序按 x64、自包含 .NET 和 Windows App SDK 配置。复制发布时必须保留整个输出目录；安装包、文件关联、干净机器验证尚未完成。
-使用 `.\scripts\package.ps1` 生成未签名 MSIX；传入 `-CertificatePath` 可使用已有证书签名。本次已生成未签名包，未安装证书或安装包。签名、信任和干净机器验证仍待完成。
+开发环境和 CI 发布流程见 [CI 与 Release](docs/CI_RELEASE.md)。
 
-## 数据与限制
+## 文件与限制
 
-设置、最近项目、恢复文件和错误日志保存在 `%LOCALAPPDATA%\AsciiStudio`。最近项目记录是本机文件路径。恢复文件保存最近一次结果，编辑后延迟约 800ms 写入；频繁更新时等待输入停止。图库与多文档工作区尚未实现。
+设置、最近项目、窗口位置、结果恢复和日志位于 `%LOCALAPPDATA%\AsciiStudio`。恢复数据保存在本机；最近项目列表记录的是文件路径。
 
-图片文件最大 40MB，源图最大 8000 万像素，处理时最长边缩至 2400；图片转换最多 2000 列 / 2000 行及 400 万字符，自动比例超限时提示而不截断。默认按字体实际宽高补偿比例；原图像素尺寸预设按处理尺寸与 13px 字体换算，自定义固定行数仍可能拉伸原图。位图导出最大 4000 万像素、单边 32767 像素；高分辨率网格可导出 TXT 等格式，位图可能需要更小的网格和字号。FIGlet 输入限制 ASCII；中文使用系统字体模式。Unicode 网格仍以 UTF-16 单元作为宽度，复杂宽字符的网格排版尚待完善。GIF 当前为静态图片。
+图片文件上限为 40 MB，源图上限为 8000 万像素，处理时最长边缩至 2400 像素。图片结果最多 2000 列、2000 行和 400 万字符。位图导出上限为 4000 万像素，单边不超过 32767 像素。较大的作品可改用文本格式导出。
 
-## 完整计划
+GIF 目前只读取第一帧，导出的 GIF 也是静态图。字符画网格仍按 UTF-16 单元计算宽度，因此中文宽字符、组合字符和 emoji 的对齐尚不完整。FIGlet 模式接受 ASCII 输入；中文文字请使用系统字体模式。
 
-[网站功能计划](docs/WEBSITE_FEATURE_PLAN.md)与[覆盖表](docs/FEATURE_COVERAGE.csv)是完整范围。游戏、历史档案、会员排除。摄像头、3D、ANSI 查看器、绘画工作室、动画、素材库、全面文本工具和高级导出均继续保留在计划中。
+## 相关文档
 
-未复制网站作品素材。FIGlet 使用 Figgle / Figgle.Fonts；依赖来源见 [第三方说明](docs/THIRD_PARTY.md)。
+- [0.9.0 实施计划](docs/V0_9_IMPLEMENTATION.md)
+- [开发状态与边界](docs/DEVELOPMENT_STATUS.md)
+- [第三方依赖说明](docs/THIRD_PARTY.md)
