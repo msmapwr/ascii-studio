@@ -119,4 +119,43 @@ Check("SVG font metrics use invariant numbers and escaped family", () =>
     }
     finally { System.Globalization.CultureInfo.CurrentCulture = previous; }
 });
+Check("authenticated ciphers round trip and reject altered metadata", () =>
+{
+    const string text = "ASCII\n测试 🙂";
+    foreach (var name in CryptoTools.Modern.Where(n => !n.StartsWith("RSA-") && CryptoTools.IsSupported(n)))
+    {
+        var cipher = CryptoTools.Apply(name, text, "secret");
+        Assert(CryptoTools.Apply(name, cipher, "secret", true) == text, "Cipher round trip failed: " + name);
+        var changed = cipher.Replace("600000", "99999999");
+        try { CryptoTools.Apply(name, changed, "secret", true); throw new Exception("Unbounded KDF metadata accepted"); } catch (ArgumentException) { }
+    }
+    var protectedText = CryptoTools.Apply("AES-256-GCM", text, "secret");
+    try { CryptoTools.Apply("AES-256-GCM", protectedText, "wrong", true); throw new Exception("Wrong password accepted"); } catch (System.Security.Cryptography.CryptographicException) { }
+});
+Check("RSA hybrid cipher supports arbitrary Unicode text", () =>
+{
+    var keys = CryptoTools.GenerateRsaKeys(); const string name = "RSA-OAEP-SHA256 + AES-256-GCM";
+    var cipher = CryptoTools.Apply(name, "测试\nASCII", keyPem: keys.PublicKey);
+    Assert(CryptoTools.Apply(name, cipher, decrypt: true, keyPem: keys.PrivateKey) == "测试\nASCII", "RSA hybrid round trip failed");
+});
+Check("encoding and traditional methods round trip", () =>
+{
+    foreach (var name in CryptoTools.Encodings)
+    {
+        var encoded = CryptoTools.Apply(name, "abc测试🙂\n");
+        Assert(CryptoTools.Apply(name, encoded, decrypt: true) == "abc测试🙂\n", "Encoding round trip failed: " + name);
+    }
+    foreach (var name in CryptoTools.Traditional)
+    {
+        var key = name == "Caesar" ? "-27" : name == "Rail Fence" ? "3" : "secret";
+        Assert(CryptoTools.Apply(name, CryptoTools.Apply(name, "Abc 测试🙂!\n", key), key, true) == "Abc 测试🙂!\n", "Traditional round trip failed: " + name);
+    }
+    Assert(CryptoTools.Apply("Base32", "foo") == "MZXW6===", "RFC 4648 Base32 vector failed");
+});
+Check("digest known value and input boundaries", () =>
+{
+    Assert(CryptoTools.Apply("SHA-256", "abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA256 vector failed");
+    try { CryptoTools.Apply("SHA-256", "abc", decrypt: true); throw new Exception("Digest was decrypted"); } catch (ArgumentException) { }
+    try { CryptoTools.Apply("AES-256-GCM", new string('a', CryptoTools.InputLimit + 1), "secret"); throw new Exception("Oversize input accepted"); } catch (ArgumentException) { }
+});
 Console.WriteLine($"{passed} checks passed.");
