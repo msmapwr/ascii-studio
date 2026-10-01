@@ -7,7 +7,8 @@ public sealed record StudioProject(int Version, AsciiDocument Document, Conversi
 public sealed record StudioSettings(string Theme = "Dark", double PreviewFontSize = 13, string[]? RecentFiles = null,
     bool Animations = true, bool WordWrap = false, bool ShowStats = true, bool CompactLayout = false,
     string DefaultExportFormat = "TXT", int ExportScale = 1, string FilePrefix = "",
-    bool AutoConvert = true, int ConversionDelay = 180, int DefaultColumns = 120, bool RememberWindow = true);
+    bool AutoConvert = true, int ConversionDelay = 180, int DefaultColumns = 120, bool RememberWindow = true,
+    double PreviewZoom = 1);
 
 public static class WorkspaceService
 {
@@ -69,6 +70,7 @@ public static class WorkspaceService
     {
         Theme = settings.Theme is "Light" or "Dark" or "System" ? settings.Theme : "Dark",
         PreviewFontSize = double.IsFinite(settings.PreviewFontSize) ? Math.Clamp(settings.PreviewFontSize, 8, 30) : 13,
+        PreviewZoom = double.IsFinite(settings.PreviewZoom) ? Math.Clamp(settings.PreviewZoom, .25, 4) : 1,
         ExportScale = Math.Clamp(settings.ExportScale, 1, 4),
         DefaultColumns = Math.Clamp(settings.DefaultColumns, 8, 2000),
         ConversionDelay = Math.Clamp(settings.ConversionDelay, 0, 1000),

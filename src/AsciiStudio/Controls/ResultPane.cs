@@ -30,6 +30,11 @@ public sealed class ResultPane : Grid
     private int previewDensity = 1;
     private StudioSettings? appliedSettings;
     private readonly DispatcherTimer recoveryTimer = new() { Interval = TimeSpan.FromMilliseconds(800) };
+    private readonly DispatcherTimer zoomSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private readonly TextBlock zoomLabel = Ui.Text("100%", 12);
+    private double zoom = 1;
+    private double readableScale = 1;
+    private double previewWidth, previewHeight;
     public AsciiDocument? Document { get; private set; }
     public Func<AsciiDocument, StudioProject>? ProjectFactory { get; set; }
 
@@ -75,9 +80,26 @@ public sealed class ResultPane : Grid
         canvas.Children.Add(imageScroll); var card = Ui.Card(canvas, new Thickness(0)); Grid.SetRow(card, 1); Children.Add(card);
         var footer = new Grid { ColumnSpacing = 12 };
         footer.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
-        stats = Ui.Text("尚未生成结果", 12, true); stats.VerticalAlignment = VerticalAlignment.Center; footer.Children.Add(stats);
+        stats = Ui.Text("尚未生成结果", 12, true); stats.TextTrimming = TextTrimming.CharacterEllipsis; stats.VerticalAlignment = VerticalAlignment.Center; footer.Children.Add(stats);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(stats, "ResultStats");
-        fontSize.ValueChanged += async (_, _) => { if (double.IsFinite(fontSize.Value)) { editor.FontSize = fontSize.Value; UpdateDimensions(); if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); } };
+        footer.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        var zoomControls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
+        Button ZoomButton(string text, string id, string name, Action action)
+        {
+            var button = Ui.Button(text, action);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, id);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, name);
+            ToolTipService.SetToolTip(button, name); return button;
+        }
+        zoomControls.Children.Add(ZoomButton("−", "ResultZoomOut", "缩小预览", () => SetZoom(zoom / 1.1)));
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(zoomLabel, "ResultZoomValue");
+        zoomLabel.VerticalAlignment = VerticalAlignment.Center; zoomControls.Children.Add(zoomLabel);
+        zoomControls.Children.Add(ZoomButton("＋", "ResultZoomIn", "放大预览", () => SetZoom(zoom * 1.1)));
+        zoomControls.Children.Add(ZoomButton("100%", "ResultZoomReset", "恢复预览缩放", () => SetZoom(1)));
+        Grid.SetColumn(zoomControls, 1); footer.Children.Add(zoomControls);
+        canvas.AddHandler(UIElement.PointerWheelChangedEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler(OnPreviewWheel), true);
+        zoomSaveTimer.Tick += async (_, _) => { zoomSaveTimer.Stop(); var value = zoom; await App.Window.Guard(() => WorkspaceService.UpdateSettings(s => s with { PreviewZoom = value })); };
+        fontSize.ValueChanged += async (_, _) => { if (double.IsFinite(fontSize.Value)) { ApplyVisualZoom(); UpdateDimensions(); if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); } };
         colorToggle.Toggled += async (_, _) => { imageScroll.Visibility = colorToggle.IsOn ? Visibility.Visible : Visibility.Collapsed; editor.Visibility = colorToggle.IsOn ? Visibility.Collapsed : Visibility.Visible; if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); };
         Grid.SetRow(footer, 2); Children.Add(footer);
         recoveryTimer.Tick += async (_, _) => { recoveryTimer.Stop(); await App.Window.Guard(SaveRecovery); };
@@ -91,6 +113,7 @@ public sealed class ResultPane : Grid
         Unloaded += (_, _) =>
         {
             recoveryTimer.Stop();
+            zoomSaveTimer.Stop();
             WorkspaceService.SettingsChanged -= ApplySettings;
             if (previewRoot is not null) previewRoot.Changed -= OnPreviewRootChanged;
             previewRoot = null;
@@ -103,10 +126,57 @@ public sealed class ResultPane : Grid
         if (appliedSettings?.PreviewFontSize != settings.PreviewFontSize) fontSize.Value = settings.PreviewFontSize;
         if (appliedSettings?.DefaultExportFormat != settings.DefaultExportFormat) format.SelectedItem = settings.DefaultExportFormat;
         if (appliedSettings?.ExportScale != settings.ExportScale) exportScale.SelectedIndex = settings.ExportScale - 1;
+        if (appliedSettings?.PreviewZoom != settings.PreviewZoom) { zoom = settings.PreviewZoom; ApplyVisualZoom(); }
         editor.TextWrapping = settings.WordWrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
         ScrollViewer.SetHorizontalScrollBarVisibility(editor, settings.WordWrap ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto);
         stats.Visibility = settings.ShowStats ? Visibility.Visible : Visibility.Collapsed;
         appliedSettings = settings;
+    }
+
+    public void SetReadablePreview(bool enabled)
+    {
+        readableScale = enabled ? 1.6 : 1;
+        ApplyVisualZoom();
+    }
+
+    private void ApplyVisualZoom()
+    {
+        editor.FontSize = fontSize.Value * zoom * readableScale;
+        zoomLabel.Text = $"{zoom * 100:0}%";
+        if (preview.Source is not null)
+        {
+            preview.Width = previewWidth * zoom * readableScale;
+            preview.Height = previewHeight * zoom * readableScale;
+        }
+    }
+
+    private void SetZoom(double value, Windows.Foundation.Point? pivot = null)
+    {
+        var scroll = colorToggle.IsOn ? imageScroll : Ui.FindDescendant<ScrollViewer>(editor);
+        var previous = zoom;
+        var x = scroll?.HorizontalOffset ?? 0; var y = scroll?.VerticalOffset ?? 0;
+        zoom = Math.Clamp(value, .25, 4); ApplyVisualZoom();
+        if (scroll is not null)
+        {
+            var ratio = zoom / previous; var point = pivot ?? new Windows.Foundation.Point(0, 0);
+            DispatcherQueue.TryEnqueue(() => { scroll.UpdateLayout(); scroll.ChangeView((x + point.X) * ratio - point.X, (y + point.Y) * ratio - point.Y, null, true); });
+        }
+        zoomSaveTimer.Stop(); zoomSaveTimer.Start();
+    }
+
+    private void OnPreviewWheel(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        var scroll = colorToggle.IsOn ? imageScroll : Ui.FindDescendant<ScrollViewer>(editor);
+        if (scroll is null) return;
+        var pointer = e.GetCurrentPoint(scroll); var delta = pointer.Properties.MouseWheelDelta;
+        if ((e.KeyModifiers & Windows.System.VirtualKeyModifiers.Control) != 0)
+        {
+            SetZoom(zoom * Math.Pow(1.1, delta / 120d), pointer.Position); e.Handled = true;
+        }
+        else if ((e.KeyModifiers & Windows.System.VirtualKeyModifiers.Shift) != 0)
+        {
+            scroll.ChangeView(Math.Clamp(scroll.HorizontalOffset - delta / 2d, 0, scroll.ScrollableWidth), null, null, true); e.Handled = true;
+        }
     }
 
     private async void OnPreviewRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
@@ -182,9 +252,10 @@ public sealed class ResultPane : Grid
         {
             previewDensity = density;
             preview.Stretch = Stretch.Fill;
-            preview.Width = dimensions.Width / (double)density;
-            preview.Height = dimensions.Height / (double)density;
+            previewWidth = dimensions.Width / (double)density;
+            previewHeight = dimensions.Height / (double)density;
             preview.Source = source;
+            ApplyVisualZoom();
         }
     }
 
