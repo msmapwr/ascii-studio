@@ -15,7 +15,7 @@
 - 独立 SVG Logo、窗口 / 任务栏 ICO、MSIX 图标资源；分辨率预设和自定义列 / 行，位图导出 1–4 倍。
 
 这是首个可运行开发版，尚未覆盖网站的完整功能。详细边界见 [开发进度](docs/DEVELOPMENT_STATUS.md)。
-当前开发版本 **0.6.0-alpha.3**：结果缩放、字体扩展与比例补偿见 [本轮计划](docs/ITERATION_07_PLAN.md)，自动编译和发布见 [CI 与 Release](docs/CI_RELEASE.md)。图片裁剪与恢复见 [v0.5](docs/ITERATION_06.md)。
+当前版本 **0.6.0**：预览缩放、字体扩展、中文风格与比例补偿见 [本轮计划](docs/ITERATION_07_PLAN.md)；35 种加密、摘要和编码见 [加密工具](docs/CRYPTO_TOOLS.md)；注释、教程、新手模式和界面字体见 [创作辅助](docs/CREATION_ASSISTANCE.md)。自动编译和发布见 [CI 与 Release](docs/CI_RELEASE.md)。图片裁剪与恢复见 [v0.5](docs/ITERATION_06.md)。
 
 ## 开发环境
 
