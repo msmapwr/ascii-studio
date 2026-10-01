@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][int]$AppPid,[ValidateSet('zoom','conversion','crypto','assist','ansi')][string]$Module='zoom')
+param([Parameter(Mandatory)][int]$AppPid,[ValidateSet('zoom','conversion','crypto','assist','ansi','generator')][string]$Module='zoom')
 $ErrorActionPreference='Stop'
 $env:Path=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User')
 $taskHwnd=(& winapp ui list-windows -a $AppPid --json|ConvertFrom-Json|Where-Object ownerHwnd -eq 0|Select-Object -First 1).hwnd
@@ -25,6 +25,36 @@ function Select-Choice([string]$Selector,[string]$Value){
  UI invoke $Selector --action collapse|Out-Null
 }
 switch($Module){
+ 'generator'{
+  Check 'Generator source and edited result recover independently' {
+   UI invoke NavGenerator;UI set-value Field_边框内容 'project source';UI invoke GeneratorGenerate
+   UI wait-for ResultEditor --contains --value 'project source' -t 4000
+   UI set-value ResultEditor 'manually edited result'
+   Start-Sleep -Milliseconds 1400
+   $taskProject=Get-Content (Join-Path $PSScriptRoot '../artifacts/enhancement-test-data/recovery.asciiproj') -Raw|ConvertFrom-Json
+   if($taskProject.Mode -ne 'generator' -or $taskProject.SourceText -ne 'project source' -or $taskProject.Document.Text -ne 'manually edited result'){throw 'Generator source or manual result was not saved'}
+   UI invoke NavHome;UI invoke Button_恢复最近一次结果
+   UI wait-for GeneratorStatus --contains --value '项目已恢复' -t 5000
+   Start-Sleep -Milliseconds 400
+   UI wait-for ResultEditor --value 'manually edited result' -t 2000
+   UI invoke GeneratorGenerate;UI wait-for ResultEditor --contains --value 'project source' -t 4000
+  }
+  Check 'Generator automatic conversion and reset follow preferences' {
+   UI invoke SettingsItem;UI invoke SettingsAutoConvert --action toggle-on
+   UI invoke NavGenerator;UI set-value Field_边框内容 'automatic generator'
+   UI wait-for ResultEditor --contains --value 'automatic generator' -t 4000
+   UI invoke SettingsItem;UI invoke SettingsAutoConvert --action toggle-off
+   UI invoke NavGenerator;UI set-value Field_边框内容 'manual generator'
+   Start-Sleep -Milliseconds 400
+   UI wait-for ResultEditor --contains --value 'automatic generator' -t 2000
+   UI invoke GeneratorSettings;UI invoke Button_恢复生成器默认参数
+   UI invoke NavHome;UI invoke NavGenerator
+   UI wait-for Field_边框内容 --value 'Hello, ASCII!' -t 2000
+   UI wait-for ResultEditor --contains --value 'automatic generator' -t 2000
+   UI invoke GeneratorGenerate;UI wait-for ResultEditor --contains --value 'Hello, ASCII!' -t 4000
+   UI invoke SettingsItem;UI invoke SettingsAutoConvert --action toggle-on
+  }
+ }
  'ansi'{
   Check 'ANSI colors and recovery retain original parameters' {
    UI invoke NavAnsi;UI invoke Button_载入彩色示例

@@ -239,6 +239,10 @@ public sealed partial class MainWindow : Window
         {
             var page = new Pages.TextPage(); await page.LoadProject(project); pages["text"] = page; Navigate("text"); PageHost.Content = page;
         }
+        else if (project.Mode == "generator")
+        {
+            var page = new Pages.GeneratorPage(); await page.LoadProject(project); pages["generators"] = page; Navigate("generators"); PageHost.Content = page;
+        }
         else if (project.Mode == "ansi")
         {
             var page = new Pages.AnsiPage(); await page.LoadProject(project); pages["ansi"] = page; Navigate("ansi"); PageHost.Content = page;
