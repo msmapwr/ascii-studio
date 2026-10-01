@@ -22,7 +22,7 @@ public sealed class ImagePage : Grid
     private readonly NumberBox columns = new NumberBox() { Minimum = 8, Maximum = 2000, Value = 120, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
     private readonly NumberBox rows = new NumberBox() { Minimum = 1, Maximum = 2000, Value = 60, IsEnabled = false, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
     private readonly CheckBox autoRows = new() { Content = "保持原图比例（自动计算行数）", IsChecked = true };
-    private readonly ComboBox resolution = Ui.Choice(["标准 · 120 列", "精细 · 240 列", "高清 · 480 列", "超清 · 960 列", "1920 × 1080 字符", "自定义"]);
+    private readonly ComboBox resolution = Ui.Choice(["标准 · 120 列", "精细 · 240 列", "高清 · 480 列", "超清 · 960 列", "原图像素尺寸", "自定义"]);
     private readonly Slider cellAspect = Ui.Slider(.25, 1, .5, .05);
     private readonly ComboBox ramp = Ui.Choice(["标准", "精细", "极简", "字母", "字母数字", "箭头", "CP437", "扩展高密度", "灰阶", "数学符号", "标准 2", "数字", "最大", "黑白", "自定义"]);
     private readonly TextBox characters = new() { Text = " .:-=+*#%@", MaxLength = 200 };
@@ -32,6 +32,12 @@ public sealed class ImagePage : Grid
     private readonly NumberBox thresholdValue = new NumberBox() { Minimum = 0, Maximum = 255, Value = 128 };
     private readonly ComboBox dither = Ui.Choice(["关闭", "Floyd–Steinberg", "Jarvis–Judice–Ninke", "Stucki", "Atkinson"]);
     private readonly ImageGeometryEditor geometry = new();
+    private readonly CheckBox fontAspect = new() { Content = "按字体实际宽高补偿比例", IsChecked = true };
+    private readonly SemaphoreSlim conversionGate = new(1, 1);
+    private readonly object transformGate = new();
+    private byte[]? cachedSource;
+    private ImageGeometry? cachedGeometry;
+    private (byte[] Pixels, int Width, int Height) cachedTransform;
     private byte[]? source;
     private string? encodedSource;
     private ConversionOptions lastOptions = new();
@@ -54,8 +60,9 @@ public sealed class ImagePage : Grid
         var sizeSettings = Ui.Stack();
         sizeSettings.Children.Add(Ui.SettingsGrid(Ui.Field("字符网格宽度（列）", columns), Ui.Field("字符网格高度（行）", rows)));
         sizeSettings.Children.Add(autoRows);
+        sizeSettings.Children.Add(fontAspect);
         sizeSettings.Children.Add(Ui.Field("字符宽高比 · 默认 0.5", cellAspect));
-        sizeSettings.Children.Add(Ui.Text("最高 2000 × 2000 字符。自动计算行数保留比例；固定尺寸可能拉伸。", 12, true));
+        sizeSettings.Children.Add(Ui.Text("最高 2000 × 2000 字符。字体补偿保留图像比例；自定义固定宽高可能拉伸。原图尺寸按处理图片和 13px 字体换算，像素尺寸为近似值。", 12, true));
         result.AddSettings("分辨率", sizeSettings, "ImageSizeSettings");
         var characterSettings = Ui.Stack(); characterSettings.Width = 300;
         characterSettings.Children.Add(Ui.Field("字符风格", ramp));
@@ -70,6 +77,11 @@ public sealed class ImagePage : Grid
         var reset = Ui.Button("重置全部图片参数", Reset); Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(reset, "ImageReset"); effects.Children.Add(reset);
         result.AddSettings("效果", effects, "ImageEffectSettings");
         result.AddSettings("裁剪与方向", geometry, "ImageGeometrySettings");
+        result.CharacterFontChanged += _ => { if (!suspend) Queue(); };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(fontAspect, "ImageFontAspect");
+        fontAspect.Checked += (_, _) => { cellAspect.IsEnabled = false; Queue(); };
+        fontAspect.Unchecked += (_, _) => { cellAspect.IsEnabled = autoRows.IsChecked == true; Queue(); };
+        cellAspect.IsEnabled = false;
         geometry.Changed += async () => await App.Window.Guard(async () =>
         {
             pending?.Cancel();
@@ -108,12 +120,13 @@ public sealed class ImagePage : Grid
         };
         columns.ValueChanged += (_, _) => { if (!suspend) resolution.SelectedIndex = 5; Queue(); }; thresholdValue.ValueChanged += (_, _) => Queue();
         rows.ValueChanged += (_, _) => { if (!suspend) resolution.SelectedIndex = 5; Queue(); }; cellAspect.ValueChanged += (_, _) => Queue();
-        autoRows.Checked += (_, _) => { rows.IsEnabled = false; cellAspect.IsEnabled = true; Queue(); }; autoRows.Unchecked += (_, _) => { rows.IsEnabled = true; cellAspect.IsEnabled = false; Queue(); };
+        autoRows.Checked += (_, _) => { rows.IsEnabled = false; cellAspect.IsEnabled = fontAspect.IsChecked != true; Queue(); }; autoRows.Unchecked += (_, _) => { rows.IsEnabled = true; cellAspect.IsEnabled = false; Queue(); };
         resolution.SelectionChanged += (_, _) =>
         {
             if (resolution.SelectedIndex is < 0 or > 4) return;
-            suspend = true; columns.Value = new[] { 120, 240, 480, 960, 1920 }[resolution.SelectedIndex]; autoRows.IsChecked = resolution.SelectedIndex != 4;
-            if (resolution.SelectedIndex == 4) rows.Value = 1080; suspend = false; Queue();
+            suspend = true; autoRows.IsChecked = true; suspend = false;
+            if (resolution.SelectedIndex < 4) { suspend = true; columns.Value = new[] { 120, 240, 480, 960 }[resolution.SelectedIndex]; autoRows.IsChecked = true; suspend = false; }
+            Queue();
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(columns, "ImageColumns");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(rows, "ImageRows");
@@ -123,31 +136,44 @@ public sealed class ImagePage : Grid
         foreach (var s in new[] { brightness, contrast, gamma, saturation, hue, gray, sepia, sharpness }) s.ValueChanged += (_, _) => Queue();
         foreach (var box in new[] { invert, color, edges, threshold }) { box.Checked += (_, _) => Queue(); box.Unchecked += (_, _) => Queue(); }
         dither.SelectionChanged += (_, _) => Queue(); characters.TextChanged += (_, _) => Queue();
-        result.ProjectFactory = doc => new(1, doc, lastOptions, encodedSource, null, "image", Geometry: geometry.Current);
+        result.ProjectFactory = doc => new(1, doc, lastOptions, encodedSource, null, "image", new() { ["fontAspect"] = (fontAspect.IsChecked == true).ToString(), ["resolution"] = resolution.SelectedIndex.ToString() }, Geometry: geometry.Current);
         suspend = true; columns.Value = WorkspaceService.Settings.DefaultColumns; resolution.SelectedIndex = columns.Value == 120 ? 0 : 5; suspend = false;
     }
 
-    private ConversionOptions Options() => new()
+    private ConversionOptions Options()
     {
-        Columns = ReadDimension(columns, "列数"),
-        Rows = autoRows.IsChecked == true ? 0 : ReadDimension(rows, "行数"),
-        CellAspect = cellAspect.Value,
-        Characters = characters.Text,
-        Brightness = brightness.Value,
-        Contrast = contrast.Value,
-        Gamma = gamma.Value,
-        Saturation = saturation.Value,
-        Hue = hue.Value,
-        Grayscale = gray.Value,
-        Sepia = sepia.Value,
-        Sharpness = sharpness.Value,
-        Invert = invert.IsChecked == true,
-        Color = color.IsChecked == true,
-        Edges = edges.IsChecked == true,
-        Threshold = threshold.IsChecked == true,
-        ThresholdValue = (int)(double.IsFinite(thresholdValue.Value) ? thresholdValue.Value : 128),
-        Dither = (DitherMode)Math.Max(0, dither.SelectedIndex)
-    };
+        var metrics = FontCatalog.Measure(result.CharacterFontFamily);
+        var aspect = fontAspect.IsChecked == true ? metrics.Width / metrics.Height : cellAspect.Value;
+        var count = ReadDimension(columns, "列数");
+        if (resolution.SelectedIndex == 4 && source is not null)
+        {
+            var crop = geometry.Current; var w = decoded.width * crop.Width / 100; var h = decoded.height * crop.Height / 100;
+            if (crop.QuarterTurns % 2 != 0) (w, h) = (h, w);
+            count = Math.Clamp((int)Math.Round(w / metrics.Width), 8, 2000);
+            count = Math.Max(8, Math.Min(count, (int)Math.Floor(2000 * w / h / aspect)));
+        }
+        return new()
+        {
+            Columns = count,
+            Rows = autoRows.IsChecked == true ? 0 : ReadDimension(rows, "行数"),
+            CellAspect = aspect,
+            Characters = characters.Text,
+            Brightness = brightness.Value,
+            Contrast = contrast.Value,
+            Gamma = gamma.Value,
+            Saturation = saturation.Value,
+            Hue = hue.Value,
+            Grayscale = gray.Value,
+            Sepia = sepia.Value,
+            Sharpness = sharpness.Value,
+            Invert = invert.IsChecked == true,
+            Color = color.IsChecked == true,
+            Edges = edges.IsChecked == true,
+            Threshold = threshold.IsChecked == true,
+            ThresholdValue = (int)(double.IsFinite(thresholdValue.Value) ? thresholdValue.Value : 128),
+            Dither = (DitherMode)Math.Max(0, dither.SelectedIndex)
+        };
+    }
     private void Queue() { if (!suspend && source is not null && WorkspaceService.Settings.AutoConvert) _ = App.Window.Guard(ConvertAsync); }
     private static int ReadDimension(NumberBox input, string name)
     {
@@ -161,15 +187,34 @@ public sealed class ImagePage : Grid
         {
             await Task.Delay(WorkspaceService.Settings.ConversionDelay, token); var options = Options(); var pixels = decoded;
             var transform = geometry.Current;
+            var family = result.CharacterFontFamily;
+            var metrics = FontCatalog.Measure(family);
+            await conversionGate.WaitAsync(token);
             progress.IsActive = true; var sw = Stopwatch.StartNew();
-            var doc = await Task.Run(() =>
+            AsciiDocument doc;
+            try
             {
-                var transformed = ImageTransforms.Apply(pixels.pixels, pixels.width, pixels.height, transform, token);
-                return ImageConverter.Convert(transformed.Pixels, transformed.Width, transformed.Height, options, token);
+                doc = await Task.Run(() =>
+            {
+                var transformed = Transformed(pixels, transform, token);
+                return ImageConverter.Convert(transformed.Pixels, transformed.Width, transformed.Height, options, token) with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height };
             }, token);
+            }
+            finally { conversionGate.Release(); }
             if (!token.IsCancellationRequested && ReferenceEquals(pending, tokenSource)) { lastOptions = options; await result.SetDocument(doc with { Title = title }, $"{sw.ElapsedMilliseconds} ms"); }
         }
         finally { if (ReferenceEquals(pending, tokenSource)) { progress.IsActive = false; pending = null; } tokenSource.Dispose(); }
+    }
+    private (byte[] Pixels, int Width, int Height) Transformed((byte[] pixels, int width, int height) pixels, ImageGeometry transform, CancellationToken token = default)
+    {
+        lock (transformGate)
+        {
+            token.ThrowIfCancellationRequested();
+            if (ReferenceEquals(cachedSource, pixels.pixels) && cachedGeometry == transform) return cachedTransform;
+            var output = transform == new ImageGeometry() ? (pixels.pixels, pixels.width, pixels.height)
+                : ImageTransforms.Apply(pixels.pixels, pixels.width, pixels.height, transform, token);
+            cachedSource = pixels.pixels; cachedGeometry = transform; cachedTransform = output; return output;
+        }
     }
     private async Task PickImage()
     {
@@ -202,7 +247,7 @@ public sealed class ImagePage : Grid
             if (version != thumbnailVersion) return;
             preview = await Task.Run(() =>
             {
-                var image = ImageTransforms.Apply(pixels.pixels, pixels.width, pixels.height, transform);
+                var image = Transformed(pixels, transform);
                 return (bytes: ImagingService.Thumbnail(image.Pixels, image.Width, image.Height), image.Width, image.Height);
             });
         }
@@ -251,6 +296,8 @@ public sealed class ImagePage : Grid
         try
         {
             lastOptions = project.Options ?? new(); Apply(lastOptions); suspend = true;
+            fontAspect.IsChecked = project.Parameters is { } parameters && parameters.TryGetValue("fontAspect", out var automatic) && bool.TryParse(automatic, out var enabled) && enabled;
+            if (project.Parameters is { } presetParameters && presetParameters.TryGetValue("resolution", out var preset) && int.TryParse(preset, out var pi) && pi is >= 0 and <= 5) resolution.SelectedIndex = pi;
             geometry.Load(project.Geometry); geometry.SourceAvailable = bytes is not null;
             source = bytes; encodedSource = project.SourceImage; decoded = image; title = project.Document.Title;
             if (bytes is not null) await RefreshThumbnail();

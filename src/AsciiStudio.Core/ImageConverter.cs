@@ -11,14 +11,14 @@ public static class ImageConverter
             throw new ArgumentException("图片像素数据无效。");
         if (options.Columns is < 8 or > 2000 || options.Rows is < 0 or > 2000 || !double.IsFinite(options.CellAspect) || options.CellAspect is <= 0 or > 2 || !double.IsFinite(options.Gamma) || options.Gamma is <= 0 or > 5)
             throw new ArgumentOutOfRangeException(nameof(options), "输出尺寸、比例或 Gamma 无效。");
-        if(!new[]{options.Brightness,options.Contrast,options.Saturation,options.Hue,options.Grayscale,options.Sepia,options.Sharpness}.All(double.IsFinite) || options.Brightness is <0 or >5 || options.Contrast is <0 or >5 || options.Saturation is <0 or >5 || options.Grayscale is <0 or >1 || options.Sepia is <0 or >1 || options.Sharpness is <0 or >10 || options.ThresholdValue is <0 or >255 || !Enum.IsDefined(options.Dither))
+        if (!new[] { options.Brightness, options.Contrast, options.Saturation, options.Hue, options.Grayscale, options.Sepia, options.Sharpness }.All(double.IsFinite) || options.Brightness is < 0 or > 5 || options.Contrast is < 0 or > 5 || options.Saturation is < 0 or > 5 || options.Grayscale is < 0 or > 1 || options.Sepia is < 0 or > 1 || options.Sharpness is < 0 or > 10 || options.ThresholdValue is < 0 or > 255 || !Enum.IsDefined(options.Dither))
             throw new ArgumentException("图片调整参数无效。");
         var chars = options.Characters.Distinct().ToArray();
         if (chars.Length < 2 || chars.Any(char.IsControl) || chars.Any(char.IsSurrogate))
             throw new ArgumentException("字符集至少需要两个不同的单字符，且不能包含控制字符或 emoji。");
         var columns = options.Columns;
         var requestedRows = options.Rows == 0 ? Math.Max(1, Math.Round(columns * (double)height / width * options.CellAspect)) : options.Rows;
-        if(requestedRows > 2000 || columns * requestedRows > 4_000_000)
+        if (requestedRows > 2000 || columns * requestedRows > 4_000_000)
             throw new ArgumentException("输出分辨率超过 2000 行或 400 万字符，请降低列数或指定行数。");
         var rows = (int)requestedRows;
         var luminance = new double[rows * columns];
@@ -49,7 +49,11 @@ public static class ImageConverter
                 r += (gray - r) * options.Grayscale; g += (gray - g) * options.Grayscale; b += (gray - b) * options.Grayscale;
                 var sr = .393 * r + .769 * g + .189 * b; var sg = .349 * r + .686 * g + .168 * b; var sb = .272 * r + .534 * g + .131 * b;
                 r += (sr - r) * options.Sepia; g += (sg - g) * options.Sepia; b += (sb - b) * options.Sepia;
-                double Adjust(double v) => Math.Clamp(Math.Pow(Math.Clamp(((v / 255 - .5) * options.Contrast + .5) * options.Brightness, 0, 1), 1 / options.Gamma), 0, 1);
+                double Adjust(double v)
+                {
+                    var adjusted = Math.Clamp(((v / 255 - .5) * options.Contrast + .5) * options.Brightness, 0, 1);
+                    return options.Gamma == 1 ? adjusted : Math.Pow(adjusted, 1 / options.Gamma);
+                }
                 r = Adjust(r); g = Adjust(g); b = Adjust(b);
                 if (options.Invert) { r = 1 - r; g = 1 - g; b = 1 - b; }
                 // Lower luminance uses denser glyphs: a white background stays mostly blank.
@@ -90,17 +94,17 @@ public static class ImageConverter
     private static (double, double, double) RotateHue(double r, double g, double b, double angle)
     {
         var c = Math.Cos(angle * Math.PI / 180); var s = Math.Sin(angle * Math.PI / 180);
-        return ((.213 + .787*c - .213*s)*r + (.715 - .715*c - .715*s)*g + (.072 - .072*c + .928*s)*b,
-            (.213 - .213*c + .143*s)*r + (.715 + .285*c + .140*s)*g + (.072 - .072*c - .283*s)*b,
-            (.213 - .213*c - .787*s)*r + (.715 - .715*c + .715*s)*g + (.072 + .928*c + .072*s)*b);
+        return ((.213 + .787 * c - .213 * s) * r + (.715 - .715 * c - .715 * s) * g + (.072 - .072 * c + .928 * s) * b,
+            (.213 - .213 * c + .143 * s) * r + (.715 + .285 * c + .140 * s) * g + (.072 - .072 * c - .283 * s) * b,
+            (.213 - .213 * c - .787 * s) * r + (.715 - .715 * c + .715 * s) * g + (.072 + .928 * c + .072 * s) * b);
     }
 
     private static (int x, int y, double weight)[] Kernel(DitherMode mode) => mode switch
     {
-        DitherMode.FloydSteinberg => [(1,0,7d/16),(-1,1,3d/16),(0,1,5d/16),(1,1,1d/16)],
-        DitherMode.Atkinson => [(1,0,1d/8),(2,0,1d/8),(-1,1,1d/8),(0,1,1d/8),(1,1,1d/8),(0,2,1d/8)],
-        DitherMode.JarvisJudiceNinke => [(1,0,7d/48),(2,0,5d/48),(-2,1,3d/48),(-1,1,5d/48),(0,1,7d/48),(1,1,5d/48),(2,1,3d/48),(-2,2,1d/48),(-1,2,3d/48),(0,2,5d/48),(1,2,3d/48),(2,2,1d/48)],
-        DitherMode.Stucki => [(1,0,8d/42),(2,0,4d/42),(-2,1,2d/42),(-1,1,4d/42),(0,1,8d/42),(1,1,4d/42),(2,1,2d/42),(-2,2,1d/42),(-1,2,2d/42),(0,2,4d/42),(1,2,2d/42),(2,2,1d/42)],
+        DitherMode.FloydSteinberg => [(1, 0, 7d / 16), (-1, 1, 3d / 16), (0, 1, 5d / 16), (1, 1, 1d / 16)],
+        DitherMode.Atkinson => [(1, 0, 1d / 8), (2, 0, 1d / 8), (-1, 1, 1d / 8), (0, 1, 1d / 8), (1, 1, 1d / 8), (0, 2, 1d / 8)],
+        DitherMode.JarvisJudiceNinke => [(1, 0, 7d / 48), (2, 0, 5d / 48), (-2, 1, 3d / 48), (-1, 1, 5d / 48), (0, 1, 7d / 48), (1, 1, 5d / 48), (2, 1, 3d / 48), (-2, 2, 1d / 48), (-1, 2, 3d / 48), (0, 2, 5d / 48), (1, 2, 3d / 48), (2, 2, 1d / 48)],
+        DitherMode.Stucki => [(1, 0, 8d / 42), (2, 0, 4d / 42), (-2, 1, 2d / 42), (-1, 1, 4d / 42), (0, 1, 8d / 42), (1, 1, 4d / 42), (2, 1, 2d / 42), (-2, 2, 1d / 42), (-1, 2, 2d / 42), (0, 2, 4d / 42), (1, 2, 2d / 42), (2, 2, 1d / 42)],
         _ => []
     };
 }
