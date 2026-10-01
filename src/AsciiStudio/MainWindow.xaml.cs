@@ -249,7 +249,7 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            var output = new ResultPane(); await output.SetDocument(project.Document); PageHost.Content = Ui.Page(Ui.Heading(project.Document.Title, "项目中的字符画快照"), output);
+            var output = new ResultPane(); await output.LoadDocument(project); PageHost.Content = Ui.Page(Ui.Heading(project.Document.Title, "项目中的字符画快照"), output);
         }
         Message("项目已打开。");
     }

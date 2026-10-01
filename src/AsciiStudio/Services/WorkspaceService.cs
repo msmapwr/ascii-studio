@@ -3,7 +3,7 @@ using AsciiStudio.Core;
 
 namespace AsciiStudio.Services;
 
-public sealed record StudioProject(int Version, AsciiDocument Document, ConversionOptions? Options, string? SourceImage, string? SourceText, string Mode, Dictionary<string, string>? Parameters = null, ImageGeometry? Geometry = null);
+public sealed record StudioProject(int Version, AsciiDocument Document, ConversionOptions? Options, string? SourceImage, string? SourceText, string Mode, Dictionary<string, string>? Parameters = null, ImageGeometry? Geometry = null, bool Edited = false, AsciiDocument? GeneratedDocument = null);
 public sealed record StudioSettings(string Theme = "Dark", double PreviewFontSize = 13, string[]? RecentFiles = null,
     bool Animations = true, bool WordWrap = false, bool ShowStats = true, bool CompactLayout = false,
     string DefaultExportFormat = "TXT", int ExportScale = 1, string FilePrefix = "",
@@ -32,6 +32,7 @@ public static class WorkspaceService
     {
         if (project.Document is null) throw new InvalidDataException("项目缺少字符画。");
         project.Document.Validate();
+        project.GeneratedDocument?.Validate();
         project.Geometry?.Validate();
         var bytes = await Task.Run(() => JsonSerializer.SerializeToUtf8Bytes(project));
         if (bytes.Length > 100_000_000) throw new InvalidDataException("项目超过 100MB，请降低字符画尺寸或输入图片大小。");
@@ -46,6 +47,7 @@ public static class WorkspaceService
         if (project.Version != 1) throw new InvalidDataException("不支持此项目版本。");
         if (project.Document is null) throw new InvalidDataException("项目缺少字符画。");
         project.Document.Validate();
+        project.GeneratedDocument?.Validate();
         project.Geometry?.Validate();
         await UpdateSettings(s => s with { RecentFiles = new[] { path }.Concat(s.RecentFiles ?? []).Distinct(StringComparer.OrdinalIgnoreCase).Take(15).ToArray() });
         return project;

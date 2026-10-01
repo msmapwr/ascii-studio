@@ -50,6 +50,7 @@ public sealed class ImagePage : Grid
     private bool suspend;
     public ImagePage()
     {
+        result.RestoreProject = LoadProject;
         var input = Ui.Stack();
         var import = Ui.Stack(10); import.Children.Add(thumbnail); import.Children.Add(sourceInfo);
         import.Children.Add(Ui.AsyncButton("选择图片 / 拖放到此处", PickImage, true));
@@ -302,7 +303,7 @@ public sealed class ImagePage : Grid
             source = bytes; encodedSource = project.SourceImage; decoded = image; title = project.Document.Title;
             if (bytes is not null) await RefreshThumbnail();
             else { thumbnail.Source = null; sourceInfo.Text = "PNG · JPEG · BMP · GIF · TIFF"; }
-            if (version == loadVersion) await result.SetDocument(project.Document);
+            if (version == loadVersion) await result.LoadDocument(project);
         }
         finally { suspend = false; }
     }

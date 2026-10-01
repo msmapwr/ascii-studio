@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][int]$AppPid,[ValidateSet('zoom','conversion','crypto','assist','ansi','generator')][string]$Module='zoom')
+param([Parameter(Mandatory)][int]$AppPid,[ValidateSet('zoom','conversion','crypto','assist','ansi','generator','history')][string]$Module='zoom')
 $ErrorActionPreference='Stop'
 $env:Path=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User')
 $taskHwnd=(& winapp ui list-windows -a $AppPid --json|ConvertFrom-Json|Where-Object ownerHwnd -eq 0|Select-Object -First 1).hwnd
@@ -25,6 +25,46 @@ function Select-Choice([string]$Selector,[string]$Value){
  UI invoke $Selector --action collapse|Out-Null
 }
 switch($Module){
+ 'history'{
+  Check 'Manual edits undo redo and divergent changes' {
+   UI invoke NavGenerator;UI set-value Field_边框内容 'history source';UI invoke GeneratorGenerate
+   UI wait-for ResultEditor --contains --value 'history source' -t 4000
+   Start-Sleep -Milliseconds 600
+   UI set-value ResultEditor 'edited history';Start-Sleep -Milliseconds 600
+   UI invoke ResultUndo;UI wait-for ResultEditor --contains --value 'history source' -t 4000
+   UI invoke ResultRedo;UI wait-for ResultEditor --value 'edited history' -t 4000
+   UI invoke ResultUndo;UI set-value ResultEditor 'divergent history';Start-Sleep -Milliseconds 600
+   UI wait-for ResultRedo -p IsEnabled --value False -t 2000
+  }
+  Check 'Generated candidate protects edits and undo restores source' {
+   UI set-value Field_边框内容 'new source';UI invoke GeneratorGenerate
+   UI wait-for ResultProtection -p IsOffscreen --value False -t 4000
+   UI wait-for ResultEditor --value 'divergent history' -t 2000
+   UI invoke ResultAcceptCandidate;UI wait-for ResultEditor --contains --value 'new source' -t 4000
+   UI invoke ResultUndo;UI wait-for ResultEditor --value 'divergent history' -t 4000
+   UI wait-for Field_边框内容 --value 'history source' -t 2000
+   UI invoke ResultRedo;UI wait-for ResultEditor --contains --value 'new source' -t 4000
+   Start-Sleep -Milliseconds 1400
+   $taskProject=Get-Content (Join-Path $PSScriptRoot '../artifacts/enhancement-test-data/recovery.asciiproj') -Raw|ConvertFrom-Json
+   if($taskProject.SourceText -ne 'new source'){throw 'History restored stale source'}
+   if(-not (Get-ChildItem (Join-Path $PSScriptRoot '../artifacts/enhancement-test-data/recovery') -Filter '*.asciiproj')){throw 'Independent recovery file missing'}
+  }
+  Check 'Recovered manual edits remain protected and retain original preview' {
+   UI set-value ResultEditor 'protected after reopen';Start-Sleep -Milliseconds 1400
+   UI invoke NavHome;UI invoke Button_恢复最近一次结果
+   UI wait-for ResultEditor --value 'protected after reopen' -t 4000
+   UI invoke GeneratorGenerate;UI wait-for ResultAcceptCandidate -t 4000
+   UI wait-for ResultEditor --value 'protected after reopen' -t 2000
+   UI invoke ResultAcceptCandidate;UI wait-for ResultEditor --contains --value 'new source' -t 4000
+   UI invoke NavAnsi;UI invoke Button_载入彩色示例;UI wait-for AnsiStatus --contains --value '80 × 6' -t 4000
+   UI invoke DisplaySettings;UI invoke ResultImagePreview --action toggle-off
+   UI invoke NavGenerator;UI invoke NavAnsi
+   UI set-value ResultEditor 'color edit';Start-Sleep -Milliseconds 600;UI invoke ResultUndo
+   Start-Sleep -Milliseconds 1400
+   $taskColor=Get-Content (Join-Path $PSScriptRoot '../artifacts/enhancement-test-data/recovery.asciiproj') -Raw|ConvertFrom-Json
+   if($taskColor.Document.BackgroundColors[80] -ne 4278190250 -or $taskColor.Document.Colors.Count -ne 480){throw 'Undo lost ANSI colors'}
+  }
+ }
  'generator'{
   Check 'Generator source and edited result recover independently' {
    UI invoke NavGenerator;UI set-value Field_边框内容 'project source';UI invoke GeneratorGenerate
@@ -37,7 +77,8 @@ switch($Module){
    UI wait-for GeneratorStatus --contains --value '项目已恢复' -t 5000
    Start-Sleep -Milliseconds 400
    UI wait-for ResultEditor --value 'manually edited result' -t 2000
-   UI invoke GeneratorGenerate;UI wait-for ResultEditor --contains --value 'project source' -t 4000
+   UI invoke GeneratorGenerate;UI wait-for ResultAcceptCandidate -t 4000;UI invoke ResultAcceptCandidate
+   UI wait-for ResultEditor --contains --value 'project source' -t 4000
   }
   Check 'Generator automatic conversion and reset follow preferences' {
    UI invoke SettingsItem;UI invoke SettingsAutoConvert --action toggle-on

@@ -29,6 +29,7 @@ public sealed class AnsiPage : Grid
 
     public AnsiPage()
     {
+        result.RestoreProject = LoadProject;
         var panel = Ui.Stack();
         panel.Children.Add(Ui.AsyncButton("打开 ANSI 文件", Pick, true)); panel.Children.Add(Ui.AsyncButton("粘贴原文", Paste)); panel.Children.Add(Ui.AsyncButton("载入彩色示例", Sample));
         panel.Children.Add(Ui.Field("ANSI 原文", input)); AutomationProperties.SetAutomationId(input, "AnsiInput");
@@ -142,6 +143,6 @@ public sealed class AnsiPage : Grid
         }
         finally { applying = false; }
         parsedText = sourceText; parsedBytes = sourceBytes; parsedEncoding = EncodingName; parsedColumns = (int)columns.Value; parsedIce = ice.IsOn;
-        result.ShowColorPreview(true); await result.SetDocument(project.Document); info.Text = "项目已恢复，点击“查看”可用原文重新解析。";
+        result.ShowColorPreview(true); await result.LoadDocument(project); info.Text = "项目已恢复，点击“查看”可用原文重新解析。";
     }
 }

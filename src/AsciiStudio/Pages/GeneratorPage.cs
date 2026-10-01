@@ -23,6 +23,7 @@ public sealed class GeneratorPage : Grid
 
     public GeneratorPage()
     {
+        result.RestoreProject = LoadProject;
         var p = Ui.Stack(); p.Children.Add(Ui.Field("生成器", kind));
         p.Children.Add(Ui.Field("边框内容", text));
         var generate = Ui.AsyncButton("生成", Generate, true);
@@ -125,7 +126,7 @@ public sealed class GeneratorPage : Grid
     {
         var recipe = GeneratorRecipe.FromParameters(project.Parameters, project.SourceText);
         version++; saved = recipe; Apply(recipe);
-        await result.SetDocument(project.Document);
+        await result.LoadDocument(project);
         status.Text = "项目已恢复，点击“生成”可用原参数重新生成。";
     }
 }

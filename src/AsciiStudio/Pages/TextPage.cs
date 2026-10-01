@@ -34,6 +34,7 @@ public sealed class TextPage : Grid
     private readonly PropertyInfo[] fonts = typeof(FiggleFonts).GetProperties(BindingFlags.Public | BindingFlags.Static).Where(p => p.PropertyType == typeof(FiggleFont)).OrderBy(p => p.Name).ToArray();
     public TextPage()
     {
+        result.RestoreProject = LoadProject;
         selectedFontIndex = Math.Max(0, Array.FindIndex(fonts, p => p.Name == "Standard"));
         figFont = new AutoSuggestBox { Text = fonts[selectedFontIndex].Name, PlaceholderText = "搜索字体", QueryIcon = new SymbolIcon(Symbol.Find), MaxSuggestionListHeight = 260 };
         figFont.TextChanged += (_, _) =>
@@ -165,7 +166,7 @@ public sealed class TextPage : Grid
             if (p.TryGetValue("replacement", out var r)) replacement.Text = r.Length <= 1 ? r : "";
         }
         result.SetReadablePreview(mode.SelectedIndex == 1);
-        await result.SetDocument(project.Document);
+        await result.LoadDocument(project);
     }
     private static string StyleCharacters(int style) => style switch { 1 => " .#", 2 => " ·●", 3 => " ░▒▓█", 4 => " .:-=+*#%@", _ => " @" };
 }

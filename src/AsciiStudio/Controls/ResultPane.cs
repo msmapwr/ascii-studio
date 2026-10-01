@@ -36,6 +36,17 @@ public sealed class ResultPane : Grid
     private double readableScale = 1;
     private double previewWidth, previewHeight;
     private readonly FontPicker characterFont = new("ResultFont", true);
+    private readonly BoundedHistory<CreationSnapshot> history = new(snapshot => snapshot.EstimateBytes());
+    private readonly SemaphoreSlim historyGate = new(1, 1);
+    private readonly AppBarButton undoButton, redoButton;
+    private readonly InfoBar protection = new() { Title = "结果已手工编辑", IsClosable = false, Severity = InfoBarSeverity.Informational };
+    private CreationSnapshot? candidate;
+    private bool restoring;
+    private long lastEdit;
+    private string? editGroup;
+    private readonly string recoveryId = Guid.NewGuid().ToString("N");
+    public Func<StudioProject, Task>? RestoreProject { get; set; }
+    private readonly TextBox generatedPreview = new() { IsReadOnly = true, AcceptsReturn = true, Height = 240, TextWrapping = TextWrapping.NoWrap };
     public string CharacterFontFamily => characterFont.SelectedFont;
     public event Action<string>? CharacterFontChanged;
     public AsciiDocument? Document { get; private set; }
@@ -51,6 +62,23 @@ public sealed class ResultPane : Grid
         AddAction("复制", Symbol.Copy, "Button_复制", () => { if (Document is not null) { var package = new DataPackage(); package.SetText(Document.Text); Clipboard.SetContent(package); App.Window.Message("已复制到剪贴板"); } return Task.CompletedTask; });
         AddAction("保存项目", Symbol.Save, "Button_保存项目", SaveProject);
         AddAction("导出", Symbol.Download, "Button_导出", Export);
+        undoButton = AddAction("撤销", Symbol.Undo, "ResultUndo", () => RestoreHistory(false));
+        redoButton = AddAction("重做", Symbol.Redo, "ResultRedo", () => RestoreHistory(true));
+        undoButton.IsEnabled = redoButton.IsEnabled = false;
+        var undoKey = new Microsoft.UI.Xaml.Input.KeyboardAccelerator { Key = Windows.System.VirtualKey.Z, Modifiers = Windows.System.VirtualKeyModifiers.Control };
+        undoKey.Invoked += async (_, args) => { args.Handled = true; await App.Window.Guard(() => RestoreHistory(false)); };
+        var redoKey = new Microsoft.UI.Xaml.Input.KeyboardAccelerator { Key = Windows.System.VirtualKey.Y, Modifiers = Windows.System.VirtualKeyModifiers.Control };
+        redoKey.Invoked += async (_, args) => { args.Handled = true; await App.Window.Guard(() => RestoreHistory(true)); };
+        KeyboardAccelerators.Add(undoKey); KeyboardAccelerators.Add(redoKey);
+        var protectionActions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var accept = Ui.AsyncButton("更新当前结果", AcceptCandidate);
+        var version = Ui.AsyncButton("生成新版本", SaveCandidate);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(accept, "ResultAcceptCandidate");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(version, "ResultSaveCandidate");
+        protectionActions.Children.Add(accept); protectionActions.Children.Add(version);
+        protectionActions.Children.Add(Ui.Button("保留当前结果", () => { candidate = null; protection.IsOpen = false; }));
+        protection.Content = protectionActions;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(protection, "ResultProtection");
         var exportSettings = Ui.Stack();
         exportSettings.Width = 300;
         exportSettings.Children.Add(Ui.Field("导出格式", format));
@@ -64,7 +92,10 @@ public sealed class ResultPane : Grid
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(colorToggle, "ResultImagePreview");
         AddSettings("显示", displaySettings, "DisplaySettings");
         AddCommentSettings();
-        Children.Add(toolbar);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(generatedPreview, "GeneratedPreview");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(generatedPreview, "生成时的原始结果");
+        AddSettings("原始结果", generatedPreview, "GeneratedSettings");
+        var commands = Ui.Stack(8); commands.Children.Add(toolbar); commands.Children.Add(protection); Children.Add(commands);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportScale, "ExportScale");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(exportScale, "图片导出倍率");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportDimensions, "ExportDimensions");
@@ -73,7 +104,7 @@ public sealed class ResultPane : Grid
         characterFont.Changed += async family =>
         {
             editor.FontFamily = new FontFamily(family);
-            if (Document is not null) { var metrics = FontCatalog.Measure(family); Document = Document with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height }; UpdateDimensions(); recoveryTimer.Stop(); recoveryTimer.Start(); }
+            if (Document is not null && !updating) { var metrics = FontCatalog.Measure(family); Document = Document with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height }; RecordEdit("font", false); UpdateDimensions(); recoveryTimer.Stop(); recoveryTimer.Start(); }
             CharacterFontChanged?.Invoke(family);
             if (colorToggle.IsOn) await App.Window.Guard(RenderPreview);
         };
@@ -85,7 +116,7 @@ public sealed class ResultPane : Grid
         {
             var text = editor.Text.Replace("\r\n", "\n").Replace('\r', '\n');
             if (updating || text == Document?.Text || (Document is null && text.Length == 0)) return;
-            try { var metrics = FontCatalog.Measure(CharacterFontFamily); Document = AsciiDocument.FromText(text, Document?.Title ?? "Untitled") with { FontFamily = CharacterFontFamily, CellWidth = metrics.Width, CellHeight = metrics.Height }; WorkspaceService.CurrentArt = Document; UpdateStats("已编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
+            try { var metrics = FontCatalog.Measure(CharacterFontFamily); Document = AsciiDocument.FromText(text, Document?.Title ?? "Untitled") with { FontFamily = CharacterFontFamily, CellWidth = metrics.Width, CellHeight = metrics.Height }; RecordEdit("text", true); WorkspaceService.CurrentArt = Document; UpdateStats("已手工编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
             catch (ArgumentException ex) { updating = true; editor.Text = Document?.Text ?? ""; updating = false; App.Window.Message(ex.Message, true); }
         };
         var canvas = new Grid(); canvas.Children.Add(editor);
@@ -218,19 +249,136 @@ public sealed class ResultPane : Grid
         toolbar.PrimaryCommands.Add(button);
     }
 
-    private void AddAction(string label, Symbol icon, string automationId, Func<Task> action)
+    private AppBarButton AddAction(string label, Symbol icon, string automationId, Func<Task> action)
     {
         var button = new AppBarButton { Label = label, Icon = new SymbolIcon(icon) };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, automationId);
-        button.Click += async (_, _) => { button.IsEnabled = false; try { await App.Window.Guard(action); } finally { button.IsEnabled = true; } };
+        button.Click += async (_, _) => { button.IsEnabled = false; try { await App.Window.Guard(action); } finally { button.IsEnabled = true; UpdateHistoryButtons(); } };
         toolbar.PrimaryCommands.Add(button);
+        return button;
     }
 
-    public async Task SetDocument(AsciiDocument document, string suffix = "")
+    public async Task SetDocument(AsciiDocument document, string suffix = "", bool preserveEdits = true)
     {
-        document.Validate(); Document = document; WorkspaceService.CurrentArt = document; characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily); updating = true; editor.Text = document.Text; updating = false;
+        document.Validate();
+        if (!restoring)
+        {
+            var project = !preserveEdits && history.HasCurrent ? history.Current.Project with { Document = document } : ProjectFactory?.Invoke(document) ?? new StudioProject(1, document, null, null, null, "snapshot");
+            var next = CreationSnapshot.Capture(project, !preserveEdits, !preserveEdits && history.HasCurrent ? history.Current.Generated : document);
+            if (preserveEdits && history.HasCurrent && history.Current.Edited)
+            {
+                candidate = next; protection.Message = "新结果已准备好。可更新当前结果并保留撤销，或保存为独立版本。"; protection.IsOpen = true;
+                return;
+            }
+            history.Push(next); editGroup = null; candidate = null; protection.IsOpen = false;
+        }
+        var scroll = colorToggle.IsOn ? imageScroll : Ui.FindDescendant<ScrollViewer>(editor);
+        var offsetX = scroll?.HorizontalOffset ?? 0; var offsetY = scroll?.VerticalOffset ?? 0;
+        var selection = editor.SelectionStart; var selectionLength = editor.SelectionLength;
+        Document = document; WorkspaceService.CurrentArt = document; updating = true;
+        try { characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily); editor.Text = document.Text; }
+        finally { updating = false; }
         UpdateStats(suffix); if (colorToggle.IsOn) await RenderPreview();
-        recoveryTimer.Stop(); recoveryTimer.Start();
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!ReferenceEquals(Document, document)) return;
+            editor.Select(Math.Min(selection, editor.Text.Length), Math.Min(selectionLength, Math.Max(0, editor.Text.Length - selection)));
+            scroll?.ChangeView(offsetX, offsetY, null, true);
+        });
+        UpdateHistoryButtons(); recoveryTimer.Stop(); if (!restoring) recoveryTimer.Start();
+    }
+    private void UpdateHistoryButtons()
+    {
+        if (undoButton is null || redoButton is null) return;
+        undoButton.IsEnabled = history.CanUndo && !restoring; redoButton.IsEnabled = history.CanRedo && !restoring;
+        if (history.HasCurrent && history.Current.Generated is { } original)
+        {
+            generatedPreview.Text = original.Text; generatedPreview.FontFamily = new FontFamily(original.FontFamily);
+        }
+    }
+
+    private StudioProject CurrentProject()
+    {
+        if (Document is null) throw new InvalidOperationException("尚无结果。");
+        return history.HasCurrent ? history.Current.Project with { Document = Document } : ProjectFactory?.Invoke(Document) ?? new(1, Document, null, null, null, "snapshot");
+    }
+
+    public async Task LoadDocument(StudioProject project)
+    {
+        if (restoring) { await SetDocument(project.Document); return; }
+        var snapshot = CreationSnapshot.Capture(project, project.Edited, project.GeneratedDocument ?? project.Document);
+        restoring = true;
+        try { await SetDocument(project.Document); }
+        finally { restoring = false; }
+        history.Push(snapshot); candidate = null; protection.IsOpen = false; editGroup = null; UpdateHistoryButtons(); recoveryTimer.Stop(); recoveryTimer.Start();
+        if (snapshot.Edited) UpdateStats("已恢复手工编辑");
+    }
+
+    private void RecordEdit(string group, bool edited)
+    {
+        if (restoring || Document is null) return;
+        if (!history.HasCurrent) history.Push(CreationSnapshot.Capture(new(1, AsciiDocument.FromText(""), null, null, null, "snapshot"), false, null));
+        var previous = history.Current;
+        WorkspaceService.CurrentArt = Document;
+        var next = CreationSnapshot.Capture(previous.Project with { Document = Document }, edited || previous.Edited, previous.Generated);
+        var now = Environment.TickCount64;
+        history.Push(next, editGroup == group && now - lastEdit < 500);
+        editGroup = group; lastEdit = now; UpdateHistoryButtons();
+    }
+
+    private async Task RestoreHistory(bool redo)
+    {
+        await historyGate.WaitAsync();
+        try
+        {
+            if (redo ? !history.CanRedo : !history.CanUndo) return;
+            var previous = history.Current; var target = redo ? history.PeekRedo() : history.PeekUndo();
+            restoring = true; editor.IsReadOnly = true; UpdateHistoryButtons();
+            try
+            {
+                if (RestoreProject is not null && target.Project.Mode != "snapshot") await RestoreProject(target.Project);
+                else await SetDocument(target.Project.Document);
+                if (redo) history.Redo(); else history.Undo();
+                candidate = null; protection.IsOpen = false; editGroup = null;
+                UpdateStats(target.Edited ? "已手工编辑" : redo ? "已重做" : "已撤销");
+            }
+            catch
+            {
+                if (RestoreProject is not null && previous.Project.Mode != "snapshot") await RestoreProject(previous.Project);
+                else await SetDocument(previous.Project.Document);
+                throw;
+            }
+            finally { restoring = false; editor.IsReadOnly = false; UpdateHistoryButtons(); recoveryTimer.Stop(); recoveryTimer.Start(); }
+        }
+        finally { historyGate.Release(); }
+    }
+
+    private async Task AcceptCandidate()
+    {
+        var next = candidate ?? throw new ArgumentException("没有等待应用的新结果。");
+        await historyGate.WaitAsync();
+        try
+        {
+            restoring = true;
+            try
+            {
+                if (RestoreProject is not null) await RestoreProject(next.Project);
+                else await SetDocument(next.Project.Document);
+                history.Push(next); editGroup = null; candidate = null; protection.IsOpen = false; UpdateStats("已更新 · 可撤销");
+            }
+            finally { restoring = false; UpdateHistoryButtons(); recoveryTimer.Stop(); recoveryTimer.Start(); }
+        }
+        finally { historyGate.Release(); }
+    }
+
+    private async Task SaveCandidate()
+    {
+        var next = candidate ?? throw new ArgumentException("没有等待保存的新结果。");
+        var picker = new FileSavePicker { SuggestedFileName = SafeName(next.Project.Document.Title) + "-version", SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
+        picker.FileTypeChoices.Add("AsciiStudio 项目", [".asciiproj"]); App.Window.InitializePicker(picker);
+        var file = await picker.PickSaveFileAsync(); if (file is null) return;
+        await WorkspaceService.SaveProject(file.Path, next.Project);
+        App.Window.Message("新版本已保存；当前手工编辑结果仍保留。可从作品库打开新版本。");
     }
     private void AddCommentSettings()
     {
@@ -262,23 +410,24 @@ public sealed class ResultPane : Grid
             var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "用注释替换结果？", Content = "本次原文可通过“恢复注释前原文”恢复。", PrimaryButtonText = "替换", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close };
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
             var next = AsciiDocument.FromText(prepared!, original!.Title) with { FontFamily = original.FontFamily, CellWidth = original.CellWidth, CellHeight = original.CellHeight };
-            await SetDocument(next, "已套注释"); wrapped = Document;
+            await SetDocument(next, "已套注释", preserveEdits: false); wrapped = Document;
         }));
         content.Children.Add(Ui.AsyncButton("恢复注释前原文", async () =>
         {
             if (original is null || Document != wrapped) throw new ArgumentException("当前结果没有可恢复的注释原文。");
-            await SetDocument(original); wrapped = null; Invalidate();
+            await SetDocument(original, preserveEdits: false); wrapped = null; Invalidate();
         }));
         AddSettings("注释", content, "CommentSettings");
     }
 
     private async Task SaveRecovery()
     {
-        if (Document is null) return;
-        var snapshot = ProjectFactory?.Invoke(Document) ?? new StudioProject(1, Document, null, null, null, "snapshot");
+        if (Document is null || restoring) return;
+        var snapshot = CurrentProject();
         var bytes = await Task.Run(() => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(snapshot));
         if (bytes.Length > 100_000_000) throw new InvalidDataException("恢复项目超过 100MB，请降低字符画尺寸或输入图片大小。");
         await WorkspaceService.AtomicWrite(Path.Combine(WorkspaceService.DataDirectory, "recovery.asciiproj"), bytes);
+        await WorkspaceService.AtomicWrite(Path.Combine(WorkspaceService.DataDirectory, "recovery", recoveryId + ".asciiproj"), bytes);
     }
 
     private void UpdateStats(string suffix = "")
@@ -324,7 +473,7 @@ public sealed class ResultPane : Grid
         var picker = new FileSavePicker { SuggestedFileName = SafeName(Document.Title), SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
         picker.FileTypeChoices.Add("AsciiStudio 项目", [".asciiproj"]); App.Window.InitializePicker(picker);
         var file = await picker.PickSaveFileAsync(); if (file is null) return;
-        await WorkspaceService.SaveProject(file.Path, ProjectFactory?.Invoke(Document) ?? new(1, Document, null, null, null, "snapshot"));
+        await WorkspaceService.SaveProject(file.Path, CurrentProject());
         App.Window.Message("项目已保存，包含当前字符画和可用的输入素材。");
     }
 

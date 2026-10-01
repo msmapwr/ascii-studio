@@ -146,7 +146,7 @@ public static class Ui
     public static void ApplyTypeface(DependencyObject root)
     {
         var settings = WorkspaceService.Settings;
-        if (Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(root) is "ResultEditor" or "CommentPreview" or "CryptoOutput" or "AnsiInput") return;
+        if (Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(root) is "ResultEditor" or "CommentPreview" or "GeneratedPreview" or "CryptoOutput" or "AnsiInput") return;
         if (root is Control control)
         {
             control.FontFamily = new FontFamily(settings.UiFontFamily); control.FontSize = settings.UiFontSize;
