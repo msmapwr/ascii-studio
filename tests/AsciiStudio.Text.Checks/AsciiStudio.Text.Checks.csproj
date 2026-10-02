@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/AsciiStudio.Core/AsciiStudio.Core.csproj" />
+    <PackageReference Include="Figgle" Version="0.6.6" />
+    <PackageReference Include="Figgle.Fonts" Version="0.6.6" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+    <Compile Include="../../src/AsciiStudio/Services/TextFontLibrary.cs" Link="TextFontLibrary.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/TextRasterService.cs" Link="TextRasterService.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/FontCatalog.cs" Link="FontCatalog.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/WorkspaceService.cs" Link="WorkspaceService.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/ImagingService.cs" Link="ImagingService.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/GlyphPainter.cs" Link="GlyphPainter.cs" />
+  </ItemGroup>
+</Project>

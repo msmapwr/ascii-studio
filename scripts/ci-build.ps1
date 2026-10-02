@@ -22,6 +22,8 @@ try {
     if ($LASTEXITCODE) { throw 'Release compilation failed.' }
     & dotnet run --project 'tests/AsciiStudio.Core.Checks/AsciiStudio.Core.Checks.csproj' -c Release
     if ($LASTEXITCODE) { throw 'Core checks failed.' }
+    & dotnet run --project 'tests/AsciiStudio.Text.Checks/AsciiStudio.Text.Checks.csproj' -c Release
+    if ($LASTEXITCODE) { throw 'Windows text checks failed.' }
 
     foreach ($taskRequired in @('AsciiStudio.exe', 'AsciiStudio.dll', 'Microsoft.UI.Xaml.dll', 'Assets/AsciiStudio.ico')) {
         if (!(Test-Path -LiteralPath (Join-Path 'artifacts/publish' $taskRequired))) { throw "Missing publish payload: $taskRequired" }
