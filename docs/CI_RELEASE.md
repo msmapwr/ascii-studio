@@ -42,4 +42,8 @@ $releaseVersion = ([xml](Get-Content ./src/AsciiStudio/AsciiStudio.csproj -Raw))
 
 这仅执行构建、检查和 ZIP 生成，不启动程序，也不发布 GitHub Release。日常 WinUI 开发继续使用 BuildAndRun.ps1 注入分析器。
 
+核心检查现在使用 `dotnet test tests/AsciiStudio.Core.Tests/AsciiStudio.Core.Tests.csproj -c Release --logger trx`。
+GitHub Actions 无论构建成功或失败都尝试上传 `artifacts/test-results/*.trx`。
+Windows 字体专项暂保留控制台检查，PowerShell UI 脚本在真实桌面执行；测试职责见[架构](ARCHITECTURE.md)。
+
 构建完成后运行 `./scripts/ci-checks.ps1`，用本地替身检查 Draft 发布顺序、重跑、上传失败和校验和错误，不调用真正的发布 API。
