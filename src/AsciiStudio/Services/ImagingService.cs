@@ -9,7 +9,7 @@ namespace AsciiStudio.Services;
 
 public static class ImagingService
 {
-    public static byte[] Thumbnail(byte[] rgba, int width, int height)
+    public static byte[] Thumbnail(byte[] rgba, int width, int height, int maximumSide = 300)
     {
         using var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
         var locked = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
@@ -27,7 +27,8 @@ public static class ImagingService
             }
         }
         finally { bitmap.UnlockBits(locked); }
-        var scale = Math.Min(1d, 300d / Math.Max(width, height));
+        if (maximumSide is < 1 or > 2400) throw new ArgumentException("预览图像尺寸无效。");
+        var scale = Math.Min(1d, maximumSide / (double)Math.Max(width, height));
         using var preview = new Bitmap(Math.Max(1, (int)(width * scale)), Math.Max(1, (int)(height * scale)), PixelFormat.Format32bppArgb);
         using (var graphics = Graphics.FromImage(preview))
         {

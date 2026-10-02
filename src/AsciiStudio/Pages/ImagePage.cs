@@ -40,6 +40,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     private (byte[] Pixels, int Width, int Height) cachedTransform;
     private byte[]? source;
     private string? encodedSource;
+    private byte[]? comparisonOriginal;
     private ConversionOptions lastOptions = new();
     private int loadVersion;
     private int thumbnailVersion;
@@ -240,7 +241,8 @@ public sealed class ImagePage : Grid, IProjectSessionPage
         if (bytes.Length > 40_000_000) throw new InvalidDataException("输入文件超过 40MB，请先压缩图片。");
         pending?.Cancel(); thumbnailVersion++; var version = ++loadVersion;
         var image = await Task.Run(() => ImagingService.Decode(bytes)); var encoded = await Task.Run(() => Convert.ToBase64String(bytes));
-        if (version != loadVersion) return; source = bytes; encodedSource = encoded; decoded = image; title = name;
+        var originalPreview = await Task.Run(() => ImagingService.Thumbnail(image.pixels, image.width, image.height, 2400));
+        if (version != loadVersion) return; source = bytes; encodedSource = encoded; decoded = image; title = name; comparisonOriginal = originalPreview;
         geometry.Load(); geometry.SourceAvailable = true;
         await RefreshThumbnail(); if (version != loadVersion) return;
         await ConvertAsync();
@@ -249,7 +251,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     {
         if (source is null) return;
         var version = ++thumbnailVersion; var pixels = decoded; var transform = geometry.Current; var name = title;
-        (byte[] bytes, int Width, int Height) preview;
+        (byte[] bytes, byte[] Comparison, int Width, int Height) preview;
         await thumbnailGate.WaitAsync();
         try
         {
@@ -257,7 +259,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
             preview = await Task.Run(() =>
             {
                 var image = Transformed(pixels, transform);
-                return (bytes: ImagingService.Thumbnail(image.Pixels, image.Width, image.Height), image.Width, image.Height);
+                return (bytes: ImagingService.Thumbnail(image.Pixels, image.Width, image.Height), Comparison: ImagingService.Thumbnail(image.Pixels, image.Width, image.Height, 2400), image.Width, image.Height);
             });
         }
         finally { thumbnailGate.Release(); }
@@ -268,6 +270,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
         var bitmap = new BitmapImage(); await bitmap.SetSourceAsync(stream);
         if (version != thumbnailVersion) return;
         thumbnail.Source = bitmap; sourceInfo.Text = $"{name} · {preview.Width} × {preview.Height} px";
+        await result.SetComparisonSources(comparisonOriginal, preview.Comparison);
     }
     private async Task LoadBitmapReference(RandomAccessStreamReference reference)
     {
@@ -309,8 +312,9 @@ public sealed class ImagePage : Grid, IProjectSessionPage
             if (project.Parameters is { } presetParameters && presetParameters.TryGetValue("resolution", out var preset) && int.TryParse(preset, out var pi) && pi is >= 0 and <= 5) resolution.SelectedIndex = pi;
             geometry.Load(project.Geometry); geometry.SourceAvailable = bytes is not null;
             source = bytes; encodedSource = project.SourceImage; decoded = image; title = project.Document.Title;
+            comparisonOriginal = bytes is null ? null : await Task.Run(() => ImagingService.Thumbnail(image.pixels!, image.width, image.height, 2400));
             if (bytes is not null) await RefreshThumbnail();
-            else { thumbnail.Source = null; sourceInfo.Text = "PNG · JPEG · BMP · GIF · TIFF"; }
+            else { thumbnail.Source = null; sourceInfo.Text = "PNG · JPEG · BMP · GIF · TIFF"; await result.SetComparisonSources(null, null); }
             if (version == loadVersion) await result.LoadDocument(project);
         }
         finally { suspend = false; }

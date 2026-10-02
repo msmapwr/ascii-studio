@@ -18,8 +18,20 @@ public sealed class ResultPane : Grid
     private static readonly TimeSpan GeneratedMergeWindow = TimeSpan.FromMilliseconds(900);
     private readonly TextBox editor;
     private readonly TextBlock stats;
-    private readonly Image preview = new() { Stretch = Stretch.None, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
-    private readonly ScrollViewer imageScroll;
+    private readonly ViewportPreview viewport = new() { Visibility = Visibility.Collapsed };
+    private ScrollViewer imageScroll => viewport.Scroll;
+    private readonly Grid editorHost = new();
+    private readonly StackPanel pagingBar = new() { Orientation = Orientation.Horizontal, Spacing = 8, Visibility = Visibility.Collapsed };
+    private readonly TextBlock pageLabel = Ui.Text("", 12);
+    private readonly NumberBox rowJump = new() { Minimum = 1, Maximum = 1, Value = 1, Width = 88, Header = "跳到行" };
+    private readonly ComboBox comparisonMode = Ui.Choice(["结果", "原图", "并排", "分界线"]);
+    private readonly ComboBox comparisonSource = Ui.Choice(["裁剪/方向后", "原始图片"]);
+    private readonly CheckBox comparisonSync = new() { Content = "同步缩放和相对滚动位置", IsChecked = true };
+    private DocumentViewIndex? viewIndex;
+    private int editorPage, editorVersion, documentVersion;
+    private Task editorUpdateTask = Task.CompletedTask;
+    private int fitMode;
+    private bool loadingEditorPage;
     private readonly ToggleSwitch colorToggle = new() { Header = "图像预览", IsOn = false };
     private readonly ComboBox format = Ui.Choice(["TXT", "PNG", "JPEG", "GIF", "HTML", "SVG", "ANSI", "JSON", "Markdown"]);
     private readonly NumberBox fontSize = new NumberBox() { Minimum = 8, Maximum = 30, Value = 13, Width = 90, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
@@ -27,7 +39,6 @@ public sealed class ResultPane : Grid
     private readonly TextBlock exportDimensions = Ui.Text("生成后显示图片分辨率", 12, true);
     private readonly CommandBar toolbar = new() { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, IsDynamicOverflowEnabled = true };
     private bool updating;
-    private int renderVersion;
     private XamlRoot? previewRoot;
     private int previewDensity = 1;
     private StudioSettings? appliedSettings;
@@ -36,7 +47,6 @@ public sealed class ResultPane : Grid
     private readonly TextBlock zoomLabel = Ui.Text("100%", 12);
     private double zoom = 1;
     private double readableScale = 1;
-    private double previewWidth, previewHeight;
     private readonly FontPicker characterFont = new("ResultFont", true);
     private readonly BoundedHistory<CreationSnapshot> history = new(snapshot => snapshot.EstimateBytes());
     private readonly SemaphoreSlim historyGate = new(1, 1);
@@ -90,7 +100,7 @@ public sealed class ResultPane : Grid
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = new GridLength(1, GridUnitType.Star) });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
-        AddAction("复制", Symbol.Copy, "Button_复制", () => { if (Document is not null) { var package = new DataPackage(); package.SetText(Document.Text); Clipboard.SetContent(package); App.Window.Message("已复制到剪贴板"); } return Task.CompletedTask; });
+        AddAction("复制", Symbol.Copy, "Button_复制", async () => { await FlushEditor(); if (Document is not null) { var package = new DataPackage(); package.SetText(Document.Text); Clipboard.SetContent(package); App.Window.Message("已复制到剪贴板"); } });
         AddAction("保存项目", Symbol.Save, "Button_保存项目", async () => await SaveProjectAsync());
         AddAction("另存为", Symbol.Save, "ProjectSaveAs", async () => await SaveProjectAsync(true));
         AddAction("导出", Symbol.Download, "Button_导出", Export);
@@ -124,6 +134,29 @@ public sealed class ResultPane : Grid
         displaySettings.Children.Add(Ui.Text("Unicode 网格：中文与 emoji 占两列，组合字符保持完整，歧义符号占一列。图像预览与 SVG 使用固定列位；纯文本在不同终端中的字形宽度可能不同。Tab 展开为四列制表位。", 12, true));
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(colorToggle, "ResultImagePreview");
         AddSettings("显示", displaySettings, "DisplaySettings");
+        var viewSettings = Ui.Stack(); viewSettings.Width = 300;
+        viewSettings.Children.Add(Ui.Button("适应窗口", () => Fit(2)));
+        viewSettings.Children.Add(Ui.Button("适应宽度", () => Fit(1)));
+        viewSettings.Children.Add(Ui.Button("定位到选区", LocateSelection));
+        viewSettings.Children.Add(Ui.Text("超大作品使用抽样概览；手动缩放仍为 25%–400%。文字超过 20 万单元时按页编辑，保存和导出始终使用完整作品。", 12, true));
+        AddSettings("视图", viewSettings, "ViewportSettings");
+        var compareSettings = Ui.Stack(); compareSettings.Width = 300;
+        compareSettings.Children.Add(Ui.Field("对比方式", comparisonMode));
+        compareSettings.Children.Add(Ui.Field("对比图像", comparisonSource));
+        compareSettings.Children.Add(comparisonSync);
+        var splitSlider = Ui.Slider(5, 95, 50);
+        compareSettings.Children.Add(Ui.Field("分界线位置", splitSlider));
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(comparisonMode, "ComparisonMode");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(comparisonSource, "ComparisonSource");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(comparisonSync, "ComparisonSync");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(splitSlider, "ComparisonSplit");
+        comparisonMode.IsEnabled = false;
+        comparisonMode.SelectionChanged += (_, _) => { if (comparisonMode.SelectedIndex > 0) colorToggle.IsOn = true; UpdateComparisonMode(); };
+        comparisonSource.SelectionChanged += (_, _) => viewport.SelectSource(comparisonSource.SelectedIndex == 0);
+        comparisonSync.Checked += (_, _) => viewport.SetSync(true); comparisonSync.Unchecked += (_, _) => viewport.SetSync(false);
+        splitSlider.ValueChanged += (_, _) => viewport.SetSplit(splitSlider.Value / 100);
+        viewport.SplitChanged += fraction => splitSlider.Value = fraction * 100;
+        AddSettings("原图对比", compareSettings, "ComparisonSettings");
         AddCommentSettings();
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(generatedPreview, "GeneratedPreview");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(generatedPreview, "生成时的原始结果");
@@ -136,6 +169,7 @@ public sealed class ResultPane : Grid
         editor = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), FontSize = 13, Padding = new Thickness(20), PlaceholderText = "转换结果", HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
         characterFont.Changed += async family =>
         {
+            if (!updating) await FlushEditor();
             editor.FontFamily = new FontFamily(family + ", Microsoft YaHei UI, Segoe UI Emoji");
             if (Document is not null && !updating) { var metrics = FontCatalog.Measure(family); Document = Document with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height }; RecordEdit("font", false); UpdateDimensions(); recoveryTimer.Stop(); recoveryTimer.Start(); }
             CharacterFontChanged?.Invoke(family);
@@ -148,17 +182,29 @@ public sealed class ResultPane : Grid
         editor.TextChanged += (_, _) =>
         {
             var text = editor.Text.Replace("\r\n", "\n").Replace('\r', '\n');
-            if (updating || text == Document?.Text || (Document is null && text.Length == 0)) return;
-            try { var metrics = FontCatalog.Measure(CharacterFontFamily); Document = AsciiDocument.FromText(text, Document?.Title ?? "Untitled") with { FontFamily = CharacterFontFamily, CellWidth = metrics.Width, CellHeight = metrics.Height }; RecordEdit("text", true); WorkspaceService.CurrentArt = Document; UpdateStats("已手工编辑 · 颜色已重置"); recoveryTimer.Stop(); recoveryTimer.Start(); }
-            catch (ArgumentException ex) { updating = true; editor.Text = Document?.Text ?? ""; updating = false; App.Window.Message(ex.Message, true); }
+            if (updating || loadingEditorPage || text == EditorText() || (Document is null && text.Length == 0)) return;
+            editorUpdateTask = App.Window.Guard(() => ApplyEditorText(text));
         };
-        var canvas = new Grid(); canvas.Children.Add(editor);
-        imageScroll = new ScrollViewer { Content = preview, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Visibility = Visibility.Collapsed };
-        canvas.Children.Add(imageScroll); var card = Ui.Card(canvas, new Thickness(0)); Grid.SetRow(card, 1); Children.Add(card);
+        editorHost.RowDefinitions.Add(new() { Height = GridLength.Auto }); editorHost.RowDefinitions.Add(new() { Height = new GridLength(1, GridUnitType.Star) });
+        pagingBar.Children.Add(Ui.AsyncButton("上一页", async () => { await FlushEditor(); LoadEditorPage(editorPage - 1); }));
+        pagingBar.Children.Add(Ui.AsyncButton("下一页", async () => { await FlushEditor(); LoadEditorPage(editorPage + 1); }));
+        pagingBar.Children.Add(pageLabel); pagingBar.Children.Add(rowJump);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(pageLabel, "ResultPageLabel");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(rowJump, "ResultRowJump");
+        rowJump.ValueChanged += async (_, _) =>
+        {
+            if (loadingEditorPage || viewIndex is null || !double.IsFinite(rowJump.Value)) return;
+            await App.Window.Guard(async () => { await FlushEditor(); var row = Math.Clamp((int)rowJump.Value - 1, 0, Math.Max(0, viewIndex.RowStarts.Length - 1)); if (viewIndex.RowStarts.Length > 0) { LoadEditorPage(viewIndex.PageAt(viewIndex.RowStarts[row])); editor.Select(Math.Clamp(viewIndex.RowStarts[row] - viewIndex.Pages[editorPage].Start, 0, editor.Text.Length), 0); } });
+        };
+        Grid.SetRow(editor, 1); editorHost.Children.Add(pagingBar); editorHost.Children.Add(editor);
+        var canvas = new Grid(); canvas.Children.Add(editorHost); canvas.Children.Add(viewport);
+        viewport.SizeChanged += (_, _) => { UpdateComparisonMode(); if (fitMode > 0) Fit(fitMode); };
+        var card = Ui.Card(canvas, new Thickness(0)); Grid.SetRow(card, 1); Children.Add(card);
         var footer = new Grid { ColumnSpacing = 12 };
         footer.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
         stats = Ui.Text("尚未生成结果", 12, true); stats.TextTrimming = TextTrimming.CharacterEllipsis; stats.VerticalAlignment = VerticalAlignment.Center; footer.Children.Add(stats);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(stats, "ResultStats");
+        viewport.Rendered += message => { if (colorToggle.IsOn) stats.Text = $"{Document?.Width} × {Document?.Height} · {message}"; };
         footer.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         var zoomControls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
         Button ZoomButton(string text, string id, string name, Action action)
@@ -177,7 +223,7 @@ public sealed class ResultPane : Grid
         canvas.AddHandler(UIElement.PointerWheelChangedEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler(OnPreviewWheel), true);
         zoomSaveTimer.Tick += async (_, _) => { zoomSaveTimer.Stop(); var value = zoom; await App.Window.Guard(() => WorkspaceService.UpdateSettings(s => s with { PreviewZoom = value })); };
         fontSize.ValueChanged += async (_, _) => { if (double.IsFinite(fontSize.Value)) { ApplyVisualZoom(); UpdateDimensions(); if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); } };
-        colorToggle.Toggled += async (_, _) => { imageScroll.Visibility = colorToggle.IsOn ? Visibility.Visible : Visibility.Collapsed; editor.Visibility = colorToggle.IsOn ? Visibility.Collapsed : Visibility.Visible; if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); };
+        colorToggle.Toggled += async (_, _) => { viewport.Visibility = colorToggle.IsOn ? Visibility.Visible : Visibility.Collapsed; editorHost.Visibility = colorToggle.IsOn ? Visibility.Collapsed : Visibility.Visible; if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); };
         Grid.SetRow(footer, 2); Children.Add(footer);
         recoveryTimer.Tick += async (_, _) => { recoveryTimer.Stop(); await App.Window.Guard(SaveRecoveryAsync); };
         Loaded += (_, _) =>
@@ -221,30 +267,124 @@ public sealed class ResultPane : Grid
     {
         editor.FontSize = fontSize.Value * zoom * readableScale;
         zoomLabel.Text = $"{zoom * 100:0}%";
-        if (preview.Source is not null)
-        {
-            preview.Width = previewWidth * zoom * readableScale;
-            preview.Height = previewHeight * zoom * readableScale;
-        }
+        viewport.SetScale((float)fontSize.Value, zoom * readableScale);
     }
 
-    private void SetZoom(double value, Windows.Foundation.Point? pivot = null)
+    private void SetZoom(double value, Windows.Foundation.Point? pivot = null, bool automatic = false)
     {
         var scroll = colorToggle.IsOn ? imageScroll : Ui.FindDescendant<ScrollViewer>(editor);
         var previous = zoom;
         var x = scroll?.HorizontalOffset ?? 0; var y = scroll?.VerticalOffset ?? 0;
-        zoom = Math.Clamp(value, .25, 4); ApplyVisualZoom();
+        if (!automatic) fitMode = 0;
+        zoom = Math.Clamp(value, automatic ? .000001 : .25, 4); ApplyVisualZoom();
         if (scroll is not null)
         {
             var ratio = zoom / previous; var point = pivot ?? new Windows.Foundation.Point(0, 0);
             DispatcherQueue.TryEnqueue(() => { scroll.UpdateLayout(); scroll.ChangeView((x + point.X) * ratio - point.X, (y + point.Y) * ratio - point.Y, null, true); });
         }
-        zoomSaveTimer.Stop(); zoomSaveTimer.Start();
+        zoomSaveTimer.Stop(); if (!automatic) zoomSaveTimer.Start();
+    }
+
+    private string EditorText()
+    {
+        if (viewIndex is null) return Document?.Text ?? "";
+        var range = viewIndex.Pages[Math.Clamp(editorPage, 0, viewIndex.Pages.Length - 1)];
+        return viewIndex.Document.Text.Substring(range.Start, range.Length);
+    }
+    private async Task FlushEditor()
+    {
+        while (true) { var pendingEdit = editorUpdateTask; await pendingEdit; if (ReferenceEquals(pendingEdit, editorUpdateTask)) return; }
+    }
+    private async Task ApplyEditorText(string text)
+    {
+        var version = ++editorVersion; var previous = Document; var oldIndex = viewIndex; var page = editorPage;
+        var rangeStart = oldIndex?.Pages[page].Start ?? 0;
+        var caret = rangeStart + editor.SelectionStart;
+        var family = CharacterFontFamily; var metrics = FontCatalog.Measure(family);
+        MarkDirty();
+        await Task.Delay(100);
+        if (version != editorVersion) return;
+        DocumentViewIndex next;
+        try
+        {
+            next = await Task.Run(() =>
+        {
+            var complete = oldIndex?.IsPaged == true ? oldIndex.ReplacePage(page, text) : text;
+            var document = AsciiDocument.FromText(complete, previous?.Title ?? "Untitled") with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height };
+            return new DocumentViewIndex(document);
+        });
+        }
+        catch (ArgumentException)
+        {
+            if (version == editorVersion && ReferenceEquals(Document, previous)) LoadEditorPage(page);
+            throw;
+        }
+        if (version != editorVersion || !ReferenceEquals(Document, previous)) return;
+        Document = next.Document; viewIndex = next; viewport.SetDocument(next);
+        LoadEditorPage(next.PageAt(caret), caret, preserveInput: true);
+        RecordEdit("text", true); WorkspaceService.CurrentArt = Document; UpdateStats("已手工编辑 · 颜色已重置");
+        recoveryTimer.Stop(); recoveryTimer.Start();
+    }
+    private void LoadEditorPage(int page, int? selection = null, bool preserveInput = false)
+    {
+        if (viewIndex is null) return;
+        editorPage = Math.Clamp(page, 0, viewIndex.Pages.Length - 1);
+        loadingEditorPage = true; updating = true;
+        try
+        {
+            var text = EditorText();
+            var sameInput = preserveInput && TextUtilities.Normalize(editor.Text) == text;
+            if (!sameInput) editor.Text = text;
+            pagingBar.Visibility = viewIndex.IsPaged ? Visibility.Visible : Visibility.Collapsed;
+            pageLabel.Text = $"{editorPage + 1}/{viewIndex.Pages.Length}";
+            rowJump.Maximum = Math.Max(1, Document?.Height ?? 1); rowJump.Value = viewIndex.Pages[editorPage].FirstRow + 1;
+            if (!sameInput && selection is { } offset) editor.Select(Math.Clamp(offset - viewIndex.Pages[editorPage].Start, 0, editor.Text.Length), 0);
+        }
+        finally { updating = false; loadingEditorPage = false; }
+    }
+    private void Fit(int mode)
+    {
+        var viewWidth = viewport.ActualWidth > 0 ? viewport.ActualWidth : editorHost.ActualWidth;
+        var viewHeight = viewport.ActualHeight > 0 ? viewport.ActualHeight : editorHost.ActualHeight;
+        if (Document is null || viewWidth < 1) return;
+        fitMode = mode; colorToggle.IsOn = true;
+        var metrics = FontCatalog.Measure(Document.FontFamily);
+        var width = (Document.Width * metrics.Width * fontSize.Value / 13 + 40) * readableScale;
+        var height = (Document.Height * metrics.Height * fontSize.Value / 13 + 40) * readableScale;
+        var availableWidth = comparisonMode.SelectedIndex == 2 && viewWidth >= 640 ? viewWidth / 2 : viewWidth;
+        var factor = Math.Max(1, availableWidth - 24) / Math.Max(1, width);
+        if (mode == 2) factor = Math.Min(factor, Math.Max(1, viewHeight - 24) / Math.Max(1, height));
+        SetZoom(factor, automatic: true);
+        DispatcherQueue.TryEnqueue(() => viewport.Scroll.ChangeView(0, 0, null, true));
+    }
+    private void LocateSelection()
+    {
+        if (viewIndex is null || Document is null) return;
+        var offset = viewIndex.Pages[editorPage].Start + editor.SelectionStart;
+        var position = viewIndex.Position(offset); var metrics = FontCatalog.Measure(Document.FontFamily);
+        colorToggle.IsOn = true;
+        DispatcherQueue.TryEnqueue(() => viewport.Scroll.ChangeView(
+            Math.Max(0, (20 + position.Column * metrics.Width * fontSize.Value / 13) * zoom * readableScale - 20),
+            Math.Max(0, (20 + position.Row * metrics.Height * fontSize.Value / 13) * zoom * readableScale - 20), null, true));
+    }
+    private void UpdateComparisonMode()
+    {
+        var mode = comparisonMode.SelectedIndex;
+        // Narrow layouts retain the user's comparison choice and show a source/result switch.
+        viewport.SetMode(viewport.ActualWidth < 640 && mode is 2 or 3 ? 1 : mode);
+    }
+    public async Task SetComparisonSources(byte[]? original, byte[]? processed)
+    {
+        await viewport.SetSources(original, processed);
+        comparisonMode.IsEnabled = original is not null;
+        if (original is null) comparisonMode.SelectedIndex = 0;
+        viewport.SelectSource(comparisonSource.SelectedIndex == 0);
     }
 
     private void OnPreviewWheel(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
-        var scroll = colorToggle.IsOn ? imageScroll : Ui.FindDescendant<ScrollViewer>(editor);
+        if (colorToggle.IsOn && viewport.HandleIndependentSourceWheel(e)) return;
+        var scroll = colorToggle.IsOn ? viewport.ScrollAt(e.OriginalSource as DependencyObject) : Ui.FindDescendant<ScrollViewer>(editor);
         if (scroll is null) return;
         var pointer = e.GetCurrentPoint(scroll); var delta = pointer.Properties.MouseWheelDelta;
         if ((e.KeyModifiers & Windows.System.VirtualKeyModifiers.Control) != 0)
@@ -259,7 +399,7 @@ public sealed class ResultPane : Grid
 
     private async void OnPreviewRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
     {
-        if (colorToggle.IsOn && previewDensity != (int)Math.Ceiling(sender.RasterizationScale)) await App.Window.Guard(RenderPreview);
+        if (colorToggle.IsOn) await App.Window.Guard(RenderPreview);
     }
 
     public void AddSettings(string label, FrameworkElement content, string automationId)
@@ -293,7 +433,14 @@ public sealed class ResultPane : Grid
 
     public async Task SetDocument(AsciiDocument document, string suffix = "", bool preserveEdits = true)
     {
-        document.Validate();
+        var version = ++documentVersion;
+        await FlushEditor();
+        var nextIndex = await Task.Run(() => new DocumentViewIndex(document));
+        // Typing may continue while indexing a large generated document. Commit
+        // it before evaluating edit protection; a newer generation wins.
+        await FlushEditor();
+        if (version != documentVersion) return;
+        document = nextIndex.Document;
         if (!restoring)
         {
             var project = !preserveEdits && history.HasCurrent ? history.Current.Project with { Document = document } : ProjectFactory?.Invoke(document) ?? new StudioProject(1, document, null, null, null, "snapshot");
@@ -315,17 +462,22 @@ public sealed class ResultPane : Grid
         }
         var scroll = colorToggle.IsOn ? imageScroll : Ui.FindDescendant<ScrollViewer>(editor);
         var offsetX = scroll?.HorizontalOffset ?? 0; var offsetY = scroll?.VerticalOffset ?? 0;
-        var selection = editor.SelectionStart; var selectionLength = editor.SelectionLength;
+        var selection = (viewIndex?.Pages[editorPage].Start ?? 0) + editor.SelectionStart; var selectionLength = editor.SelectionLength;
         Document = document; WorkspaceService.CurrentArt = document; updating = true;
-        try { characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily + ", Microsoft YaHei UI, Segoe UI Emoji"); editor.Text = document.Text; }
+        var wasPaged = viewIndex?.IsPaged == true;
+        viewIndex = nextIndex; viewport.SetDocument(nextIndex);
+        try { characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily + ", Microsoft YaHei UI, Segoe UI Emoji"); LoadEditorPage(nextIndex.PageAt(selection), selection); }
         finally { updating = false; }
+        if (nextIndex.IsPaged && !wasPaged) colorToggle.IsOn = true;
         UpdateStats(suffix); if (colorToggle.IsOn) await RenderPreview();
+        if (fitMode > 0) Fit(fitMode);
         DocumentChanged?.Invoke(document);
         DispatcherQueue.TryEnqueue(() =>
         {
             if (!ReferenceEquals(Document, document)) return;
-            editor.Select(Math.Min(selection, editor.Text.Length), Math.Min(selectionLength, Math.Max(0, editor.Text.Length - selection)));
-            scroll?.ChangeView(offsetX, offsetY, null, true);
+            var localSelection = Math.Clamp(selection - nextIndex.Pages[editorPage].Start, 0, editor.Text.Length);
+            editor.Select(localSelection, Math.Min(selectionLength, Math.Max(0, editor.Text.Length - localSelection)));
+            if (fitMode == 0) scroll?.ChangeView(offsetX, offsetY, null, true);
         });
         UpdateHistoryButtons(); recoveryTimer.Stop(); if (!restoring) recoveryTimer.Start();
     }
@@ -335,7 +487,7 @@ public sealed class ResultPane : Grid
         undoButton.IsEnabled = history.CanUndo && !restoring; redoButton.IsEnabled = history.CanRedo && !restoring;
         if (history.HasCurrent && history.Current.Generated is { } original)
         {
-            generatedPreview.Text = original.Text; generatedPreview.FontFamily = new FontFamily(original.FontFamily + ", Microsoft YaHei UI, Segoe UI Emoji");
+            generatedPreview.Text = original.Text.Length > 64_000 ? "原始结果较大，以下为开头预览：\n" + DocumentViewIndex.Prefix(original.Text, 64_000) : original.Text; generatedPreview.FontFamily = new FontFamily(original.FontFamily + ", Microsoft YaHei UI, Segoe UI Emoji");
         }
     }
 
@@ -399,6 +551,7 @@ public sealed class ResultPane : Grid
 
     private async Task RestoreHistory(bool redo)
     {
+        await FlushEditor();
         await historyGate.WaitAsync();
         try
         {
@@ -468,17 +621,18 @@ public sealed class ResultPane : Grid
             if (Document is null) throw new ArgumentException("先生成或输入一些内容。");
             if (Document != wrapped) original = Document;
             var text = CommentTools.Wrap(original!.Text, language.SelectedItem?.ToString() ?? "C", style.SelectedIndex == 1);
-            sample.Text = text; prepared = text;
+            sample.Text = text.Length > 64000 ? DocumentViewIndex.Prefix(text, 64000) + "\n（预览节选，复制和替换使用完整内容）" : text; prepared = text;
         }
         void Invalidate() { prepared = null; sample.Text = ""; }
         language.SelectionChanged += (_, _) => Invalidate(); style.SelectionChanged += (_, _) => Invalidate();
-        content.Children.Add(Ui.AsyncButton("生成注释预览", () => { Prepare(); return Task.CompletedTask; }));
-        content.Children.Add(Ui.AsyncButton("复制注释", () =>
+        content.Children.Add(Ui.AsyncButton("生成注释预览", async () => { await FlushEditor(); Prepare(); }));
+        content.Children.Add(Ui.AsyncButton("复制注释", async () =>
         {
-            Prepare(); var package = new DataPackage(); package.SetText(prepared!); Clipboard.SetContent(package); App.Window.Message("已复制注释"); return Task.CompletedTask;
+            await FlushEditor(); Prepare(); var package = new DataPackage(); package.SetText(prepared!); Clipboard.SetContent(package); App.Window.Message("已复制注释");
         }));
         content.Children.Add(Ui.AsyncButton("替换结果", async () =>
         {
+            await FlushEditor();
             Prepare();
             var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "用注释替换结果？", Content = "本次原文可通过“恢复注释前原文”恢复。", PrimaryButtonText = "替换", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close };
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
@@ -495,6 +649,7 @@ public sealed class ResultPane : Grid
 
     public async Task SaveRecoveryAsync()
     {
+        await FlushEditor();
         await saveGate.WaitAsync();
         try
         {
@@ -522,31 +677,14 @@ public sealed class ResultPane : Grid
     private async Task RenderPreview()
     {
         if (Document is null) return;
-        var current = ++renderVersion; var document = Document; var size = (float)fontSize.Value;
-        var density = Math.Max(1, (int)Math.Ceiling(XamlRoot?.RasterizationScale ?? 1));
-        (int Width, int Height) dimensions;
-        try { dimensions = ImagingService.RenderSize(document, size, scale: density); }
-        catch (ArgumentException ex)
-        {
-            preview.Source = null; colorToggle.IsOn = false; App.Window.Message(ex.Message + " 已切换到文本视图。", true); return;
-        }
-        var bytes = await Task.Run(() => ImagingService.Render(document, size, scale: density));
-        using var stream = new InMemoryRandomAccessStream();
-        using (var writer = new DataWriter(stream.GetOutputStreamAt(0))) { writer.WriteBytes(bytes); await writer.StoreAsync(); }
-        stream.Seek(0); var source = new BitmapImage(); await source.SetSourceAsync(stream);
-        if (current == renderVersion)
-        {
-            previewDensity = density;
-            preview.Stretch = Stretch.Fill;
-            previewWidth = dimensions.Width / (double)density;
-            previewHeight = dimensions.Height / (double)density;
-            preview.Source = source;
-            ApplyVisualZoom();
-        }
+        if (!ReferenceEquals(viewIndex?.Document, Document)) { var document = Document; var next = await Task.Run(() => new DocumentViewIndex(document)); if (!ReferenceEquals(Document, document)) return; viewIndex = next; viewport.SetDocument(next); }
+        previewDensity = Math.Max(1, (int)Math.Ceiling(XamlRoot?.RasterizationScale ?? 1));
+        ApplyVisualZoom(); viewport.Refresh();
     }
 
     public async Task<bool> SaveProjectAsync(bool saveAs = false)
     {
+        await FlushEditor();
         if (Document is null && DraftFactory is null) { App.Window.Message("先生成或输入一些内容。"); return false; }
         var path = saveAs ? null : projectPath;
         if (path is null)
@@ -572,6 +710,7 @@ public sealed class ResultPane : Grid
 
     private async Task Export()
     {
+        await FlushEditor();
         if (Document is null) { App.Window.Message("先生成或输入一些内容。"); return; }
         var doc = Document; var kind = format.SelectedItem?.ToString() ?? "TXT";
         var ext = kind switch { "JPEG" => ".jpg", "ANSI" => ".ans", "Markdown" => ".md", _ => "." + kind.ToLowerInvariant() };
