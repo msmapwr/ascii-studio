@@ -12,6 +12,7 @@ public sealed record StudioSettings(string Theme = "Dark", double PreviewFontSiz
 
 public static class WorkspaceService
 {
+    public const int CurrentProjectVersion = 2;
     public static AsciiDocument? CurrentArt { get; set; }
     public static string DataDirectory { get; } = Environment.GetEnvironmentVariable("ASCIISTUDIO_DATA_DIRECTORY") is { Length: > 0 } directory
         ? Path.GetFullPath(directory) : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AsciiStudio");
@@ -34,8 +35,19 @@ public static class WorkspaceService
         project.Document.Validate();
         project.GeneratedDocument?.Validate();
         project.Geometry?.Validate();
-        var bytes = await Task.Run(() => JsonSerializer.SerializeToUtf8Bytes(project));
+        var savedProject = project with { Version = CurrentProjectVersion };
+        var bytes = await Task.Run(() => JsonSerializer.SerializeToUtf8Bytes(savedProject));
         if (bytes.Length > 100_000_000) throw new InvalidDataException("项目超过 100MB，请降低字符画尺寸或输入图片大小。");
+        if (File.Exists(path))
+        {
+            var current = await ReadProjectVersion(path);
+            if (current > CurrentProjectVersion) throw new InvalidDataException("目标文件使用更新的项目格式，请另存为新文件。");
+            if (current < CurrentProjectVersion)
+            {
+                var backup = path + ".bak";
+                await AtomicWrite(backup, await File.ReadAllBytesAsync(path));
+            }
+        }
         await AtomicWrite(path, bytes);
         await UpdateSettings(s => s with { RecentFiles = new[] { path }.Concat(s.RecentFiles ?? []).Distinct(StringComparer.OrdinalIgnoreCase).Take(15).ToArray() });
     }
@@ -43,14 +55,25 @@ public static class WorkspaceService
     public static async Task<StudioProject> OpenProject(string path)
     {
         if (new FileInfo(path).Length > 100_000_000) throw new InvalidDataException("项目超过 100MB 限制。");
-        var project = JsonSerializer.Deserialize<StudioProject>(await File.ReadAllBytesAsync(path)) ?? throw new InvalidDataException("项目为空。");
-        if (project.Version != 1) throw new InvalidDataException("不支持此项目版本。");
+        var project = JsonSerializer.Deserialize<StudioProject>(await File.ReadAllTextAsync(path)) ?? throw new InvalidDataException("项目为空。");
+        if (project.Version is < 1 or > CurrentProjectVersion) throw new InvalidDataException("不支持此项目版本。");
         if (project.Document is null) throw new InvalidDataException("项目缺少字符画。");
         project.Document.Validate();
         project.GeneratedDocument?.Validate();
         project.Geometry?.Validate();
         await UpdateSettings(s => s with { RecentFiles = new[] { path }.Concat(s.RecentFiles ?? []).Distinct(StringComparer.OrdinalIgnoreCase).Take(15).ToArray() });
-        return project;
+        return project.Version == CurrentProjectVersion ? project : project with { Version = CurrentProjectVersion };
+    }
+
+    private static async Task<int> ReadProjectVersion(string path)
+    {
+        if (new FileInfo(path).Length > 100_000_000) throw new InvalidDataException("目标项目超过 100MB 限制，请另存为新文件。");
+        try
+        {
+            using var document = JsonDocument.Parse(await File.ReadAllTextAsync(path));
+            return document.RootElement.TryGetProperty("Version", out var version) && version.TryGetInt32(out var value) ? value : 1;
+        }
+        catch (JsonException) { throw new InvalidDataException("旧项目文件损坏，无法创建迁移备份。"); }
     }
 
     public static Task SetSettings(StudioSettings settings) => UpdateSettings(_ => settings);
