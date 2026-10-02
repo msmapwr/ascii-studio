@@ -13,7 +13,7 @@ using Windows.Storage.Streams;
 
 namespace AsciiStudio.Pages;
 
-public sealed class ImagePage : Grid
+public sealed class ImagePage : Grid, IProjectSessionPage
 {
     private readonly ResultPane result = new();
     private readonly Image thumbnail = new() { Height = 120, Stretch = Stretch.Uniform };
@@ -48,6 +48,13 @@ public sealed class ImagePage : Grid
     private string title = "Image";
     private CancellationTokenSource? pending;
     private bool suspend;
+    public ResultPane ResultPane => result;
+    public string SessionMode => "image";
+    public event Action<bool>? DirtyChanged { add => result.DirtyChanged += value; remove => result.DirtyChanged -= value; }
+    public event Action<AsciiDocument>? DocumentChanged { add => result.DocumentChanged += value; remove => result.DocumentChanged -= value; }
+    public void SetSession(string id, string? path) => result.SetSession(id, path);
+    public Task<bool> SaveProjectAsync() => result.SaveProjectAsync();
+    public Task SaveRecoveryAsync() => result.SaveRecoveryAsync();
     public ImagePage()
     {
         result.RestoreProject = LoadProject;
@@ -138,6 +145,7 @@ public sealed class ImagePage : Grid
         foreach (var box in new[] { invert, color, edges, threshold }) { box.Checked += (_, _) => Queue(); box.Unchecked += (_, _) => Queue(); }
         dither.SelectionChanged += (_, _) => Queue(); characters.TextChanged += (_, _) => Queue();
         result.ProjectFactory = doc => new(1, doc, lastOptions, encodedSource, null, "image", new() { ["fontAspect"] = (fontAspect.IsChecked == true).ToString(), ["resolution"] = resolution.SelectedIndex.ToString() }, Geometry: geometry.Current);
+        result.DraftFactory = doc => new(2, doc, Options(), encodedSource, null, "image", new() { ["fontAspect"] = (fontAspect.IsChecked == true).ToString(), ["resolution"] = resolution.SelectedIndex.ToString() }, Geometry: geometry.Current);
         suspend = true; columns.Value = WorkspaceService.Settings.DefaultColumns; resolution.SelectedIndex = columns.Value == 120 ? 0 : 5; suspend = false;
     }
 
@@ -175,7 +183,7 @@ public sealed class ImagePage : Grid
             Dither = (DitherMode)Math.Max(0, dither.SelectedIndex)
         };
     }
-    private void Queue() { if (!suspend && source is not null && WorkspaceService.Settings.AutoConvert) _ = App.Window.Guard(ConvertAsync); }
+    private void Queue() { if (!suspend && IsLoaded) result.InputChanged(); if (!suspend && source is not null && WorkspaceService.Settings.AutoConvert) _ = App.Window.Guard(ConvertAsync); }
     private static int ReadDimension(NumberBox input, string name)
     {
         if (!double.IsFinite(input.Value) || input.Value != Math.Truncate(input.Value)) throw new ArgumentException($"{name}必须是整数。");

@@ -6,9 +6,16 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace AsciiStudio.Pages;
 
-public sealed class GeneratorPage : Grid
+public sealed class GeneratorPage : Grid, IProjectSessionPage
 {
     private readonly ResultPane result = new();
+    public ResultPane ResultPane => result;
+    public string SessionMode => "generator";
+    public event Action<bool>? DirtyChanged { add => result.DirtyChanged += value; remove => result.DirtyChanged -= value; }
+    public event Action<AsciiDocument>? DocumentChanged { add => result.DocumentChanged += value; remove => result.DocumentChanged -= value; }
+    public void SetSession(string id, string? path) => result.SetSession(id, path);
+    public Task<bool> SaveProjectAsync() => result.SaveProjectAsync();
+    public Task SaveRecoveryAsync() => result.SaveRecoveryAsync();
     private readonly ComboBox kind = Ui.Choice(["文字边框", "分隔线", "迷宫", "星空", "棋盘", "斜纹", "密度渐变"]);
     private readonly ComboBox style = Ui.Choice(["ASCII / 虚线", "双线 / 点线", "星号 / 等号", "波浪"]);
     private readonly TextBox text = new() { Text = "Hello, ASCII!", AcceptsReturn = true, MinHeight = 100, MaxLength = 2_000_000 };
@@ -36,6 +43,7 @@ public sealed class GeneratorPage : Grid
         parameters.Children.Add(Ui.Button("恢复生成器默认参数", Reset));
         result.AddSettings("生成参数", parameters, "GeneratorSettings");
         result.ProjectFactory = document => new(1, document, null, null, saved.Text, "generator", saved.ToParameters());
+        result.DraftFactory = document => { var recipe = Capture(); return new(2, document, null, null, recipe.Text, "generator", recipe.ToParameters()); };
         Children.Add(Ui.Page(Ui.Heading("生成器", ""), Ui.Workspace(Ui.Card(p), result)));
         kind.SelectionChanged += (_, _) => { UpdateControls(); Changed(); };
         style.SelectionChanged += (_, _) => Changed();
@@ -79,6 +87,7 @@ public sealed class GeneratorPage : Grid
         catch (ArgumentException error) { version++; observed = null; status.Text = error.Message; return; }
         if (recipe == observed) return;
         observed = recipe;
+        if (IsLoaded) result.InputChanged();
         var current = ++version;
         status.Text = "参数已修改，点击“生成”更新结果。";
         if (IsLoaded && WorkspaceService.Settings.AutoConvert) _ = App.Window.Guard(() => GenerateDelayed(current));

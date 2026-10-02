@@ -11,9 +11,16 @@ using Windows.Storage.Pickers;
 
 namespace AsciiStudio.Pages;
 
-public sealed class AnsiPage : Grid
+public sealed class AnsiPage : Grid, IProjectSessionPage
 {
     private readonly ResultPane result = new();
+    public ResultPane ResultPane => result;
+    public string SessionMode => "ansi";
+    public event Action<bool>? DirtyChanged { add => result.DirtyChanged += value; remove => result.DirtyChanged -= value; }
+    public event Action<AsciiDocument>? DocumentChanged { add => result.DocumentChanged += value; remove => result.DocumentChanged -= value; }
+    public void SetSession(string id, string? path) => result.SetSession(id, path);
+    public Task<bool> SaveProjectAsync() => result.SaveProjectAsync();
+    public Task SaveRecoveryAsync() => result.SaveRecoveryAsync();
     private readonly TextBox input = new() { AcceptsReturn = true, Height = 200, MaxLength = AnsiArt.InputLimit, TextWrapping = TextWrapping.NoWrap, FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas") };
     private readonly ComboBox encoding = Ui.Choice(["自动（UTF-8 / CP437）", "UTF-8", "CP437"]);
     private readonly NumberBox columns = new() { Value = 80, Minimum = 20, Maximum = 300, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
@@ -48,14 +55,24 @@ public sealed class AnsiPage : Grid
             ["ice"] = parsedIce.ToString(),
             ["bytes"] = parsedBytes is null ? "" : Convert.ToBase64String(parsedBytes)
         });
+        result.DraftFactory = document => new(2, document, null, null, sourceText, "ansi", new()
+        {
+            ["encoding"] = EncodingName,
+            ["columns"] = ((int)columns.Value).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["ice"] = ice.IsOn.ToString(),
+            ["bytes"] = sourceBytes is null ? "" : Convert.ToBase64String(sourceBytes)
+        });
         input.TextChanged += (_, _) =>
         {
             var normalized = input.Text.Replace("\r\n", "\n").Replace('\r', '\n');
             if (applying || normalized == sourceText.Replace("\r\n", "\n").Replace('\r', '\n')) return;
             sourceText = normalized; sourceBytes = null; metadata.Text = "";
+            result.InputChanged();
             pending?.Cancel(); version++; progress.IsActive = false; info.Text = "原文已修改，点击“查看”更新结果。";
         };
-        encoding.SelectionChanged += async (_, _) => { if (!applying && sourceBytes is not null) await App.Window.Guard(Parse); };
+        encoding.SelectionChanged += async (_, _) => { if (!applying) { result.InputChanged(); if (sourceBytes is not null) await App.Window.Guard(Parse); } };
+        columns.ValueChanged += (_, _) => { if (!applying) result.InputChanged(); };
+        ice.Toggled += (_, _) => { if (!applying) result.InputChanged(); };
         Unloaded += (_, _) => { pending?.Cancel(); version++; progress.IsActive = false; };
         Children.Add(Ui.Page(Ui.Heading("ANSI 查看器", ""), Ui.Workspace(Ui.Card(panel), result)));
         AllowDrop = true;

@@ -40,6 +40,7 @@ public sealed class ResultPane : Grid
     private readonly FontPicker characterFont = new("ResultFont", true);
     private readonly BoundedHistory<CreationSnapshot> history = new(snapshot => snapshot.EstimateBytes());
     private readonly SemaphoreSlim historyGate = new(1, 1);
+    private readonly SemaphoreSlim saveGate = new(1, 1);
     private readonly AppBarButton undoButton, redoButton;
     private readonly InfoBar protection = new() { Title = "结果已手工编辑", IsClosable = false, Severity = InfoBarSeverity.Informational };
     private CreationSnapshot? candidate;
@@ -48,14 +49,40 @@ public sealed class ResultPane : Grid
     private string? editGroup;
     private long lastGeneratedPush;
     private bool lastPushWasGenerated;
-    private readonly string recoveryId = Guid.NewGuid().ToString("N");
+    private string recoveryId = Guid.NewGuid().ToString("N");
+    private string? projectPath;
+    private bool isDirty;
+    private long dirtyRevision;
     public Func<StudioProject, Task>? RestoreProject { get; set; }
     private readonly TextBox generatedPreview = new() { IsReadOnly = true, AcceptsReturn = true, Height = 240, TextWrapping = TextWrapping.NoWrap };
     public string CharacterFontFamily => characterFont.SelectedFont;
     public event Action<string>? CharacterFontChanged;
+    public event Action<bool>? DirtyChanged;
+    public event Action<AsciiDocument>? DocumentChanged;
     public AsciiDocument? Document { get; private set; }
+    public bool IsDirty => isDirty;
+    public string? ProjectPath => projectPath;
     public Func<AsciiDocument, StudioProject>? ProjectFactory { get; set; }
+    public Func<AsciiDocument, StudioProject>? DraftFactory { get; set; }
     public void ShowColorPreview(bool enabled) => colorToggle.IsOn = enabled;
+
+    public void SetSession(string id, string? path)
+    {
+        recoveryId = id;
+        projectPath = path;
+    }
+
+    public void MarkRecovered()
+    {
+        MarkDirty();
+        UpdateStats("已从恢复文件恢复");
+    }
+
+    public void InputChanged()
+    {
+        if (restoring) return;
+        MarkDirty(); recoveryTimer.Stop(); recoveryTimer.Start();
+    }
 
     public ResultPane()
     {
@@ -64,7 +91,8 @@ public sealed class ResultPane : Grid
         RowDefinitions.Add(new() { Height = new GridLength(1, GridUnitType.Star) });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         AddAction("复制", Symbol.Copy, "Button_复制", () => { if (Document is not null) { var package = new DataPackage(); package.SetText(Document.Text); Clipboard.SetContent(package); App.Window.Message("已复制到剪贴板"); } return Task.CompletedTask; });
-        AddAction("保存项目", Symbol.Save, "Button_保存项目", SaveProject);
+        AddAction("保存项目", Symbol.Save, "Button_保存项目", async () => await SaveProjectAsync());
+        AddAction("另存为", Symbol.Save, "ProjectSaveAs", async () => await SaveProjectAsync(true));
         AddAction("导出", Symbol.Download, "Button_导出", Export);
         undoButton = AddAction("撤销", Symbol.Undo, "ResultUndo", () => RestoreHistory(false));
         redoButton = AddAction("重做", Symbol.Redo, "ResultRedo", () => RestoreHistory(true));
@@ -150,7 +178,7 @@ public sealed class ResultPane : Grid
         fontSize.ValueChanged += async (_, _) => { if (double.IsFinite(fontSize.Value)) { ApplyVisualZoom(); UpdateDimensions(); if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); } };
         colorToggle.Toggled += async (_, _) => { imageScroll.Visibility = colorToggle.IsOn ? Visibility.Visible : Visibility.Collapsed; editor.Visibility = colorToggle.IsOn ? Visibility.Collapsed : Visibility.Visible; if (colorToggle.IsOn) await App.Window.Guard(RenderPreview); };
         Grid.SetRow(footer, 2); Children.Add(footer);
-        recoveryTimer.Tick += async (_, _) => { recoveryTimer.Stop(); await App.Window.Guard(SaveRecovery); };
+        recoveryTimer.Tick += async (_, _) => { recoveryTimer.Stop(); await App.Window.Guard(SaveRecoveryAsync); };
         Loaded += (_, _) =>
         {
             ApplySettings(WorkspaceService.Settings);
@@ -281,6 +309,7 @@ public sealed class ResultPane : Grid
             history.Push(next, merge);
             lastPushWasGenerated = preserveEdits;
             lastGeneratedPush = now;
+            MarkDirty();
             editGroup = null; candidate = null; protection.IsOpen = false;
         }
         var scroll = colorToggle.IsOn ? imageScroll : Ui.FindDescendant<ScrollViewer>(editor);
@@ -290,6 +319,7 @@ public sealed class ResultPane : Grid
         try { characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily); editor.Text = document.Text; }
         finally { updating = false; }
         UpdateStats(suffix); if (colorToggle.IsOn) await RenderPreview();
+        DocumentChanged?.Invoke(document);
         DispatcherQueue.TryEnqueue(() =>
         {
             if (!ReferenceEquals(Document, document)) return;
@@ -314,6 +344,13 @@ public sealed class ResultPane : Grid
         return history.HasCurrent ? history.Current.Project with { Document = Document } : ProjectFactory?.Invoke(Document) ?? new(1, Document, null, null, null, "snapshot");
     }
 
+    private StudioProject ProjectForSave()
+    {
+        var document = Document ?? AsciiDocument.FromText("");
+        var project = DraftFactory?.Invoke(document) ?? CurrentProject();
+        return history.HasCurrent ? project with { Edited = history.Current.Edited, GeneratedDocument = history.Current.Generated } : project;
+    }
+
     public async Task LoadDocument(StudioProject project)
     {
         if (restoring) { await SetDocument(project.Document); return; }
@@ -321,7 +358,7 @@ public sealed class ResultPane : Grid
         restoring = true;
         try { await SetDocument(project.Document); }
         finally { restoring = false; }
-        history.Push(snapshot); candidate = null; protection.IsOpen = false; editGroup = null; lastPushWasGenerated = false; UpdateHistoryButtons(); recoveryTimer.Stop(); recoveryTimer.Start();
+        history.Push(snapshot); candidate = null; protection.IsOpen = false; editGroup = null; lastPushWasGenerated = false; isDirty = false; DirtyChanged?.Invoke(false); DocumentChanged?.Invoke(project.Document); UpdateHistoryButtons(); recoveryTimer.Stop(); recoveryTimer.Start();
         if (snapshot.Edited) UpdateStats("已恢复手工编辑");
     }
 
@@ -329,6 +366,7 @@ public sealed class ResultPane : Grid
     {
         if (restoring || Document is null) return;
         lastPushWasGenerated = false;
+        MarkDirty();
         if (!history.HasCurrent) history.Push(CreationSnapshot.Capture(new(1, AsciiDocument.FromText(""), null, null, null, "snapshot"), false, null));
         var previous = history.Current;
         WorkspaceService.CurrentArt = Document;
@@ -336,6 +374,14 @@ public sealed class ResultPane : Grid
         var now = Environment.TickCount64;
         history.Push(next, editGroup == group && now - lastEdit < 500);
         editGroup = group; lastEdit = now; UpdateHistoryButtons();
+    }
+
+    private void MarkDirty()
+    {
+        dirtyRevision++;
+        if (isDirty) return;
+        isDirty = true;
+        DirtyChanged?.Invoke(true);
     }
 
     private static bool CanMergeGenerated(StudioProject previous, StudioProject next)
@@ -362,6 +408,7 @@ public sealed class ResultPane : Grid
                 if (RestoreProject is not null && target.Project.Mode != "snapshot") await RestoreProject(target.Project);
                 else await SetDocument(target.Project.Document);
                 if (redo) history.Redo(); else history.Undo();
+                MarkDirty();
                 candidate = null; protection.IsOpen = false; editGroup = null; lastPushWasGenerated = false;
                 UpdateStats(target.Edited ? "已手工编辑" : redo ? "已重做" : "已撤销");
             }
@@ -388,6 +435,7 @@ public sealed class ResultPane : Grid
                 if (RestoreProject is not null) await RestoreProject(next.Project);
                 else await SetDocument(next.Project.Document);
                 history.Push(next); editGroup = null; lastPushWasGenerated = false; candidate = null; protection.IsOpen = false; UpdateStats("已更新 · 可撤销");
+                MarkDirty();
             }
             finally { restoring = false; UpdateHistoryButtons(); recoveryTimer.Stop(); recoveryTimer.Start(); }
         }
@@ -443,14 +491,19 @@ public sealed class ResultPane : Grid
         AddSettings("注释", content, "CommentSettings");
     }
 
-    private async Task SaveRecovery()
+    public async Task SaveRecoveryAsync()
     {
-        if (Document is null || restoring) return;
-        var snapshot = CurrentProject();
-        var bytes = await Task.Run(() => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(snapshot));
-        if (bytes.Length > 100_000_000) throw new InvalidDataException("恢复项目超过 100MB，请降低字符画尺寸或输入图片大小。");
-        await WorkspaceService.AtomicWrite(Path.Combine(WorkspaceService.DataDirectory, "recovery.asciiproj"), bytes);
-        await WorkspaceService.AtomicWrite(Path.Combine(WorkspaceService.DataDirectory, "recovery", recoveryId + ".asciiproj"), bytes);
+        await saveGate.WaitAsync();
+        try
+        {
+            if ((Document is null && DraftFactory is null) || restoring || (!isDirty && projectPath is not null)) return;
+            var snapshot = ProjectForSave();
+            var bytes = await Task.Run(() => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(snapshot));
+            if (bytes.Length > 100_000_000) throw new InvalidDataException("恢复项目超过 100MB，请降低字符画尺寸或输入图片大小。");
+            await WorkspaceService.AtomicWrite(Path.Combine(WorkspaceService.DataDirectory, "recovery.asciiproj"), bytes);
+            await WorkspaceService.AtomicWrite(WorkspaceSessionService.RecoveryPath(recoveryId), bytes);
+        }
+        finally { saveGate.Release(); }
     }
 
     private void UpdateStats(string suffix = "")
@@ -490,14 +543,29 @@ public sealed class ResultPane : Grid
         }
     }
 
-    private async Task SaveProject()
+    public async Task<bool> SaveProjectAsync(bool saveAs = false)
     {
-        if (Document is null) { App.Window.Message("先生成或输入一些内容。"); return; }
-        var picker = new FileSavePicker { SuggestedFileName = SafeName(Document.Title), SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
-        picker.FileTypeChoices.Add("AsciiStudio 项目", [".asciiproj"]); App.Window.InitializePicker(picker);
-        var file = await picker.PickSaveFileAsync(); if (file is null) return;
-        await WorkspaceService.SaveProject(file.Path, CurrentProject());
+        if (Document is null && DraftFactory is null) { App.Window.Message("先生成或输入一些内容。"); return false; }
+        var path = saveAs ? null : projectPath;
+        if (path is null)
+        {
+            var picker = new FileSavePicker { SuggestedFileName = SafeName(Document?.Title ?? "Untitled"), SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
+            picker.FileTypeChoices.Add("AsciiStudio 项目", [".asciiproj"]); App.Window.InitializePicker(picker);
+            var file = await picker.PickSaveFileAsync(); if (file is null) return false;
+            path = file.Path;
+        }
+        await saveGate.WaitAsync();
+        try
+        {
+            var snapshot = ProjectForSave();
+            var savedRevision = dirtyRevision;
+            await WorkspaceService.SaveProject(path, snapshot);
+            projectPath = path; isDirty = dirtyRevision != savedRevision; DirtyChanged?.Invoke(isDirty);
+            if (!isDirty) { recoveryTimer.Stop(); WorkspaceSessionService.DeleteRecovery(recoveryId); }
+        }
+        finally { saveGate.Release(); }
         App.Window.Message("项目已保存，包含当前字符画和可用的输入素材。");
+        return true;
     }
 
     private async Task Export()

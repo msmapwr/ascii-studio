@@ -10,14 +10,22 @@ using Microsoft.UI.Xaml.Media;
 
 namespace AsciiStudio.Pages;
 
-public sealed class TextPage : Grid
+public sealed class TextPage : Grid, IProjectSessionPage
 {
     private readonly ResultPane result = new();
+    public ResultPane ResultPane => result;
+    public string SessionMode => "text";
+    public event Action<bool>? DirtyChanged { add => result.DirtyChanged += value; remove => result.DirtyChanged -= value; }
+    public event Action<AsciiDocument>? DocumentChanged { add => result.DocumentChanged += value; remove => result.DocumentChanged -= value; }
+    public void SetSession(string id, string? path) => result.SetSession(id, path);
+    public Task<bool> SaveProjectAsync() => result.SaveProjectAsync();
+    public Task SaveRecoveryAsync() => result.SaveRecoveryAsync();
     private readonly TextBox input = new() { Text = "ASCII STUDIO", AcceptsReturn = true, TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap, Height = 80, MaxLength = 2000 };
     private readonly ComboBox mode = Ui.Choice(["FIGlet 艺术字", "系统字体 → 字符画（支持中文）"]);
     private readonly AutoSuggestBox figFont;
     private int selectedFontIndex;
     private int previewVersion;
+    private bool loading;
     private readonly TextBlock previewSample = Ui.Text("abc", 18);
     private readonly TextBlock fontPreview = new() { FontFamily = new FontFamily("Consolas"), FontSize = 8, TextWrapping = TextWrapping.NoWrap };
     private readonly Dictionary<string, string> previewCache = [];
@@ -41,7 +49,7 @@ public sealed class TextPage : Grid
         {
             figFont.ItemsSource = fonts.Where(f => f.Name.Contains(figFont.Text, StringComparison.OrdinalIgnoreCase)).Select(f => f.Name).ToArray();
             var index = Array.FindIndex(fonts, f => f.Name.Equals(figFont.Text, StringComparison.OrdinalIgnoreCase));
-            if (index >= 0 && index != selectedFontIndex) { selectedFontIndex = index; QueuePreview(); }
+            if (index >= 0 && index != selectedFontIndex) { selectedFontIndex = index; QueuePreview(true); }
         };
         figFont.GotFocus += (_, _) => figFont.ItemsSource = fonts.Select(f => f.Name).ToArray();
         figFont.SuggestionChosen += (_, args) => SelectFont(args.SelectedItem?.ToString());
@@ -83,12 +91,29 @@ public sealed class TextPage : Grid
             systemFontField.Visibility = mode.SelectedIndex == 1 ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
             columns.IsEnabled = mode.SelectedIndex == 1;
             systemStyleField.Visibility = mode.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
-            QueuePreview();
+            QueuePreview(true);
         }
         mode.SelectionChanged += (_, _) => UpdateFontMode(); UpdateFontMode();
-        systemFont.Changed += _ => QueuePreview(); systemStyle.SelectionChanged += (_, _) => QueuePreview();
+        systemFont.Changed += _ => QueuePreview(true); systemStyle.SelectionChanged += (_, _) => QueuePreview(true);
         Unloaded += (_, _) => previewVersion++;
         Loaded += (_, _) => QueuePreview();
+        input.TextChanged += (_, _) => DraftChanged();
+        columns.ValueChanged += (_, _) => DraftChanged();
+        border.SelectionChanged += (_, _) => DraftChanged();
+        trim.Checked += (_, _) => DraftChanged(); trim.Unchecked += (_, _) => DraftChanged();
+        replacement.TextChanged += (_, _) => DraftChanged();
+        result.DraftFactory = doc => new(WorkspaceService.CurrentProjectVersion, doc,
+            new ConversionOptions { Columns = double.IsFinite(columns.Value) ? (int)columns.Value : 120 }, null, input.Text, "text",
+            new Dictionary<string, string>
+            {
+                ["mode"] = mode.SelectedIndex.ToString(),
+                ["font"] = fonts[selectedFontIndex].Name,
+                ["systemFont"] = systemFont.SelectedFont,
+                ["systemStyle"] = systemStyle.SelectedIndex.ToString(),
+                ["border"] = border.SelectedIndex.ToString(),
+                ["trim"] = (trim.IsChecked == true).ToString(),
+                ["replacement"] = replacement.Text
+            });
         result.ProjectFactory = doc => new(1, doc, new ConversionOptions { Columns = generatedColumns }, null, generatedSource, "text", generatedParameters);
     }
 
@@ -96,9 +121,17 @@ public sealed class TextPage : Grid
     {
         var index = Array.FindIndex(fonts, f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         if (index < 0) return;
-        selectedFontIndex = index; figFont.Text = fonts[index].Name; QueuePreview();
+        selectedFontIndex = index; figFont.Text = fonts[index].Name; QueuePreview(true);
     }
-    private void QueuePreview() => _ = App.Window.Guard(UpdatePreview);
+    private void DraftChanged()
+    {
+        if (IsLoaded && !loading) result.InputChanged();
+    }
+    private void QueuePreview(bool inputChanged = false)
+    {
+        if (inputChanged) DraftChanged();
+        _ = App.Window.Guard(UpdatePreview);
+    }
     private async Task UpdatePreview()
     {
         var version = ++previewVersion;
@@ -153,20 +186,25 @@ public sealed class TextPage : Grid
     }
     public async Task LoadProject(StudioProject project)
     {
-        input.Text = project.SourceText ?? ""; if (project.Options is not null) columns.Value = project.Options.Columns;
-        generatedSource = project.SourceText; generatedParameters = project.Parameters; generatedColumns = project.Options?.Columns ?? 120;
-        if (project.Parameters is { } p)
+        loading = true;
+        try
         {
-            if (p.TryGetValue("mode", out var m) && int.TryParse(m, out var mi) && mi is >= 0 and <= 1) mode.SelectedIndex = mi;
-            if (p.TryGetValue("font", out var f)) SelectFont(f);
-            if (p.TryGetValue("systemFont", out var sf)) systemFont.Select(sf);
-            if (p.TryGetValue("systemStyle", out var style) && int.TryParse(style, out var si) && si is >= 0 and < 5) systemStyle.SelectedIndex = si;
-            if (p.TryGetValue("border", out var b) && int.TryParse(b, out var bi) && bi is >= 0 and <= 3) border.SelectedIndex = bi;
-            if (p.TryGetValue("trim", out var t) && bool.TryParse(t, out var tr)) trim.IsChecked = tr;
-            if (p.TryGetValue("replacement", out var r)) replacement.Text = r.Length <= 1 ? r : "";
+            input.Text = project.SourceText ?? ""; if (project.Options is not null) columns.Value = project.Options.Columns;
+            generatedSource = project.SourceText; generatedParameters = project.Parameters; generatedColumns = project.Options?.Columns ?? 120;
+            if (project.Parameters is { } p)
+            {
+                if (p.TryGetValue("mode", out var m) && int.TryParse(m, out var mi) && mi is >= 0 and <= 1) mode.SelectedIndex = mi;
+                if (p.TryGetValue("font", out var f)) SelectFont(f);
+                if (p.TryGetValue("systemFont", out var sf)) systemFont.Select(sf);
+                if (p.TryGetValue("systemStyle", out var style) && int.TryParse(style, out var si) && si is >= 0 and < 5) systemStyle.SelectedIndex = si;
+                if (p.TryGetValue("border", out var b) && int.TryParse(b, out var bi) && bi is >= 0 and <= 3) border.SelectedIndex = bi;
+                if (p.TryGetValue("trim", out var t) && bool.TryParse(t, out var tr)) trim.IsChecked = tr;
+                if (p.TryGetValue("replacement", out var r)) replacement.Text = r.Length <= 1 ? r : "";
+            }
+            result.SetReadablePreview(mode.SelectedIndex == 1);
+            await result.LoadDocument(project);
         }
-        result.SetReadablePreview(mode.SelectedIndex == 1);
-        await result.LoadDocument(project);
+        finally { loading = false; }
     }
     private static string StyleCharacters(int style) => style switch { 1 => " .#", 2 => " ·●", 3 => " ░▒▓█", 4 => " .:-=+*#%@", _ => " @" };
 }

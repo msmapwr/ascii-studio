@@ -8,9 +8,9 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
-        UnhandledException+=(_,e)=>
+        UnhandledException += (_, e) =>
         {
-            try{Directory.CreateDirectory(Services.WorkspaceService.DataDirectory);File.AppendAllText(Path.Combine(Services.WorkspaceService.DataDirectory,"errors.log"),$"{DateTimeOffset.Now:O} UI unhandled: {e.Message}\n{e.Exception}\n");}catch(IOException){}
+            try { Directory.CreateDirectory(Services.WorkspaceService.DataDirectory); File.AppendAllText(Path.Combine(Services.WorkspaceService.DataDirectory, "errors.log"), $"{DateTimeOffset.Now:O} UI unhandled: {e.Message}\n{e.Exception}\n"); } catch (IOException) { }
             System.Diagnostics.Debug.WriteLine($"UI unhandled: {e.Message} {e.Exception}");
         };
     }
@@ -18,5 +18,6 @@ public partial class App : Application
     {
         Window = new MainWindow();
         Window.Activate();
+        _ = Window.Guard(Window.RestoreSessionAsync);
     }
 }
