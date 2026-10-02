@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <Version>0.9.0-alpha.3</Version>
+    <Version>0.9.0-alpha.4</Version>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>AsciiStudio</RootNamespace>
@@ -18,6 +18,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Assets/**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../licenses/Unicode.txt" Link="licenses/Unicode.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.9169" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
