@@ -126,7 +126,7 @@ public static class ImageQualityConverter
         var density = (float[])sample.Density.Clone(); var colors = sample.Colors;
         if (o.AdaptiveStrength > 0 || o.Sharpness > 0 || o.Edges)
         {
-            var original = (float[])density.Clone(); var w = sample.Width;
+            var original = sample.Density; var w = sample.Width;
             for (var y = 1; y < sample.Height - 1; y++)
             {
                 token.ThrowIfCancellationRequested();
