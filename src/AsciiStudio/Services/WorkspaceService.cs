@@ -12,7 +12,7 @@ public sealed record StudioSettings(string Theme = "Dark", double PreviewFontSiz
 
 public static class WorkspaceService
 {
-    public const int CurrentProjectVersion = 3;
+    public const int CurrentProjectVersion = 4;
     public static AsciiDocument? CurrentArt { get; set; }
     public static string DataDirectory { get; } = Environment.GetEnvironmentVariable("ASCIISTUDIO_DATA_DIRECTORY") is { Length: > 0 } directory
         ? Path.GetFullPath(directory) : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AsciiStudio");
@@ -35,6 +35,7 @@ public static class WorkspaceService
         project.Document.Validate();
         project.GeneratedDocument?.Validate();
         project.Geometry?.Validate();
+        if (project.Options is not null) ImageQualityConverter.Validate(project.Options);
         var savedProject = project with
         {
             Version = CurrentProjectVersion,
@@ -66,6 +67,7 @@ public static class WorkspaceService
         project.Document.Validate();
         project.GeneratedDocument?.Validate();
         project.Geometry?.Validate();
+        if (project.Options is not null) ImageQualityConverter.Validate(project.Options);
         await UpdateSettings(s => s with { RecentFiles = new[] { path }.Concat(s.RecentFiles ?? []).Distinct(StringComparer.OrdinalIgnoreCase).Take(15).ToArray() });
         return project with
         {

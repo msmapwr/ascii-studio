@@ -18,7 +18,7 @@ public sealed class TutorialPage : Grid
         Loaded += (_, _) => { Apply(WorkspaceService.Settings); WorkspaceService.SettingsChanged += Apply; };
         Unloaded += (_, _) => WorkspaceService.SettingsChanged -= Apply;
         content.Children.Add(Ui.WithHelp(beginner, "新手模式"));
-        Add("1. 图片变成字符画", "打开图片 → 选择列数 → 转换。默认按字体宽高补偿比例；在结果栏上方调整字符、颜色和裁剪。自动转换会合并连续调整。", "image");
+        Add("1. 图片变成字符画", "打开图片 → 选择列数与风格 → 转换。密度模式按字体笔画实测深浅；结构线条适合轮廓，Braille 更细腻，半块双色保留上下颜色。在结果上方设置透明裁剪、自适应和调色板。自动调整先显示临时预览，停止后生成完整结果；取消会保留上次结果。", "image");
         Add("2. 文字变成艺术字", "输入文字并选择转换方式。英文可使用 FIGlet，中文选择系统字体模式。输入字体负责字形，结果字体负责字符画的排列。", "text");
         Add("3. 查看和编辑", "结果可以直接编辑。− / ＋ 和 Ctrl+滚轮调整预览，100% 恢复；Shift+滚轮横向移动。预览缩放不改变导出尺寸。窄窗口从顶部展开输入。", "text");
         Add("4. 保存、导出与套注释", "保存项目可以继续调整原图和参数。导出选择 TXT、PNG、HTML 等格式；位图倍率独立设置。注释工具先预览再复制或替换，当前会话可恢复原文。", "library");

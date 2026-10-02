@@ -21,6 +21,7 @@ public sealed class ResultPane : Grid
     private readonly ViewportPreview viewport = new() { Visibility = Visibility.Collapsed };
     private ScrollViewer imageScroll => viewport.Scroll;
     private readonly Grid editorHost = new();
+    private readonly StackPanel statusPanels = Ui.Stack(4);
     private readonly StackPanel pagingBar = new() { Orientation = Orientation.Horizontal, Spacing = 8, Visibility = Visibility.Collapsed };
     private readonly TextBlock pageLabel = Ui.Text("", 12);
     private readonly NumberBox rowJump = new() { Minimum = 1, Maximum = 1, Value = 1, Width = 88, Header = "跳到行" };
@@ -161,7 +162,7 @@ public sealed class ResultPane : Grid
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(generatedPreview, "GeneratedPreview");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(generatedPreview, "生成时的原始结果");
         AddSettings("原始结果", generatedPreview, "GeneratedSettings");
-        var commands = Ui.Stack(8); commands.Children.Add(toolbar); commands.Children.Add(protection); Children.Add(commands);
+        var commands = Ui.Stack(8); commands.Children.Add(toolbar); commands.Children.Add(statusPanels); commands.Children.Add(protection); Children.Add(commands);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportScale, "ExportScale");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(exportScale, "图片导出倍率");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(exportDimensions, "ExportDimensions");
@@ -404,7 +405,7 @@ public sealed class ResultPane : Grid
 
     public void AddSettings(string label, FrameworkElement content, string automationId)
     {
-        var flyout = Ui.AdaptiveFlyout(content, anchor: toolbar);
+        var flyout = Ui.AdaptiveFlyout(content, anchor: toolbar, showClose: true);
         var button = new AppBarButton { Label = label, Icon = new SymbolIcon(Symbol.Setting) };
         // Close the overflow before opening an editor so two light-dismiss
         // surfaces cannot compete for focus or consume the first input click.
@@ -431,20 +432,46 @@ public sealed class ResultPane : Grid
         return button;
     }
 
-    public async Task SetDocument(AsciiDocument document, string suffix = "", bool preserveEdits = true)
+    public void AddStatus(FrameworkElement content) => statusPanels.Children.Add(content);
+    public bool HasManualEdits => history.HasCurrent && history.Current.Edited;
+    private bool transientPreview;
+    public async Task ShowTransientPreview(AsciiDocument document, CancellationToken cancellationToken = default)
+    {
+        var version = documentVersion;
+        await FlushEditor();
+        cancellationToken.ThrowIfCancellationRequested();
+        if (HasManualEdits || version != documentVersion) return;
+        transientPreview = true; viewport.SetDocument(new DocumentViewIndex(document));
+        viewport.Visibility = Visibility.Visible; editorHost.Visibility = Visibility.Collapsed;
+        ApplyVisualZoom(); viewport.Refresh();
+    }
+    public void ClearTransientPreview()
+    {
+        if (!transientPreview) return;
+        transientPreview = false;
+        if (viewIndex is not null) viewport.SetDocument(viewIndex);
+        viewport.Visibility = colorToggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
+        editorHost.Visibility = colorToggle.IsOn ? Visibility.Collapsed : Visibility.Visible;
+    }
+    public async Task SetDocument(AsciiDocument document, string suffix = "", bool preserveEdits = true, CancellationToken cancellationToken = default)
     {
         var version = ++documentVersion;
         await FlushEditor();
-        var nextIndex = await Task.Run(() => new DocumentViewIndex(document));
+        var nextIndex = await Task.Run(() => new DocumentViewIndex(document, cancellationToken), cancellationToken);
         // Typing may continue while indexing a large generated document. Commit
         // it before evaluating edit protection; a newer generation wins.
         await FlushEditor();
+        cancellationToken.ThrowIfCancellationRequested(); ClearTransientPreview();
         if (version != documentVersion) return;
         document = nextIndex.Document;
         if (!restoring)
         {
             var project = !preserveEdits && history.HasCurrent ? history.Current.Project with { Document = document } : ProjectFactory?.Invoke(document) ?? new StudioProject(1, document, null, null, null, "snapshot");
-            var next = CreationSnapshot.Capture(project, !preserveEdits, !preserveEdits && history.HasCurrent ? history.Current.Generated : document);
+            var generated = !preserveEdits && history.HasCurrent ? history.Current.Generated : document;
+            var next = await Task.Run(() => CreationSnapshot.Capture(project, !preserveEdits, generated), cancellationToken);
+            await FlushEditor();
+            cancellationToken.ThrowIfCancellationRequested();
+            if (version != documentVersion) return;
             if (preserveEdits && history.HasCurrent && history.Current.Edited)
             {
                 candidate = next; protection.Message = "新结果已准备好。可更新当前结果并保留撤销，或保存为独立版本。"; protection.IsOpen = true;

@@ -80,6 +80,8 @@ public static class Ui
     }
     public static FrameworkElement WithHelp(FrameworkElement control, string label)
     {
+        if (string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(control)))
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(control, Id("Field", label));
         var panel = Stack(6); panel.Children.Add(control); AddHelp(panel, label); return panel;
     }
     private static void AddHelp(StackPanel panel, string label)
@@ -96,6 +98,14 @@ public static class Ui
             "色相" => "沿色环改变颜色。",
             "抖动" or "抖动算法" => "用相邻字符分散误差，使渐变更平滑。",
             "字符集" or "字符集 · 由浅到深" or "字符风格" => "从浅到深排列字符，决定画面使用的纹理。",
+            "转换风格" => "密度字符表现明暗；结构线条表现边缘方向；Braille 每字符有8个点；半块双色分别保存上下两种颜色。",
+            "按所选字体实测字符密度" => "按当前字体实际笔画覆盖面积排列字符，只用于密度模式。旧项目默认沿用原来的字符顺序。",
+            "自适应 · 平坦区域降噪 / 边缘增强" => "0 保持原图处理。提高强度会减少平坦区域杂点并加强局部边缘。",
+            "结构线条检测阈值" => "只影响结构模式。较低值保留更多细小边缘，也可能增加杂点。",
+            "透明区域留空" => "透明像素不生成字符；颜色保留半透明度。终端不支持半透明，ANSI 导出使用不透明 RGB。",
+            "裁去透明边缘" => "先裁剪和旋转，再移除透明外边缘，保留原图和处理参数。",
+            "调色板" => "选择颜色范围。双色使用前两个颜色；ANSI 16/256 色会同时选择对应的终端导出编码。关闭保留原图颜色时只生成单色字符。",
+            "调整时先显示低成本预览" => "自动转换先生成最多120列预览，停止调整后更新完整结果。临时预览不写入项目或撤销记录，手工编辑的结果继续受到保护。",
             "输出分辨率预设" => "这里设置字符网格，原图像素尺寸会按字体换算；默认保持原图比例。",
             "保持原图比例（自动计算行数）" or "按字体实际宽高补偿比例" => "推荐开启，让行数同时考虑图片比例和实际字符宽高。",
             "灰度" => "增加灰度会逐渐去除原图色彩。",
@@ -188,7 +198,7 @@ public static class Ui
         return grid;
     }
 
-    public static Flyout AdaptiveFlyout(FrameworkElement content, double preferredWidth = 420, FrameworkElement? anchor = null)
+    public static Flyout AdaptiveFlyout(FrameworkElement content, double preferredWidth = 420, FrameworkElement? anchor = null, bool showClose = false)
     {
         if (double.IsFinite(content.Width)) preferredWidth = content.Width;
         content.Width = double.NaN;
@@ -196,6 +206,16 @@ public static class Ui
         if (string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(scroll)))
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(scroll, "AdaptiveSettingsScroll");
         var flyout = new Flyout { Content = scroll, ShowMode = Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowMode.Standard };
+        FrameworkElement flyoutRoot = scroll;
+        if (showClose)
+        {
+            var panel = new Grid { RowSpacing = 8 };
+            panel.RowDefinitions.Add(new() { Height = GridLength.Auto }); panel.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            var done = Button("完成设置", () => { }); done.HorizontalAlignment = HorizontalAlignment.Right;
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(done, "SettingsDone");
+            done.Click += (_, _) => { done.Focus(FocusState.Programmatic); flyout.Hide(); };
+            Grid.SetRow(done, 1); panel.Children.Add(scroll); panel.Children.Add(done); flyout.Content = panel; flyoutRoot = panel;
+        }
         // The content owns scrolling; disable the presenter's second scroller.
         var presenterStyle = new Style { TargetType = typeof(FlyoutPresenter) };
         presenterStyle.Setters.Add(new Setter(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled));
@@ -206,17 +226,17 @@ public static class Ui
         {
             if (activeRoot is null) return;
             scroll.Width = Math.Max(1, Math.Min(preferredWidth, activeRoot.Size.Width - 64));
-            scroll.MaxHeight = Math.Max(80, activeRoot.Size.Height - 160);
+            scroll.MaxHeight = Math.Max(80, activeRoot.Size.Height - 160 - (showClose ? 48 : 0));
             if (activeRoot.Size.Width < 640 && anchor?.XamlRoot is not null)
             {
                 var bottom = anchor.TransformToVisual(null).TransformPoint(new Windows.Foundation.Point(0, anchor.ActualHeight)).Y;
-                scroll.MaxHeight = Math.Max(80, Math.Min(scroll.MaxHeight, activeRoot.Size.Height - bottom - 32));
+                scroll.MaxHeight = Math.Max(80, Math.Min(scroll.MaxHeight, activeRoot.Size.Height - bottom - 32 - (showClose ? 48 : 0)));
             }
         }
         void RootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => Resize();
         flyout.Opened += (_, _) =>
         {
-            ApplyTypeface(scroll);
+            ApplyTypeface(flyoutRoot);
             activeRoot = scroll.XamlRoot;
             if (activeRoot is not null) activeRoot.Changed += RootChanged;
             Resize();
