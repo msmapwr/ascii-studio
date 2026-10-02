@@ -14,8 +14,8 @@ public static class ImageConverter
         if (!new[] { options.Brightness, options.Contrast, options.Saturation, options.Hue, options.Grayscale, options.Sepia, options.Sharpness }.All(double.IsFinite) || options.Brightness is < 0 or > 5 || options.Contrast is < 0 or > 5 || options.Saturation is < 0 or > 5 || options.Grayscale is < 0 or > 1 || options.Sepia is < 0 or > 1 || options.Sharpness is < 0 or > 10 || options.ThresholdValue is < 0 or > 255 || !Enum.IsDefined(options.Dither))
             throw new ArgumentException("图片调整参数无效。");
         var chars = options.Characters.Distinct().ToArray();
-        if (chars.Length < 2 || chars.Any(char.IsControl) || chars.Any(char.IsSurrogate))
-            throw new ArgumentException("字符集至少需要两个不同的单字符，且不能包含控制字符或 emoji。");
+        if (chars.Length < 2 || chars.Any(char.IsControl) || chars.Any(char.IsSurrogate) || chars.Any(c => UnicodeGrid.GlyphWidth(c.ToString()) != 1))
+            throw new ArgumentException("图片字符集至少需要两个不同的单列字符；中文、emoji 和组合标记请用于文字创作。");
         var columns = options.Columns;
         var requestedRows = options.Rows == 0 ? Math.Max(1, Math.Round(columns * (double)height / width * options.CellAspect)) : options.Rows;
         if (requestedRows > 2000 || columns * requestedRows > 4_000_000)
@@ -88,7 +88,7 @@ public static class ImageConverter
             }
             if (y < rows - 1) result.Append('\n');
         }
-        return new AsciiDocument { Text = result.ToString(), Width = columns, Height = rows, Colors = colors };
+        return new AsciiDocument { GridVersion = 1, Text = result.ToString(), Width = columns, Height = rows, Colors = colors };
     }
 
     private static (double, double, double) RotateHue(double r, double g, double b, double angle)

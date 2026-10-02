@@ -6,8 +6,8 @@ public static class Generators
 {
     public static string Border(string text, int style)
     {
-        var rows = TextUtilities.Normalize(text).Split('\n');
-        var width = rows.Max(r => r.Length);
+        var rows = UnicodeGrid.ExpandTabs(text).Split('\n');
+        var width = rows.Max(UnicodeGrid.Width);
         if (width > 2000 || rows.Length > 1000) throw new ArgumentException("边框内容过大。");
         var (tl, tr, bl, br, h, v) = style switch
         {
@@ -16,7 +16,7 @@ public static class Generators
             _ => ('+', '+', '+', '+', '-', '|')
         };
         return tl + new string(h, width + 2) + tr + "\n" +
-            string.Join('\n', rows.Select(r => $"{v} {r.PadRight(width)} {v}")) + "\n" + bl + new string(h, width + 2) + br;
+            string.Join('\n', rows.Select(r => $"{v} {UnicodeGrid.PadRight(r, width)} {v}")) + "\n" + bl + new string(h, width + 2) + br;
     }
 
     public static string Divider(int width, int style) => style switch

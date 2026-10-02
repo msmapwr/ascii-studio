@@ -10,7 +10,7 @@ public static class TextUtilities
 
     public static string TrimCanvas(string text)
     {
-        var rows = Normalize(text).Split('\n').ToList();
+        var rows = UnicodeGrid.ExpandTabs(text).Split('\n').ToList();
         while (rows.Count > 0 && string.IsNullOrWhiteSpace(rows[0])) rows.RemoveAt(0);
         while (rows.Count > 0 && string.IsNullOrWhiteSpace(rows[^1])) rows.RemoveAt(rows.Count - 1);
         if (rows.Count == 0) return "";
