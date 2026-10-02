@@ -121,6 +121,7 @@ public sealed class ResultPane : Grid
         displaySettings.Children.Add(Ui.Field("字号 · 同时用于图片导出", fontSize));
         displaySettings.Children.Add(colorToggle);
         displaySettings.Children.Add(Ui.Field("字符画字体", characterFont));
+        displaySettings.Children.Add(Ui.Text("Unicode 网格：中文与 emoji 占两列，组合字符保持完整，歧义符号占一列。图像预览与 SVG 使用固定列位；纯文本在不同终端中的字形宽度可能不同。Tab 展开为四列制表位。", 12, true));
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(colorToggle, "ResultImagePreview");
         AddSettings("显示", displaySettings, "DisplaySettings");
         AddCommentSettings();
@@ -135,7 +136,7 @@ public sealed class ResultPane : Grid
         editor = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), FontSize = 13, Padding = new Thickness(20), PlaceholderText = "转换结果", HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
         characterFont.Changed += async family =>
         {
-            editor.FontFamily = new FontFamily(family);
+            editor.FontFamily = new FontFamily(family + ", Microsoft YaHei UI, Segoe UI Emoji");
             if (Document is not null && !updating) { var metrics = FontCatalog.Measure(family); Document = Document with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height }; RecordEdit("font", false); UpdateDimensions(); recoveryTimer.Stop(); recoveryTimer.Start(); }
             CharacterFontChanged?.Invoke(family);
             if (colorToggle.IsOn) await App.Window.Guard(RenderPreview);
@@ -316,7 +317,7 @@ public sealed class ResultPane : Grid
         var offsetX = scroll?.HorizontalOffset ?? 0; var offsetY = scroll?.VerticalOffset ?? 0;
         var selection = editor.SelectionStart; var selectionLength = editor.SelectionLength;
         Document = document; WorkspaceService.CurrentArt = document; updating = true;
-        try { characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily); editor.Text = document.Text; }
+        try { characterFont.Select(document.FontFamily); editor.FontFamily = new FontFamily(CharacterFontFamily + ", Microsoft YaHei UI, Segoe UI Emoji"); editor.Text = document.Text; }
         finally { updating = false; }
         UpdateStats(suffix); if (colorToggle.IsOn) await RenderPreview();
         DocumentChanged?.Invoke(document);
@@ -334,7 +335,7 @@ public sealed class ResultPane : Grid
         undoButton.IsEnabled = history.CanUndo && !restoring; redoButton.IsEnabled = history.CanRedo && !restoring;
         if (history.HasCurrent && history.Current.Generated is { } original)
         {
-            generatedPreview.Text = original.Text; generatedPreview.FontFamily = new FontFamily(original.FontFamily);
+            generatedPreview.Text = original.Text; generatedPreview.FontFamily = new FontFamily(original.FontFamily + ", Microsoft YaHei UI, Segoe UI Emoji");
         }
     }
 
@@ -347,12 +348,13 @@ public sealed class ResultPane : Grid
     private StudioProject ProjectForSave()
     {
         var document = Document ?? AsciiDocument.FromText("");
-        var project = DraftFactory?.Invoke(document) ?? CurrentProject();
+        var project = (DraftFactory?.Invoke(document) ?? CurrentProject()) with { Version = WorkspaceService.CurrentProjectVersion };
         return history.HasCurrent ? project with { Edited = history.Current.Edited, GeneratedDocument = history.Current.Generated } : project;
     }
 
     public async Task LoadDocument(StudioProject project)
     {
+        project = project with { Document = UnicodeGrid.Upgrade(project.Document), GeneratedDocument = project.GeneratedDocument is null ? null : UnicodeGrid.Upgrade(project.GeneratedDocument) };
         if (restoring) { await SetDocument(project.Document); return; }
         var snapshot = CreationSnapshot.Capture(project, project.Edited, project.GeneratedDocument ?? project.Document);
         restoring = true;

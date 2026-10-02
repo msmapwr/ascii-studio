@@ -111,7 +111,7 @@ public static class ImagingService
 
     public static (int Width, int Height) RenderSize(AsciiDocument document, float size = 14, int padding = 20, int scale = 1)
     {
-        document.Validate();
+        document = UnicodeGrid.Upgrade(document);
         if (!float.IsFinite(size) || size is < 1 or > 120 || scale is < 1 or > 4 || padding is < 0 or > 200) throw new ArgumentException("导出字号或倍率无效。");
         using var font = new Font(document.FontFamily, size * scale, FontStyle.Regular, GraphicsUnit.Pixel);
         using var measure = new Bitmap(1, 1); using var g = Graphics.FromImage(measure);
@@ -123,7 +123,7 @@ public static class ImagingService
     }
     public static byte[] Render(AsciiDocument document, float size = 14, int padding = 20, bool transparent = false, ImageFormat? format = null, int scale = 1)
     {
-        document.Validate();
+        document = UnicodeGrid.Upgrade(document);
         var dimensions = RenderSize(document, size, padding, scale); size *= scale; padding *= scale;
         using var font = new Font(document.FontFamily, size, FontStyle.Regular, GraphicsUnit.Pixel);
         using var measure = new Bitmap(1, 1); using var mg = Graphics.FromImage(measure);
@@ -149,12 +149,12 @@ public static class ImagingService
                         var left = padding + start * cell; var right = padding + x * cell;
                         g.FillRectangle(brush, (float)Math.Floor(left), (float)Math.Floor(padding + y * lineHeight), (float)Math.Ceiling(right) - (float)Math.Floor(left), (float)Math.Ceiling(padding + (y + 1) * lineHeight) - (float)Math.Floor(padding + y * lineHeight));
                     }
-                if (document.Colors is null)
+                if (document.Colors is null && lines[y].All(char.IsAscii))
                 {
                     using var brush = new SolidBrush(Color.FromArgb(231, 237, 247));
                     g.DrawString(lines[y], font, brush, padding, padding + y * lineHeight, StringFormat.GenericTypographic);
                 }
-                else
+                else if (document.Colors is not null && lines[y].All(char.IsAscii))
                 {
                     for (var x = 0; x < lines[y].Length;)
                     {
@@ -162,6 +162,16 @@ public static class ImagingService
                         while (x < lines[y].Length && document.Colors[y * document.Width + x] == color) x++;
                         using var brush = new SolidBrush(Color.FromArgb(unchecked((int)color)));
                         g.DrawString(lines[y][start..x], font, brush, padding + start * cell, padding + y * lineHeight, StringFormat.GenericTypographic);
+                    }
+                }
+                else
+                {
+                    foreach (var glyph in UnicodeGrid.Glyphs(lines[y]))
+                    {
+                        if (glyph.Width == 0) continue;
+                        var color = document.Colors?[y * document.Width + glyph.Column] ?? 0xFFE7EDF7;
+                        using var brush = new SolidBrush(Color.FromArgb(unchecked((int)color)));
+                        g.DrawString(glyph.Text, font, brush, padding + glyph.Column * cell, padding + y * lineHeight, StringFormat.GenericTypographic);
                     }
                 }
             }

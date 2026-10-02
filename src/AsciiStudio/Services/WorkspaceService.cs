@@ -12,7 +12,7 @@ public sealed record StudioSettings(string Theme = "Dark", double PreviewFontSiz
 
 public static class WorkspaceService
 {
-    public const int CurrentProjectVersion = 2;
+    public const int CurrentProjectVersion = 3;
     public static AsciiDocument? CurrentArt { get; set; }
     public static string DataDirectory { get; } = Environment.GetEnvironmentVariable("ASCIISTUDIO_DATA_DIRECTORY") is { Length: > 0 } directory
         ? Path.GetFullPath(directory) : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AsciiStudio");
@@ -35,7 +35,12 @@ public static class WorkspaceService
         project.Document.Validate();
         project.GeneratedDocument?.Validate();
         project.Geometry?.Validate();
-        var savedProject = project with { Version = CurrentProjectVersion };
+        var savedProject = project with
+        {
+            Version = CurrentProjectVersion,
+            Document = UnicodeGrid.Upgrade(project.Document),
+            GeneratedDocument = project.GeneratedDocument is null ? null : UnicodeGrid.Upgrade(project.GeneratedDocument)
+        };
         var bytes = await Task.Run(() => JsonSerializer.SerializeToUtf8Bytes(savedProject));
         if (bytes.Length > 100_000_000) throw new InvalidDataException("项目超过 100MB，请降低字符画尺寸或输入图片大小。");
         if (File.Exists(path))
@@ -62,7 +67,12 @@ public static class WorkspaceService
         project.GeneratedDocument?.Validate();
         project.Geometry?.Validate();
         await UpdateSettings(s => s with { RecentFiles = new[] { path }.Concat(s.RecentFiles ?? []).Distinct(StringComparer.OrdinalIgnoreCase).Take(15).ToArray() });
-        return project.Version == CurrentProjectVersion ? project : project with { Version = CurrentProjectVersion };
+        return project with
+        {
+            Version = CurrentProjectVersion,
+            Document = UnicodeGrid.Upgrade(project.Document),
+            GeneratedDocument = project.GeneratedDocument is null ? null : UnicodeGrid.Upgrade(project.GeneratedDocument)
+        };
     }
 
     private static async Task<int> ReadProjectVersion(string path)

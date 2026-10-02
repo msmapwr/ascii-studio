@@ -139,7 +139,7 @@ public sealed class AnsiPage : Grid, IProjectSessionPage
             parsedBytes = bytes; parsedText = source.Text; parsedEncoding = selected; parsedColumns = width; parsedIce = useIce; SetText(source.Text);
             result.ShowColorPreview(true); await result.SetDocument(document);
             if (current != version) return;
-            info.Text = $"{source.Encoding} · {document.Width} × {document.Height} · 忽略 {parsed.IgnoredSequences} · 未完成 {parsed.IncompleteSequences}" + (source.MetadataWarnings > 0 ? " · 元数据异常" : "") + (parsed.HasWideCharacters ? " · 宽字符/组合字符可能对齐不准确" : "");
+            info.Text = $"{source.Encoding} · {document.Width} × {document.Height} · 忽略 {parsed.IgnoredSequences} · 未完成 {parsed.IncompleteSequences}" + (source.MetadataWarnings > 0 ? " · 元数据异常" : "") + (parsed.HasWideCharacters ? " · 双列 Unicode 网格" : "");
             metadata.Text = source.Metadata is { } m ? $"SAUCE · {m.Title} · {m.Author} · {m.Group} · {m.Date}" + (m.Comments.Length > 0 ? "\n" + string.Join('\n', m.Comments) : "") : "";
         }
         finally { if (current == version) progress.IsActive = false; if (ReferenceEquals(pending, cancellation)) pending = null; cancellation.Dispose(); }
