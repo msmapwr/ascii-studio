@@ -56,7 +56,7 @@ if($Phase -eq 'initial'){
  Start-Sleep -Milliseconds 600
  $taskSaved=Get-Content (Join-Path $taskData 'session-two.asciiproj') -Raw|ConvertFrom-Json
  $taskBackup=Get-Content (Join-Path $taskData 'session-two.asciiproj.bak') -Raw|ConvertFrom-Json
- if($taskSaved.Version -ne 3 -or $taskSaved.Document.Text -ne 'saved second' -or $taskBackup.Version -ne 1){throw 'Migration save or backup failed'}
+ if($taskSaved.Version -ne 4 -or $taskSaved.Document.Text -ne 'saved second' -or $taskBackup.Version -ne 1){throw 'Migration save or backup failed'}
  Tab 'session-one';CloseTab 'session-one'
  UI wait-for SecondaryButton -t 3000|Out-Null;UI invoke 取消|Out-Null;Count 2
  CloseTab 'session-one'

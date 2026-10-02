@@ -27,7 +27,7 @@ UI invoke Button_保存项目 | Out-Null
 Start-Sleep -Milliseconds 600
 $taskSaved = Get-Content $taskProject -Raw | ConvertFrom-Json
 $taskBackup = Get-Content ($taskProject + '.bak') -Raw | ConvertFrom-Json
-if ($taskSaved.Version -ne 3 -or $taskSaved.Document.GridVersion -ne 1 -or $taskSaved.Document.Width -ne 4 -or $taskBackup.Version -ne 2) { throw 'Legacy Unicode project migration failed' }
+if ($taskSaved.Version -ne 4 -or $taskSaved.Document.GridVersion -ne 1 -or $taskSaved.Document.Width -ne 4 -or $taskBackup.Version -ne 2) { throw 'Legacy Unicode project migration failed' }
 if (($taskSaved.Document.Colors -join ',') -ne '4294901760,4294901760,4278255360,4278255360') { throw 'Wide foreground colors not migrated' }
 UI invoke MoreButton | Out-Null
 UI invoke DisplaySettings | Out-Null
