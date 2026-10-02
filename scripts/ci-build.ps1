@@ -20,8 +20,10 @@ try {
     # CI has no desktop skill installation; local development retains its analyzer wrapper.
     & dotnet publish 'src/AsciiStudio/AsciiStudio.csproj' -c Release --no-restore --self-contained true -p:WindowsAppSDKSelfContained=true -o artifacts/publish -v minimal
     if ($LASTEXITCODE) { throw 'Release compilation failed.' }
-    & dotnet run --project 'tests/AsciiStudio.Core.Checks/AsciiStudio.Core.Checks.csproj' -c Release
-    if ($LASTEXITCODE) { throw 'Core checks failed.' }
+    & dotnet test 'tests/AsciiStudio.Core.Tests/AsciiStudio.Core.Tests.csproj' -c Release --logger trx --results-directory artifacts/test-results
+    if ($LASTEXITCODE) { throw 'Core unit tests failed.' }
+    & dotnet test 'tests/AsciiStudio.Creation.Tests/AsciiStudio.Creation.Tests.csproj' -c Release --logger trx --results-directory artifacts/test-results
+    if ($LASTEXITCODE) { throw 'Creation controller unit tests failed.' }
     & dotnet run --project 'tests/AsciiStudio.Text.Checks/AsciiStudio.Text.Checks.csproj' -c Release
     if ($LASTEXITCODE) { throw 'Windows text checks failed.' }
 

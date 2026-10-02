@@ -20,6 +20,6 @@
 
 ## 验证
 
-核心索引检查位于 `tests/AsciiStudio.Core.Checks/Program.cs`；UI 脚本为 `scripts/ui-viewport-tests.ps1`，使用 `artifacts/alpha5-ui-data` 隔离目录。先执行 `-Prepare`，以 `ASCIISTUDIO_DATA_DIRECTORY` 指定该目录启动应用，再传入 `-AppPid`。截图包含百万字符概览、行定位、并排、分界线及 480 DIP 窄窗口；Windows 命令行不承载整页文本，UIA 使用短文本替换页并核对保存文件的未显示内容。
+核心索引检查位于 `tests/AsciiStudio.Core.Tests/ViewportTests.cs`；UI 脚本为 `scripts/ui-viewport-tests.ps1`，使用 `artifacts/alpha5-ui-data` 隔离目录。先执行 `-Prepare`，以 `ASCIISTUDIO_DATA_DIRECTORY` 指定该目录启动应用，再传入 `-AppPid`。截图包含百万字符概览、行定位、并排、分界线及 480 DIP 窄窗口；Windows 命令行不承载整页文本，UIA 使用短文本替换页并核对保存文件的未显示内容。
 
 仅验证当前实际显示缩放；实体跨显示器缩放切换仍须实机验收，不宣称已经覆盖。

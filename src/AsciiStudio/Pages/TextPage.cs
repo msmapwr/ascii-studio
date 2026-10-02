@@ -25,7 +25,8 @@ public sealed class TextPage : Grid, IProjectSessionPage
     private TextFontEntry[] fonts = TextFontLibrary.Entries();
     private string selectedFont = "builtin:standard";
     private bool loading;
-    private int previewVersion, page;
+    private int page;
+    private readonly TextCreationController controller = new();
     private readonly TextBlock previewSample = Ui.Text("abc", 18), fontPreview = new() { FontFamily = new FontFamily("Consolas"), FontSize = 8 };
     private readonly ScrollViewer fontPreviewScroll;
     private readonly FontPicker systemFont = new("TextSystemFont");
@@ -37,10 +38,7 @@ public sealed class TextPage : Grid, IProjectSessionPage
     private readonly InfoBar warning = new() { IsClosable = true, Severity = InfoBarSeverity.Warning };
     private readonly TextBlock status = Ui.Text("", 12), details = Ui.Text("", 12), gridPage = Ui.Text("", 12);
     private readonly GridView fontGrid = new() { Height = 320, SelectionMode = ListViewSelectionMode.Single, IsItemClickEnabled = true };
-    private CancellationTokenSource? gridPending, generation;
-    private string? generatedSource;
-    private Dictionary<string, string>? generatedParameters;
-    private int generatedColumns = 120;
+    private CancellationTokenSource? gridPending;
     private static NumberBox Number(double value, int min, int max) => new() { Value = value, Minimum = min, Maximum = max, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
     private static int Integer(NumberBox n) => double.IsFinite(n.Value) && n.Value == Math.Truncate(n.Value) ? checked((int)n.Value) : throw new ArgumentException("请输入整数参数。");
     private static void Id(DependencyObject e, string id) => Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(e, id);
@@ -88,8 +86,8 @@ public sealed class TextPage : Grid, IProjectSessionPage
         foreach (var check in new[] { trim, wrap, allowMissing }) { check.Checked += (_, _) => DraftChanged(); check.Unchecked += (_, _) => DraftChanged(); }
         replacement.TextChanged += (_, _) => DraftChanged(); borderTitle.TextChanged += (_, _) => DraftChanged();
         preset.SelectionChanged += (_, _) => { if (loading || preset.SelectedIndex == 0) return; columns.Value = preset.SelectedIndex == 1 ? 200 : preset.SelectedIndex == 2 ? 160 : 96; weight.SelectedIndex = preset.SelectedIndex == 3 ? 0 : 1; stroke.Value = preset.SelectedIndex == 1 ? 1 : 0; fill.SelectedIndex = 0; letterSpacing.Value = preset.SelectedIndex == 1 ? 2 : preset.SelectedIndex == 2 ? 1 : 0; lineSpacing.Value = preset.SelectedIndex == 3 ? 0 : 1; QueuePreview(true); };
-        Loaded += (_, _) => QueuePreview(); Unloaded += (_, _) => { previewVersion++; gridPending?.Cancel(); generation?.Cancel(); };
-        result.DraftFactory = doc => new(WorkspaceService.CurrentProjectVersion, doc, new ConversionOptions { Columns = Integer(columns) }, null, input.Text, "text", Parameters()); result.ProjectFactory = doc => new(WorkspaceService.CurrentProjectVersion, doc, new ConversionOptions { Columns = generatedColumns }, null, generatedSource, "text", generatedParameters); UpdateDetails();
+        Loaded += (_, _) => QueuePreview(); Unloaded += (_, _) => { controller.Previews.Cancel(); gridPending?.Cancel(); controller.Operations.Cancel(); };
+        result.DraftFactory = doc => TextProjectMapper.Project(doc, Integer(columns), input.Text, Parameters()); result.ProjectFactory = controller.Project; UpdateDetails();
     }
     private void AddSettings(string label, string id, params UIElement[] content) { var panel = Ui.Stack(); panel.Width = 340; foreach (var e in content) panel.Children.Add(e); result.AddSettings(label, panel, id); }
     private TextArtOptions Layout() => new() { LetterSpacing = Integer(letterSpacing), LineSpacing = Integer(lineSpacing), MaximumWidth = Integer(maximumWidth), Wrap = wrap.IsChecked == true, Alignment = (ArtAlignment)alignment.SelectedIndex, Horizontal = (ArtPacking)horizontal.SelectedIndex, Vertical = (ArtPacking)vertical.SelectedIndex, Border = border.SelectedIndex, PaddingX = Integer(paddingX), PaddingY = Integer(paddingY), Title = borderTitle.Text, Trim = trim.IsChecked == true, Replacement = replacement.Text };
@@ -120,28 +118,54 @@ public sealed class TextPage : Grid, IProjectSessionPage
         finally { if (ReferenceEquals(gridPending, cts)) gridPending = null; cts.Dispose(); }
     }
     private void QueuePreview(bool changed = false) { if (changed) DraftChanged(); _ = App.Window.Guard(UpdatePreview); }
-    private async Task UpdatePreview() { var v = ++previewVersion; var chinese = mode.SelectedIndex == 1; var id = selectedFont; var raster = Raster(); await Task.Delay(100); if (v != previewVersion) return; if (!chinese && !TextFontLibrary.Available(id)) return; var rendered = await Task.Run(() => chinese ? TextRasterService.Render("测试", new(), raster with { Columns = 48 }, .5) : TextFontLibrary.Render(id, "abc", new())); if (v != previewVersion) return; previewSample.Text = chinese ? "测试" : "abc"; previewSample.FontFamily = new FontFamily(chinese ? raster.Family : "Segoe UI"); fontPreview.Text = rendered; fontPreview.FontSize = chinese ? 12 : 8; fontPreviewScroll.Height = chinese ? 180 : 100; await MotionService.Fade(fontPreview, 0, 1, 140); }
-    private async Task Generate()
+    private async Task UpdatePreview()
     {
-        generation?.Cancel(); var cts = new CancellationTokenSource(); generation = cts;
+        using var operation = controller.Previews.Begin();
         try
         {
-            var text = input.Text; var selectedMode = mode.SelectedIndex; var id = selectedFont; var layout = Layout(); layout.Validate(); var raster = Raster(); var parameters = Parameters(); var family = result.CharacterFontFamily; var metrics = FontCatalog.Measure(family); status.Text = "正在生成…";
-            if (selectedMode == 1) { var missing = await Task.Run(() => TextRasterService.Missing(text, raster.Family, raster.Bold), cts.Token); warning.IsOpen = missing.Length > 0; warning.Title = "所选字体可能缺少字形"; warning.Message = "缺字或需回退：" + string.Join(" ", missing); if (missing.Length > 0 && allowMissing.IsChecked != true) { status.Text = "请更换字体，或在中文字形中选择仍然生成。"; return; } }
-            var output = await Task.Run(() => selectedMode == 0 ? TextFontLibrary.Render(id, text, layout, cts.Token) : TextRasterService.Render(text, layout, raster, metrics.Width / metrics.Height, cts.Token), cts.Token); cts.Token.ThrowIfCancellationRequested(); generatedSource = text; generatedColumns = raster.Columns; generatedParameters = parameters; result.SetReadablePreview(selectedMode == 1); var title = string.Concat(TextArtLayout.Elements(text.Split('\n')[0]).Take(32)); await result.SetDocument(AsciiDocument.FromText(output, title) with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height }, cancellationToken: cts.Token); status.Text = "生成完成";
+            var chinese = mode.SelectedIndex == 1; var raster = Raster();
+            var rendered = await controller.Preview(chinese, selectedFont, raster, operation.Token);
+            if (!operation.IsCurrent || rendered is null) return;
+            previewSample.Text = chinese ? "测试" : "abc";
+            previewSample.FontFamily = new FontFamily(chinese ? raster.Family : "Segoe UI");
+            fontPreview.Text = rendered; fontPreview.FontSize = chinese ? 12 : 8;
+            fontPreviewScroll.Height = chinese ? 180 : 100; await MotionService.Fade(fontPreview, 0, 1, 140);
         }
-        catch (OperationCanceledException) when (cts.IsCancellationRequested) { }
-        catch (Exception e) when (e is ArgumentException or Figgle.FiggleException) { warning.Title = "无法生成"; warning.Message = e.Message; warning.IsOpen = true; status.Text = "请调整设置后重新生成。"; }
-        finally { if (ReferenceEquals(generation, cts)) generation = null; cts.Dispose(); }
+        catch (OperationCanceledException) when (operation.Token.IsCancellationRequested) { }
+    }
+    private async Task Generate()
+    {
+        using var operation = controller.Operations.Begin(); var token = operation.Token;
+        try
+        {
+            var family = result.CharacterFontFamily; var metrics = FontCatalog.Measure(family);
+            var request = new TextCreationRequest(input.Text, mode.SelectedIndex, selectedFont, Layout(), Raster(),
+                family, metrics.Width, metrics.Height, Parameters());
+            var allow = allowMissing.IsChecked == true; status.Text = "正在生成…";
+            if (request.Mode == 1)
+            {
+                var missing = await controller.Missing(request, token); if (!operation.IsCurrent) return;
+                warning.IsOpen = missing.Length > 0; warning.Title = "所选字体可能缺少字形";
+                warning.Message = "缺字或需回退：" + string.Join(" ", missing);
+                if (missing.Length > 0 && !allow) { status.Text = "请更换字体，或在中文字形中选择仍然生成。"; return; }
+            }
+            var document = await controller.Generate(request, token); if (!operation.IsCurrent) return;
+            controller.Accept(request); result.SetReadablePreview(request.Mode == 1);
+            await result.SetDocument(document, cancellationToken: token);
+            if (operation.IsCurrent) status.Text = "生成完成";
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception e) when (e is ArgumentException or Figgle.FiggleException)
+        { if (operation.IsCurrent) { warning.Title = "无法生成"; warning.Message = e.Message; warning.IsOpen = true; status.Text = "请调整设置后重新生成。"; } }
     }
     public async Task LoadProject(StudioProject project)
     {
-        loading = true;
+        controller.Restore(project); loading = true;
         try
         {
-            input.Text = project.SourceText ?? ""; columns.Value = project.Options?.Columns ?? 120; generatedSource = project.SourceText; generatedParameters = project.Parameters; generatedColumns = project.Options?.Columns ?? 120; var p = project.Parameters ?? new(); mode.SelectedIndex = p.GetValueOrDefault("mode") == "1" ? 1 : 0; var value = p.GetValueOrDefault("font", "Standard"); selectedFont = value.StartsWith("user:", StringComparison.Ordinal) ? value : TextFontLibrary.ResolveId(value, fonts); figFont.Text = fonts.FirstOrDefault(f => f.Id == selectedFont)?.Name ?? "缺失的字体"; systemFont.Select(p.GetValueOrDefault("systemFont", "Microsoft YaHei UI")); systemStyle.SelectedIndex = int.TryParse(p.GetValueOrDefault("systemStyle"), out var style) && style is >= 0 and < 5 ? style : 0;
+            input.Text = project.SourceText ?? ""; columns.Value = project.Options?.Columns ?? 120; var p = project.Parameters ?? new(); mode.SelectedIndex = p.GetValueOrDefault("mode") == "1" ? 1 : 0; var value = p.GetValueOrDefault("font", "Standard"); selectedFont = value.StartsWith("user:", StringComparison.Ordinal) ? value : TextFontLibrary.ResolveId(value, fonts); figFont.Text = fonts.FirstOrDefault(f => f.Id == selectedFont)?.Name ?? "缺失的字体"; systemFont.Select(p.GetValueOrDefault("systemFont", "Microsoft YaHei UI")); systemStyle.SelectedIndex = int.TryParse(p.GetValueOrDefault("systemStyle"), out var style) && style is >= 0 and < 5 ? style : 0;
             if (!p.ContainsKey("raster")) weight.SelectedIndex = systemStyle.SelectedIndex == 1 ? 0 : 1;
-            var o = p.TryGetValue("layout", out var json) ? JsonSerializer.Deserialize<TextArtOptions>(json) ?? new() : new() { Border = int.TryParse(p.GetValueOrDefault("border"), out var b) && b is >= 0 and <= 3 ? b : 0, Trim = p.GetValueOrDefault("trim") != "False", Replacement = p.GetValueOrDefault("replacement", "") }; o.Validate(); letterSpacing.Value = o.LetterSpacing; lineSpacing.Value = o.LineSpacing; maximumWidth.Value = o.MaximumWidth; alignment.SelectedIndex = (int)o.Alignment; horizontal.SelectedIndex = (int)o.Horizontal; vertical.SelectedIndex = (int)o.Vertical; wrap.IsChecked = o.Wrap; border.SelectedIndex = o.Border; paddingX.Value = o.PaddingX; paddingY.Value = o.PaddingY; borderTitle.Text = o.Title; trim.IsChecked = o.Trim; replacement.Text = o.Replacement;
+            var o = TextProjectMapper.Layout(p); letterSpacing.Value = o.LetterSpacing; lineSpacing.Value = o.LineSpacing; maximumWidth.Value = o.MaximumWidth; alignment.SelectedIndex = (int)o.Alignment; horizontal.SelectedIndex = (int)o.Horizontal; vertical.SelectedIndex = (int)o.Vertical; wrap.IsChecked = o.Wrap; border.SelectedIndex = o.Border; paddingX.Value = o.PaddingX; paddingY.Value = o.PaddingY; borderTitle.Text = o.Title; trim.IsChecked = o.Trim; replacement.Text = o.Replacement;
             if (p.TryGetValue("raster", out var rjson) && JsonSerializer.Deserialize<TextRasterOptions>(rjson) is { } ro) { systemFont.Select(ro.Family); weight.SelectedIndex = ro.Bold ? 1 : 0; stroke.Value = ro.Stroke; fill.SelectedIndex = ro.Filled ? 0 : 1; }
             preset.SelectedIndex = int.TryParse(p.GetValueOrDefault("readabilityPreset"), out var pi) && pi is >= 0 and <= 3 ? pi : 0;
             allowMissing.IsChecked = p.GetValueOrDefault("allowMissing") == "True"; warning.IsOpen = mode.SelectedIndex == 0 && !TextFontLibrary.Available(selectedFont); warning.Title = "项目字体缺失"; warning.Message = "已保留原结果；导入对应字体或选择其他字体后可生成。"; UpdateDetails(); result.SetReadablePreview(mode.SelectedIndex == 1); await result.LoadDocument(project);

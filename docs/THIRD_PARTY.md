@@ -9,3 +9,6 @@
 | Figgle.Fonts | 0.6.6 | 内置 FIGlet 字体 | https://github.com/drewnoakes/figgle/tree/master/src/Figgle.Fonts |
 
 具体依赖及间接依赖版本见各项目 `packages.lock.json`。发行前需收集完整依赖许可证和各字体原始说明，审核字体资产分发条件；当前不是经过发行审核的安装包。不从 asciiart.eu 批量复制或分发图库作品。
+
+核心测试使用 xUnit、xUnit Visual Studio runner 和 Microsoft.NET.Test.Sdk，单独在测试项目锁定版本，不随应用 ZIP 发布。
+展示样例为仓库工具自行绘制及本机字体生成，没有第三方图库素材。
