@@ -172,7 +172,7 @@ public static class ImagingService
                         if (glyph.Width == 0) continue;
                         var color = document.Colors?[y * document.Width + glyph.Column] ?? 0xFFE7EDF7;
                         using var brush = new SolidBrush(Color.FromArgb(unchecked((int)color)));
-                        g.DrawString(glyph.Text, font, brush, padding + glyph.Column * cell, padding + y * lineHeight, StringFormat.GenericTypographic);
+                        GlyphPainter.Draw(g, glyph.Text, font, brush, padding + glyph.Column * cell, padding + y * lineHeight, cell, lineHeight, transparent ? Color.Transparent : Color.FromArgb(255, 18, 24, 34));
                     }
                 }
             }

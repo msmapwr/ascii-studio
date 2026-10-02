@@ -83,7 +83,7 @@ public static class ViewportRasterizer
                     if (!string.IsNullOrWhiteSpace(glyph.Text)) graphics.FillRectangle(brush, 20 + glyph.Column * cell, 20 + row * lineHeight,
                         Math.Min(sampleStep, lastColumn - glyph.Column) * cell, Math.Min(sampleStep, lastRow - row) * lineHeight);
                 }
-                else graphics.DrawString(glyph.Text, font, brush, 20 + glyph.Column * cell, 20 + row * lineHeight, StringFormat.GenericTypographic);
+                else GlyphPainter.Draw(graphics, glyph.Text, font, brush, 20 + glyph.Column * cell, 20 + row * lineHeight, cell, lineHeight);
             }
         }
         cancellation.ThrowIfCancellationRequested();

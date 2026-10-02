@@ -21,8 +21,8 @@ public static class ExportService
                     var start = x; var color = document.Colors?[y * document.Width + x] ?? 0xFFE7EDF7;
                     var background = document.BackgroundColors?[y * document.Width + x];
                     while (x < lines[y].Length && (document.Colors?[y * document.Width + x] ?? 0xFFE7EDF7) == color && document.BackgroundColors?[y * document.Width + x] == background) x++;
-                    var bg = background.HasValue ? $";background-color:#{background.Value & 0xFFFFFF:X6}" : "";
-                    content.Append($"<span style=\"color:#{color & 0xFFFFFF:X6}{bg}\">{WebUtility.HtmlEncode(lines[y][start..x])}</span>");
+                    var bg = background.HasValue ? $";background-color:{CssColor(background.Value)}" : "";
+                    content.Append($"<span style=\"color:{CssColor(color)}{bg}\">{WebUtility.HtmlEncode(lines[y][start..x])}</span>");
                 }
             }
             else foreach (var glyph in UnicodeGrid.Glyphs(lines[y]))
@@ -30,9 +30,18 @@ public static class ExportService
                 if (glyph.Width == 0) continue;
                 var color = document.Colors?[y * document.Width + glyph.Column] ?? 0xFFE7EDF7;
                 var background = document.BackgroundColors?[y * document.Width + glyph.Column];
-                var bg = background.HasValue ? $";background-color:#{background.Value & 0xFFFFFF:X6}" : "";
+                var bg = background.HasValue ? $";background-color:{CssColor(background.Value)}" : "";
                 var width = (glyph.Width * document.CellWidth).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-                content.Append($"<span style=\"display:inline-block;width:{width}px;color:#{color & 0xFFFFFF:X6}{bg}\">{WebUtility.HtmlEncode(glyph.Text)}</span>");
+                var foreground = $"color:{CssColor(color)}";
+                if (ImageQualityConverter.BlockFill(glyph.Text) is { } block)
+                {
+                    var top = (block.Top * 100).ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+                    var end = ((block.Top + block.Height) * 100).ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+                    var baseColor = background.HasValue ? CssColor(background.Value) : "transparent";
+                    foreground = $"color:transparent;background-image:linear-gradient(to bottom,{baseColor} 0%,{baseColor} {top}%,{CssColor(color)} {top}%,{CssColor(color)} {end}%,{baseColor} {end}%)";
+                    bg = "";
+                }
+                content.Append($"<span style=\"display:inline-block;width:{width}px;{foreground}{bg}\">{WebUtility.HtmlEncode(glyph.Text)}</span>");
             }
             if (y < lines.Length - 1) content.Append('\n');
         }
@@ -53,7 +62,7 @@ public static class ExportService
                 {
                     var start = x; var background = document.BackgroundColors[y * document.Width + x];
                     while (x < document.Width && document.BackgroundColors[y * document.Width + x] == background) x++;
-                    result.Append($"<rect x=\"{Number(pad + start * cw)}\" y=\"{Number(pad + y * ch)}\" width=\"{Number((x - start) * cw)}\" height=\"{Number(ch)}\" fill=\"#{background & 0xFFFFFF:X6}\"/>");
+                    result.Append($"<rect x=\"{Number(pad + start * cw)}\" y=\"{Number(pad + y * ch)}\" width=\"{Number((x - start) * cw)}\" height=\"{Number(ch)}\" fill=\"#{background & 0xFFFFFF:X6}\"{SvgAlpha(background)}/>");
                 }
         for (var y = 0; y < lines.Length; y++)
         {
@@ -63,7 +72,14 @@ public static class ExportService
             {
                 if (glyph.Width == 0) continue;
                 var color = document.Colors?[y * document.Width + glyph.Column] ?? 0xFFE7EDF7;
-                result.Append($"<text x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + 1) * ch)}\" fill=\"#{color & 0xFFFFFF:X6}\">{WebUtility.HtmlEncode(glyph.Text)}</text>");
+                if (ImageQualityConverter.BlockFill(glyph.Text) is { } block)
+                {
+                    if (color >> 24 < 255)
+                        result.Append($"<rect x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + block.Top) * ch)}\" width=\"{Number(cw)}\" height=\"{Number(block.Height * ch)}\" fill=\"#121822\"/>");
+                    result.Append($"<rect x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + block.Top) * ch)}\" width=\"{Number(cw)}\" height=\"{Number(block.Height * ch)}\" fill=\"#{color & 0xFFFFFF:X6}\"{SvgAlpha(color)}/>");
+                    continue;
+                }
+                result.Append($"<text x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + 1) * ch)}\" fill=\"#{color & 0xFFFFFF:X6}\"{SvgAlpha(color)}>{WebUtility.HtmlEncode(glyph.Text)}</text>");
             }
         }
         return result.Append("</g></svg>").ToString();
@@ -80,9 +96,9 @@ public static class ExportService
                 var x = glyph.Column;
                 if (glyph.Width == 0) continue;
                 var c = document.Colors?[y * document.Width + x] ?? 0xFFE7EDF7;
-                if (c != previous) { result.Append($"\x1b[38;2;{c >> 16 & 255};{c >> 8 & 255};{c & 255}m"); previous = c; }
+                if (c != previous) { result.Append(AnsiColor(c, false, document.ColorEncoding)); previous = c; }
                 var background = document.BackgroundColors?[y * document.Width + x];
-                if (background.HasValue && background != previousBackground) { var b = background.Value; result.Append($"\x1b[48;2;{b >> 16 & 255};{b >> 8 & 255};{b & 255}m"); previousBackground = background; }
+                if (background.HasValue && background != previousBackground) { result.Append(AnsiColor(background.Value, true, document.ColorEncoding)); previousBackground = background; }
                 result.Append(glyph.Text);
             }
             if (y < lines.Length - 1) result.Append("\r\n");
@@ -97,4 +113,17 @@ public static class ExportService
         var fence = new string('`', Math.Max(3, longest + 1)); return fence + "text\n" + document.Text + "\n" + fence + "\n";
     }
     public static string Json(AsciiDocument document) { document.Validate(); return JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true }); }
+    private static string AnsiColor(uint c, bool background, AnsiColorEncoding encoding)
+    {
+        if (c >> 24 == 0) return background ? "\x1b[49m" : "\x1b[39m";
+        if (encoding == AnsiColorEncoding.Ansi16)
+        {
+            var index = ImagePalettes.Nearest(c, ImagePalettes.Ansi16);
+            return $"\x1b[{(index < 8 ? 30 : 90) + index % 8 + (background ? 10 : 0)}m";
+        }
+        if (encoding == AnsiColorEncoding.Ansi256) return $"\x1b[{(background ? 48 : 38)};5;{ImagePalettes.Nearest(c, ImagePalettes.Ansi256)}m";
+        return $"\x1b[{(background ? 48 : 38)};2;{c >> 16 & 255};{c >> 8 & 255};{c & 255}m";
+    }
+    private static string CssColor(uint c) => c >> 24 == 255 ? $"#{c & 0xFFFFFF:X6}" : $"#{c & 0xFFFFFF:X6}{c >> 24:X2}";
+    private static string SvgAlpha(uint c) => c >> 24 == 255 ? "" : $" fill-opacity=\"{((c >> 24) / 255d).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)}\"";
 }
