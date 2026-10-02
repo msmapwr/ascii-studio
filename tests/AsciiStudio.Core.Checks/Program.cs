@@ -265,4 +265,51 @@ Check("bounded creation history budgets retain usable current state", () =>
     Assert(history.Count == 1 && !history.CanUndo && history.Current.Length == 20, "Oversized current state lost");
     try { history.Undo(); throw new Exception("Empty undo accepted"); } catch (InvalidOperationException) { }
 });
+Check("Unicode clusters and stable terminal widths", () =>
+{
+    foreach (var (text, expected) in new (string, int)[] { ("ABC", 3), ("测试A", 5), ("e\u0301", 1), ("👨‍👩‍👧‍👦", 2), ("🇨🇳", 2), ("1️⃣", 2), ("中👩🏽‍💻x", 5), ("╔═╗", 3), ("\u0301", 0), ("\U00020000", 2) })
+        Assert(UnicodeGrid.Width(text) == expected, $"Wrong width for {text}");
+    Assert(UnicodeGrid.Glyphs("👨‍👩‍👧‍👦").Count() == 1, "Emoji sequence was split");
+    Assert(AsciiDocument.FromText("中\tx\ne\u0301\tZ").Text == "中  x\ne\u0301   Z", "Tab stops ignored display width");
+});
+Check("Unicode validation and border alignment", () =>
+{
+    var bordered = Generators.Border("测试\ne\u0301\n👨‍👩‍👧‍👦", 2);
+    Assert(bordered.Split('\n').Select(UnicodeGrid.Width).Distinct().Count() == 1, "Unicode border was misaligned");
+    Assert(AsciiDocument.FromText("中e\u0301😀").Width == 5, "Grid uses UTF-16 length");
+    try { AsciiDocument.FromText("\ud800"); throw new Exception("Unpaired surrogate accepted"); } catch (ArgumentException) { }
+    try { (AsciiDocument.FromText("测试") with { Width = 2 }).Validate(); throw new Exception("Wide text overflow accepted"); } catch (ArgumentException) { }
+    try { new AsciiDocument { Width = 10, Height = 0, BackgroundColors = [] }.Validate(); throw new Exception("Zero row color grid accepted"); } catch (ArgumentException) { }
+    try { ImageConverter.Convert(pixels, 2, 2, new() { Characters = " 中" }); throw new Exception("Wide image ramp accepted"); } catch (ArgumentException) { }
+});
+Check("Unicode legacy foreground and background migration", () =>
+{
+    var legacy = new AsciiDocument { Text = "中e\u0301😀!", Width = 6, Height = 1, Colors = [1,2,3,4,5,6], BackgroundColors = [11,12,13,14,15,16] };
+    var upgraded = UnicodeGrid.Upgrade(legacy);
+    Assert(upgraded.GridVersion == 1 && upgraded.Width == 6, "Wrong migrated grid");
+    Assert(upgraded.Colors!.SequenceEqual(new uint[] {1,1,2,4,4,6}) && upgraded.BackgroundColors!.SequenceEqual(new uint[] {11,11,12,14,14,16}), "Migration split glyph colors");
+    Assert(ReferenceEquals(UnicodeGrid.Upgrade(upgraded), upgraded), "Migration is not idempotent");
+    var grown = UnicodeGrid.Upgrade(new AsciiDocument { Text = "测试", Width = 2, Height = 1, Colors = [1,2] });
+    Assert(grown.Width == 4 && grown.Colors!.SequenceEqual(new uint[] {1,1,2,2}), "CJK migration did not expand columns");
+});
+Check("Unicode SVG HTML and ANSI keep clusters and colors", () =>
+{
+    var document = AsciiDocument.FromText("中e\u0301😀!") with { Colors = [0xFFFF0000,0xFFFF0000,0xFF00FF00,0xFF0000FF,0xFF0000FF,0xFFFFFFFF] };
+    var svg = ExportService.Svg(document);
+    var xml = System.Xml.Linq.XDocument.Parse(svg);
+    var nodes = xml.Descendants().Where(n => n.Name.LocalName == "text").ToArray();
+    Assert(nodes.Length == 4 && nodes[1].Value == "e\u0301" && nodes[2].Value == "😀" && (string?)nodes[3].Attribute("x") == "65", "SVG split glyphs or used UTF-16 positions");
+    Assert(ExportService.Html(document).Contains("width:18px") && ExportService.Html(document).Contains("e\u0301"), "HTML missing fixed widths");
+    var restored = AnsiArt.Parse(ExportService.Ansi(document), 20).Document;
+    Assert(restored.Text.TrimEnd() == document.Text && restored.Colors!.Take(6).SequenceEqual(document.Colors!), "ANSI Unicode round trip changed glyphs or colors");
+});
+Check("Unicode ANSI wide cursor wrap and overwrite", () =>
+{
+    var parsed = AnsiArt.Parse(new string('a',19) + "中Z", 20).Document;
+    Assert(parsed.Height == 2 && parsed.Text.Split('\n')[1].StartsWith("中Z"), "Wide glyph did not wrap before last column");
+    var overwritten = AnsiArt.Parse("中\x1b[2GX",20).Document;
+    Assert(overwritten.Text.StartsWith(" X"), "Overwriting continuation left broken wide glyph");
+    var combined = AnsiArt.Parse("e\x1b[31m\u0301X",20).Document;
+    Assert(combined.Text.StartsWith("e\u0301X"), "Color escape broke combining mark");
+});
 Console.WriteLine($"{passed} checks passed.");
