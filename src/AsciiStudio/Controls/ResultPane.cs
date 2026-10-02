@@ -403,9 +403,9 @@ public sealed class ResultPane : Grid
         if (colorToggle.IsOn) await App.Window.Guard(RenderPreview);
     }
 
-    public void AddSettings(string label, FrameworkElement content, string automationId)
+    public Flyout AddSettings(string label, FrameworkElement content, string automationId, bool useAvailableHeight = false)
     {
-        var flyout = Ui.AdaptiveFlyout(content, anchor: toolbar, showClose: true);
+        var flyout = Ui.AdaptiveFlyout(content, anchor: useAvailableHeight ? null : toolbar, showClose: true);
         var button = new AppBarButton { Label = label, Icon = new SymbolIcon(Symbol.Setting) };
         // Close the overflow before opening an editor so two light-dismiss
         // surfaces cannot compete for focus or consume the first input click.
@@ -421,6 +421,7 @@ public sealed class ResultPane : Grid
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, automationId);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
         toolbar.PrimaryCommands.Add(button);
+        return flyout;
     }
 
     private AppBarButton AddAction(string label, Symbol icon, string automationId, Func<Task> action)
