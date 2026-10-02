@@ -89,7 +89,10 @@ public static class ImageQualityConverter
         return new(rgba, w, h, o.Columns, (int)rows, sx, sy);
     }
 
-    public static ImageFiltered Filter(ImageSample sample, ConversionOptions o, CancellationToken token = default)
+    public static ImageFiltered Filter(ImageSample sample, ConversionOptions o, CancellationToken token = default) =>
+        ApplyEdges(AdjustColors(sample, o, token), o, token);
+
+    public static ImageFiltered AdjustColors(ImageSample sample, ConversionOptions o, CancellationToken token = default)
     {
         Validate(o); token.ThrowIfCancellationRequested();
         var length = sample.Width * sample.Height; var density = new float[length]; var colors = new uint[length];
@@ -113,6 +116,14 @@ public static class ImageQualityConverter
             var alpha = (uint)Math.Round(a * 255);
             colors[i] = alpha < o.AlphaThreshold ? 0 : ImagePalettes.Pack((int)Math.Round(r * 255), (int)Math.Round(g * 255), (int)Math.Round(b * 255)) & 0xFFFFFF | alpha << 24;
         }
+        return new(density, colors, sample.Width, sample.Height, sample.Columns, sample.Rows, sample.ScaleX, sample.ScaleY);
+    }
+
+    public static ImageFiltered ApplyEdges(ImageFiltered sample, ConversionOptions o, CancellationToken token = default)
+    {
+        Validate(o); token.ThrowIfCancellationRequested();
+        if (o.AdaptiveStrength == 0 && o.Sharpness == 0 && !o.Edges) return sample;
+        var density = (float[])sample.Density.Clone(); var colors = sample.Colors;
         if (o.AdaptiveStrength > 0 || o.Sharpness > 0 || o.Edges)
         {
             var original = (float[])density.Clone(); var w = sample.Width;
@@ -138,43 +149,8 @@ public static class ImageQualityConverter
     public static AsciiDocument Map(ImageFiltered grid, ConversionOptions o, GlyphCoverage[]? profile = null, CancellationToken token = default)
     {
         Validate(o); token.ThrowIfCancellationRequested();
-        var chars = (o.Style == ImageArtStyle.Density ? o.Characters : " .:-=+*#%@").Distinct().ToArray();
-        var levels = chars.Select((c, i) => new GlyphCoverage(c, i / (double)(chars.Length - 1))).ToArray();
-        if (o.MeasureGlyphDensity && o.Style == ImageArtStyle.Density)
-        {
-            if (profile is null || profile.Length != chars.Length || !profile.Select(p => p.Glyph).ToHashSet().SetEquals(chars)
-                || profile.Any(p => !double.IsFinite(p.Coverage) || p.Coverage is < 0 or > 1)) throw new ArgumentException("所选字体的字符密度测量无效。");
-            var sorted = profile.OrderBy(p => p.Coverage).ToArray(); var range = sorted[^1].Coverage - sorted[0].Coverage;
-            if (range > .00001) levels = sorted.Select(p => p with { Coverage = (p.Coverage - sorted[0].Coverage) / range }).ToArray();
-        }
-        var density = (float[])grid.Density.Clone(); var kernel = ImageConverter.Kernel(o.Dither);
-        int Nearest(double value)
-        {
-            var low = 0; var high = levels.Length - 1;
-            while (low < high) { var middle = (low + high) / 2; if (levels[middle].Coverage < value) low = middle + 1; else high = middle; }
-            return low > 0 && value - levels[low - 1].Coverage <= levels[low].Coverage - value ? low - 1 : low;
-        }
-        // Quantize on a private buffer: diffusion never changes cached filter data.
-        var quantized = new int[density.Length];
-        for (var y = 0; y < grid.Height; y++)
-        {
-            token.ThrowIfCancellationRequested();
-            for (var x = 0; x < grid.Width; x++)
-            {
-                var i = y * grid.Width + x; if (grid.Colors[i] >> 24 == 0) continue;
-                var value = Math.Clamp(density[i], 0, 1);
-                if (o.Threshold) value = value >= 1 - o.ThresholdValue / 255d ? 1 : 0;
-                var binary = o.Style is ImageArtStyle.Braille or ImageArtStyle.HalfBlock;
-                var index = binary ? value >= 1 - o.ThresholdValue / 255d ? 1 : 0 : Nearest(value);
-                quantized[i] = index; var error = value - (binary ? index : levels[index].Coverage);
-                foreach (var (dx, dy, weight) in kernel)
-                    if (x + dx >= 0 && x + dx < grid.Width && y + dy < grid.Height)
-                    {
-                        var target = (y + dy) * grid.Width + x + dx;
-                        if (grid.Colors[target] >> 24 != 0) density[target] += (float)(error * weight);
-                    }
-            }
-        }
+        var levels = GlyphLevels(o, profile);
+        var quantized = Dither(grid, o, levels, token);
         var colors = o.Color ? new uint[grid.Columns * grid.Rows] : null;
         var backgrounds = o.Color && o.Style == ImageArtStyle.HalfBlock ? new uint[grid.Columns * grid.Rows] : null;
         var text = new StringBuilder(grid.Rows * (grid.Columns + 1));
@@ -261,6 +237,53 @@ public static class ImageQualityConverter
             BackgroundColors = backgrounds,
             ColorEncoding = o.PaletteMode == ImagePaletteMode.Ansi16 ? AnsiColorEncoding.Ansi16 : o.PaletteMode == ImagePaletteMode.Ansi256 ? AnsiColorEncoding.Ansi256 : AnsiColorEncoding.TrueColor
         };
+    }
+
+    private static GlyphCoverage[] GlyphLevels(ConversionOptions o, GlyphCoverage[]? profile)
+    {
+        var chars = (o.Style == ImageArtStyle.Density ? o.Characters : " .:-=+*#%@").Distinct().ToArray();
+        var levels = chars.Select((c, i) => new GlyphCoverage(c, i / (double)(chars.Length - 1))).ToArray();
+        if (o.MeasureGlyphDensity && o.Style == ImageArtStyle.Density)
+        {
+            if (profile is null || profile.Length != chars.Length || !profile.Select(p => p.Glyph).ToHashSet().SetEquals(chars)
+                || profile.Any(p => !double.IsFinite(p.Coverage) || p.Coverage is < 0 or > 1)) throw new ArgumentException("所选字体的字符密度测量无效。");
+            var sorted = profile.OrderBy(p => p.Coverage).ToArray(); var range = sorted[^1].Coverage - sorted[0].Coverage;
+            if (range > .00001) levels = sorted.Select(p => p with { Coverage = (p.Coverage - sorted[0].Coverage) / range }).ToArray();
+        }
+        return levels;
+    }
+
+    public static int[] Dither(ImageFiltered grid, ConversionOptions o, GlyphCoverage[] levels, CancellationToken token = default)
+    {
+        var density = (float[])grid.Density.Clone(); var kernel = ImageConverter.Kernel(o.Dither);
+        int Nearest(double value)
+        {
+            var low = 0; var high = levels.Length - 1;
+            while (low < high) { var middle = (low + high) / 2; if (levels[middle].Coverage < value) low = middle + 1; else high = middle; }
+            return low > 0 && value - levels[low - 1].Coverage <= levels[low].Coverage - value ? low - 1 : low;
+        }
+        // Quantize on a private buffer: diffusion never changes cached filter data.
+        var quantized = new int[density.Length];
+        for (var y = 0; y < grid.Height; y++)
+        {
+            token.ThrowIfCancellationRequested();
+            for (var x = 0; x < grid.Width; x++)
+            {
+                var i = y * grid.Width + x; if (grid.Colors[i] >> 24 == 0) continue;
+                var value = Math.Clamp(density[i], 0, 1);
+                if (o.Threshold) value = value >= 1 - o.ThresholdValue / 255d ? 1 : 0;
+                var binary = o.Style is ImageArtStyle.Braille or ImageArtStyle.HalfBlock;
+                var index = binary ? value >= 1 - o.ThresholdValue / 255d ? 1 : 0 : Nearest(value);
+                quantized[i] = index; var error = value - (binary ? index : levels[index].Coverage);
+                foreach (var (dx, dy, weight) in kernel)
+                    if (x + dx >= 0 && x + dx < grid.Width && y + dy < grid.Height)
+                    {
+                        var target = (y + dy) * grid.Width + x + dx;
+                        if (grid.Colors[target] >> 24 != 0) density[target] += (float)(error * weight);
+                    }
+            }
+        }
+        return quantized;
     }
 
     public static AsciiDocument Convert(byte[] pixels, int width, int height, ConversionOptions o, GlyphCoverage[]? profile = null, CancellationToken token = default)

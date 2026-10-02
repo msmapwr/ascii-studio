@@ -27,44 +27,64 @@ public static class ImageConverter
         var rows = (int)requestedRows;
         var luminance = new double[rows * columns];
         var colors = options.Color ? new uint[rows * columns] : null;
-        double br = (options.Background >> 16) & 255, bg = (options.Background >> 8) & 255, bb = options.Background & 255;
         for (var y = 0; y < rows; y++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             for (var x = 0; x < columns; x++)
             {
-                int x0 = (int)((long)x * width / columns), x1 = Math.Max(x0 + 1, (int)((long)(x + 1) * width / columns));
-                int y0 = (int)((long)y * height / rows), y1 = Math.Max(y0 + 1, (int)((long)(y + 1) * height / rows));
-                double r = 0, g = 0, b = 0; var count = 0;
-                for (var sy = y0; sy < Math.Min(y1, height); sy++)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    for (var sx = x0; sx < Math.Min(x1, width); sx++)
-                    {
-                        var p = (sy * width + sx) * 4; var a = rgba[p + 3] / 255d;
-                        r += rgba[p] * a + br * (1 - a); g += rgba[p + 1] * a + bg * (1 - a); b += rgba[p + 2] * a + bb * (1 - a); count++;
-                    }
-                }
-                r /= count; g /= count; b /= count;
-                var gray = .2126 * r + .7152 * g + .0722 * b;
-                r = gray + (r - gray) * options.Saturation; g = gray + (g - gray) * options.Saturation; b = gray + (b - gray) * options.Saturation;
-                if (options.Hue != 0) (r, g, b) = RotateHue(r, g, b, options.Hue);
-                gray = .2126 * r + .7152 * g + .0722 * b;
-                r += (gray - r) * options.Grayscale; g += (gray - g) * options.Grayscale; b += (gray - b) * options.Grayscale;
-                var sr = .393 * r + .769 * g + .189 * b; var sg = .349 * r + .686 * g + .168 * b; var sb = .272 * r + .534 * g + .131 * b;
-                r += (sr - r) * options.Sepia; g += (sg - g) * options.Sepia; b += (sb - b) * options.Sepia;
-                double Adjust(double v)
-                {
-                    var adjusted = Math.Clamp(((v / 255 - .5) * options.Contrast + .5) * options.Brightness, 0, 1);
-                    return options.Gamma == 1 ? adjusted : Math.Pow(adjusted, 1 / options.Gamma);
-                }
-                r = Adjust(r); g = Adjust(g); b = Adjust(b);
-                if (options.Invert) { r = 1 - r; g = 1 - g; b = 1 - b; }
-                // Lower luminance uses denser glyphs: a white background stays mostly blank.
+                var (r, g, b) = SampleCell(rgba, width, height, columns, rows, x, y, options.Background, cancellationToken);
+                (r, g, b) = AdjustColor(r, g, b, options);
                 luminance[y * columns + x] = 1 - (.2126 * r + .7152 * g + .0722 * b);
                 if (colors is not null) colors[y * columns + x] = 0xFF000000u | (uint)(r * 255) << 16 | (uint)(g * 255) << 8 | (uint)(b * 255);
             }
         }
+        ApplyEdges(luminance, columns, rows, options, cancellationToken);
+        var indices = Dither(luminance, columns, rows, chars.Length, options, cancellationToken);
+        return Map(indices, chars, columns, rows, colors, cancellationToken);
+    }
+
+    // Sample and adjust one cell at a time to avoid an extra RGB buffer for million-cell results.
+    private static (double, double, double) SampleCell(byte[] rgba, int width, int height, int columns,
+        int rows, int x, int y, uint background, CancellationToken cancellationToken)
+    {
+        double br = (background >> 16) & 255, bg = (background >> 8) & 255, bb = background & 255;
+        int x0 = (int)((long)x * width / columns), x1 = Math.Max(x0 + 1, (int)((long)(x + 1) * width / columns));
+        int y0 = (int)((long)y * height / rows), y1 = Math.Max(y0 + 1, (int)((long)(y + 1) * height / rows));
+        double r = 0, g = 0, b = 0; var count = 0;
+        for (var sy = y0; sy < Math.Min(y1, height); sy++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            for (var sx = x0; sx < Math.Min(x1, width); sx++)
+            {
+                var p = (sy * width + sx) * 4; var a = rgba[p + 3] / 255d;
+                r += rgba[p] * a + br * (1 - a); g += rgba[p + 1] * a + bg * (1 - a); b += rgba[p + 2] * a + bb * (1 - a); count++;
+            }
+        }
+        r /= count; g /= count; b /= count;
+        return (r, g, b);
+    }
+
+    private static (double, double, double) AdjustColor(double r, double g, double b, ConversionOptions options)
+    {
+        var gray = .2126 * r + .7152 * g + .0722 * b;
+        r = gray + (r - gray) * options.Saturation; g = gray + (g - gray) * options.Saturation; b = gray + (b - gray) * options.Saturation;
+        if (options.Hue != 0) (r, g, b) = RotateHue(r, g, b, options.Hue);
+        gray = .2126 * r + .7152 * g + .0722 * b;
+        r += (gray - r) * options.Grayscale; g += (gray - g) * options.Grayscale; b += (gray - b) * options.Grayscale;
+        var sr = .393 * r + .769 * g + .189 * b; var sg = .349 * r + .686 * g + .168 * b; var sb = .272 * r + .534 * g + .131 * b;
+        r += (sr - r) * options.Sepia; g += (sg - g) * options.Sepia; b += (sb - b) * options.Sepia;
+        double Adjust(double v)
+        {
+            var adjusted = Math.Clamp(((v / 255 - .5) * options.Contrast + .5) * options.Brightness, 0, 1);
+            return options.Gamma == 1 ? adjusted : Math.Pow(adjusted, 1 / options.Gamma);
+        }
+        r = Adjust(r); g = Adjust(g); b = Adjust(b);
+        if (options.Invert) { r = 1 - r; g = 1 - g; b = 1 - b; }
+        return (r, g, b);
+    }
+
+    private static void ApplyEdges(double[] luminance, int columns, int rows, ConversionOptions options, CancellationToken cancellationToken)
+    {
         if (options.Sharpness > 0 || options.Edges)
         {
             var original = (double[])luminance.Clone();
@@ -77,8 +97,13 @@ public static class ImageConverter
                     : Math.Clamp(original[i] + (original[i] - neighbors) * options.Sharpness, 0, 1);
             }
         }
+    }
+
+    private static ushort[] Dither(double[] luminance, int columns, int rows, int levels, ConversionOptions options, CancellationToken cancellationToken)
+    {
         var kernel = Kernel(options.Dither);
-        var result = new StringBuilder(rows * (columns + 1));
+        // A ramp consists of distinct UTF-16 chars, so a 16-bit index is sufficient.
+        var indices = new ushort[luminance.Length];
         for (var y = 0; y < rows; y++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -86,11 +111,22 @@ public static class ImageConverter
             {
                 var value = Math.Clamp(luminance[y * columns + x], 0, 1);
                 if (options.Threshold) value = value >= 1 - options.ThresholdValue / 255d ? 1 : 0;
-                var index = (int)Math.Round(value * (chars.Length - 1)); result.Append(chars[index]);
-                var error = value - index / (double)(chars.Length - 1);
+                var index = (int)Math.Round(value * (levels - 1)); indices[y * columns + x] = (ushort)index;
+                var error = value - index / (double)(levels - 1);
                 foreach (var (dx, dy, weight) in kernel)
                     if (x + dx >= 0 && x + dx < columns && y + dy < rows) luminance[(y + dy) * columns + x + dx] += error * weight;
             }
+        }
+        return indices;
+    }
+
+    private static AsciiDocument Map(ushort[] indices, char[] chars, int columns, int rows, uint[]? colors, CancellationToken cancellationToken)
+    {
+        var result = new StringBuilder(rows * (columns + 1));
+        for (var y = 0; y < rows; y++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            for (var x = 0; x < columns; x++) result.Append(chars[indices[y * columns + x]]);
             if (y < rows - 1) result.Append('\n');
         }
         return new AsciiDocument { GridVersion = 1, Text = result.ToString(), Width = columns, Height = rows, Colors = colors };
