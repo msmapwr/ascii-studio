@@ -1,0 +1,87 @@
+using System.Diagnostics;
+using AsciiStudio.Core;
+
+namespace AsciiStudio.Services;
+
+public sealed record ImageConversionRequest(byte[] Pixels, int Width, int Height, string Revision,
+    ImageGeometry Geometry, ConversionOptions Options, string Family, double CellWidth,
+    double CellHeight, bool NativeSize, bool Automatic, bool Preview, string Title);
+public sealed record ImageConversionResult(AsciiDocument Document, ConversionOptions Options, long ElapsedMilliseconds);
+
+/// <summary>Coordinates CPU conversion and interim previews without depending on WinUI controls.</summary>
+public sealed class ImageCreationController
+{
+    private readonly SemaphoreSlim gate = new(1, 1);
+    public LatestOperation Operations { get; } = new();
+    public ImagePipelineService Pipeline { get; } = new();
+    public ImageSourceState Source { get; } = new();
+    public ConversionOptions LastOptions { get; set; } = new() { MeasureGlyphDensity = true };
+
+    public Task<ImageSourceSnapshot> PrepareSource(byte[] bytes, string title, string? encoded = null) => Task.Run(() =>
+    {
+        if (bytes.Length > 40_000_000) throw new InvalidDataException("输入文件超过 40MB，请先压缩图片。");
+        var decoded = Pipeline.Decode(bytes);
+        return new ImageSourceSnapshot(bytes, decoded.Key, encoded ?? System.Convert.ToBase64String(bytes), decoded.Frame,
+            ImagingService.Thumbnail(decoded.Frame.Pixels, decoded.Frame.Width, decoded.Frame.Height, 2400), title);
+    });
+
+    public async Task<ImageConversionResult> Convert(ImageConversionRequest request,
+        Func<AsciiDocument, CancellationToken, Task> preview, Action<string> status, CancellationToken token)
+    {
+        var options = request.Options;
+        ImageQualityConverter.Validate(options);
+        await gate.WaitAsync(token);
+        try
+        {
+            var timer = Stopwatch.StartNew();
+            if (request.NativeSize)
+            {
+                var frame = await Task.Run(() => Pipeline.Transform(request.Pixels, request.Width, request.Height,
+                    request.Revision, request.Geometry, options.TrimTransparent, options.AlphaThreshold, token), token);
+                var count = Math.Clamp((int)Math.Round(frame.Width / request.CellWidth), 8, 2000);
+                count = Math.Max(8, Math.Min(count, (int)Math.Floor(2000d * frame.Width / frame.Height / options.CellAspect)));
+                options = options with { Columns = count, Rows = 0 };
+            }
+            async Task<AsciiDocument> Render(ConversionOptions settings) => await Task.Run(() =>
+                Pipeline.Convert(request.Pixels, request.Width, request.Height, request.Revision, request.Geometry,
+                    settings, request.Family, token) with
+                {
+                    FontFamily = request.Family,
+                    CellWidth = request.CellWidth,
+                    CellHeight = request.CellHeight,
+                    Title = request.Title
+                }, token);
+            if (request.Automatic && options.QuickPreview && options.Columns > 120 && request.Preview)
+            {
+                var low = options with { Columns = 120, Rows = options.Rows == 0 ? 0 : Math.Max(1, (int)Math.Round(options.Rows * 120d / options.Columns)) };
+                var document = await Render(low);
+                token.ThrowIfCancellationRequested();
+                await preview(document, token);
+                status("低成本预览 · 正在准备完整结果");
+                await Task.Delay(300, token);
+            }
+            token.ThrowIfCancellationRequested();
+            status("正在转换…");
+            var result = await Render(options);
+            token.ThrowIfCancellationRequested();
+            return new(result, options, timer.ElapsedMilliseconds);
+        }
+        finally { gate.Release(); }
+    }
+
+    public Task<(byte[] Bytes, byte[] Comparison, int Width, int Height)> Preview(ImageFrame frame,
+        string revision, ImageGeometry geometry, bool trim, int alpha) => Task.Run(() =>
+    {
+        var image = Pipeline.Transform(frame.Pixels, frame.Width, frame.Height, revision, geometry, trim, alpha);
+        return (Pipeline.Thumbnail(image, revision, geometry, trim, alpha, 300),
+            Pipeline.Thumbnail(image, revision, geometry, trim, alpha, 2400), image.Width, image.Height);
+    });
+
+    public StudioProject Project(AsciiDocument document, ConversionOptions options, string? source,
+        bool fontAspect, int resolution, ImageGeometry geometry) => new(WorkspaceService.CurrentProjectVersion,
+        document, options, source, null, "image", new()
+        {
+            ["fontAspect"] = fontAspect.ToString(),
+            ["resolution"] = resolution.ToString()
+        }, Geometry: geometry);
+}

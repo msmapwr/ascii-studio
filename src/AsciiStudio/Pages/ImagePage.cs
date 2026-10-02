@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using AsciiStudio.Controls;
 using AsciiStudio.Core;
 using AsciiStudio.Services;
@@ -46,19 +45,9 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     private readonly TextBlock processingStatus = Ui.Text("", 12, true);
     private readonly TextBlock cacheStatus = Ui.Text("缓存：每项目64MB / 全局256MB", 12, true);
     private readonly Button cancel = new() { Content = "取消转换" };
-    private readonly ImagePipelineService pipeline = new();
-    private readonly SemaphoreSlim conversionGate = new(1, 1);
-    private byte[]? source;
-    private string sourceKey = "";
-    private string? encodedSource;
-    private byte[]? comparisonOriginal;
-    private ConversionOptions lastOptions = new() { MeasureGlyphDensity = true };
-    private int loadVersion;
-    private int thumbnailVersion;
-    private readonly SemaphoreSlim thumbnailGate = new(1, 1);
-    private (byte[] pixels, int width, int height) decoded;
-    private string title = "Image";
-    private CancellationTokenSource? pending;
+    private readonly ImageCreationController controller = new();
+    private ImagePipelineService pipeline => controller.Pipeline;
+    private ConversionOptions lastOptions { get => controller.LastOptions; set => controller.LastOptions = value; }
     private bool suspend;
     public ResultPane ResultPane => result;
     public string SessionMode => "image";
@@ -76,11 +65,11 @@ public sealed class ImagePage : Grid, IProjectSessionPage
         import.Children.Add(Ui.AsyncButton("从剪贴板粘贴", Paste)); input.Children.Add(Ui.Card(import));
         input.Children.Add(Ui.Field("输出分辨率预设", resolution));
         input.Children.Add(Ui.Field("转换风格", artStyle));
-        input.Children.Add(Ui.AsyncButton("转换", () => source is null ? throw new InvalidOperationException("请先选择图片。") : ConvertAsync(), true));
+        input.Children.Add(Ui.AsyncButton("转换", () => controller.Source.Source is null ? throw new InvalidOperationException("请先选择图片。") : ConvertAsync(), true));
         progress.Visibility = Visibility.Collapsed;
         cancel.Visibility = Visibility.Collapsed; cancel.IsEnabled = false;
         cancel.Click += (_, _) => CancelConversion();
-        KeyDown += (_, e) => { if (e.Key == Windows.System.VirtualKey.Escape && pending is not null) { CancelConversion(); e.Handled = true; } };
+        KeyDown += (_, e) => { if (e.Key == Windows.System.VirtualKey.Escape && controller.Operations.IsRunning) { CancelConversion(); e.Handled = true; } };
         var statusPanel = new Grid { ColumnSpacing = 8 };
         statusPanel.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         statusPanel.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
@@ -146,11 +135,11 @@ public sealed class ImagePage : Grid, IProjectSessionPage
         cellAspect.IsEnabled = false;
         geometry.Changed += async () => await App.Window.Guard(async () =>
         {
-            pending?.Cancel();
+            controller.Operations.Cancel();
             await RefreshThumbnail(); if (IsLoaded) Queue();
         });
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(sourceInfo, "ImageSourceInfo");
-        Unloaded += (_, _) => { pending?.Cancel(); result.ClearTransientPreview(); thumbnailVersion++; };
+        Unloaded += (_, _) => { controller.Operations.Cancel(); result.ClearTransientPreview(); controller.Source.ThumbnailVersion++; };
         var body = Ui.Page(Ui.Heading("图片转换", "把照片变成字符画。调整滑块，细节即刻变化。"), Ui.Workspace(input, result)); Children.Add(body);
         AllowDrop = true;
         DragOver += (_, e) => { if (e.DataView.Contains(StandardDataFormats.StorageItems) || e.DataView.Contains(StandardDataFormats.Bitmap)) e.AcceptedOperation = DataPackageOperation.Copy; };
@@ -198,8 +187,8 @@ public sealed class ImagePage : Grid, IProjectSessionPage
         foreach (var s in new[] { brightness, contrast, gamma, saturation, hue, gray, sepia, sharpness }) s.ValueChanged += (_, _) => Queue();
         foreach (var box in new[] { invert, color, edges, threshold }) { box.Checked += (_, _) => Queue(); box.Unchecked += (_, _) => Queue(); }
         dither.SelectionChanged += (_, _) => Queue(); characters.TextChanged += (_, _) => Queue();
-        result.ProjectFactory = doc => new(1, doc, lastOptions, encodedSource, null, "image", new() { ["fontAspect"] = (fontAspect.IsChecked == true).ToString(), ["resolution"] = resolution.SelectedIndex.ToString() }, Geometry: geometry.Current);
-        result.DraftFactory = doc => new(2, doc, Options(), encodedSource, null, "image", new() { ["fontAspect"] = (fontAspect.IsChecked == true).ToString(), ["resolution"] = resolution.SelectedIndex.ToString() }, Geometry: geometry.Current);
+        result.ProjectFactory = doc => controller.Project(doc, lastOptions, controller.Source.Encoded, fontAspect.IsChecked == true, resolution.SelectedIndex, geometry.Current);
+        result.DraftFactory = doc => controller.Project(doc, Options(), controller.Source.Encoded, fontAspect.IsChecked == true, resolution.SelectedIndex, geometry.Current);
         suspend = true; columns.Value = WorkspaceService.Settings.DefaultColumns; resolution.SelectedIndex = columns.Value == 120 ? 0 : 5; suspend = false;
     }
 
@@ -208,9 +197,9 @@ public sealed class ImagePage : Grid, IProjectSessionPage
         var metrics = FontCatalog.Measure(result.CharacterFontFamily);
         var aspect = fontAspect.IsChecked == true ? metrics.Width / metrics.Height : cellAspect.Value;
         var count = ReadDimension(columns, "列数");
-        if (resolution.SelectedIndex == 4 && source is not null)
+        if (resolution.SelectedIndex == 4 && controller.Source.Source is not null)
         {
-            var crop = geometry.Current; var w = decoded.width * crop.Width / 100; var h = decoded.height * crop.Height / 100;
+            var crop = geometry.Current; var w = controller.Source.Decoded.width * crop.Width / 100; var h = controller.Source.Decoded.height * crop.Height / 100;
             if (crop.QuarterTurns % 2 != 0) (w, h) = (h, w);
             count = Math.Clamp((int)Math.Round(w / metrics.Width), 8, 2000);
             count = Math.Max(8, Math.Min(count, (int)Math.Floor(2000 * w / h / aspect)));
@@ -249,9 +238,9 @@ public sealed class ImagePage : Grid, IProjectSessionPage
             QuickPreview = quickPreview.IsChecked == true
         };
     }
-    private void Queue() { if (!suspend && IsLoaded) result.InputChanged(); if (!suspend && IsLoaded && source is not null && WorkspaceService.Settings.AutoConvert) _ = App.Window.Guard(() => ConvertAsync(true)); }
-    private void CancelConversion() { if (pending is null) return; pending.Cancel(); processingStatus.Text = "已取消，保留当前结果"; }
-    private void RefreshRegion() { if (!suspend && IsLoaded && source is not null) _ = App.Window.Guard(RefreshThumbnail); }
+    private void Queue() { if (!suspend && IsLoaded) result.InputChanged(); if (!suspend && IsLoaded && controller.Source.Source is not null && WorkspaceService.Settings.AutoConvert) _ = App.Window.Guard(() => ConvertAsync(true)); }
+    private void CancelConversion() { controller.Operations.Cancel(); processingStatus.Text = "已取消，保留当前结果"; }
+    private void RefreshRegion() { if (!suspend && IsLoaded && controller.Source.Source is not null) _ = App.Window.Guard(RefreshThumbnail); }
     private void UpdateModeControls()
     {
         ramp.IsEnabled = characters.IsEnabled = measuredDensity.IsEnabled = artStyle.SelectedIndex == 0;
@@ -268,55 +257,36 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     }
     private async Task ConvertAsync(bool automatic = false)
     {
-        pending?.Cancel(); result.ClearTransientPreview(); var tokenSource = new CancellationTokenSource(); pending = tokenSource; var token = tokenSource.Token;
+        using var operation = controller.Operations.Begin(); var token = operation.Token;
+        result.ClearTransientPreview();
         try
         {
-            progress.IsActive = true; progress.Visibility = Visibility.Visible; cancel.IsEnabled = true; cancel.Visibility = Visibility.Visible; processingStatus.Text = "等待转换…";
+            progress.IsActive = true; progress.Visibility = Visibility.Visible;
+            cancel.IsEnabled = true; cancel.Visibility = Visibility.Visible; processingStatus.Text = "等待转换…";
             if (automatic) await Task.Delay(WorkspaceService.Settings.ConversionDelay, token);
-            var options = Options(); ImageQualityConverter.Validate(options); var pixels = decoded; var revision = sourceKey;
-            var transform = geometry.Current;
-            var family = result.CharacterFontFamily;
-            var metrics = FontCatalog.Measure(family);
-            var nativeSize = resolution.SelectedIndex == 4;
-            await conversionGate.WaitAsync(token);
-            progress.IsActive = true; var sw = Stopwatch.StartNew();
-            AsciiDocument doc;
-            try
-            {
-                if (nativeSize)
-                {
-                    var frame = await Task.Run(() => pipeline.Transform(pixels.pixels, pixels.width, pixels.height, revision, transform, options.TrimTransparent, options.AlphaThreshold, token), token);
-                    var count = Math.Clamp((int)Math.Round(frame.Width / metrics.Width), 8, 2000);
-                    count = Math.Max(8, Math.Min(count, (int)Math.Floor(2000d * frame.Width / frame.Height / options.CellAspect)));
-                    options = options with { Columns = count, Rows = 0 };
-                }
-                if (automatic && options.QuickPreview && options.Columns > 120 && !result.HasManualEdits)
-                {
-                    var low = options with { Columns = 120, Rows = options.Rows == 0 ? 0 : Math.Max(1, (int)Math.Round(options.Rows * 120d / options.Columns)) };
-                    var preview = await Task.Run(() => pipeline.Convert(pixels.pixels, pixels.width, pixels.height, revision, transform, low, family, token), token);
-                    token.ThrowIfCancellationRequested();
-                    await result.ShowTransientPreview(preview with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height }, token);
-                    processingStatus.Text = "低成本预览 · 正在准备完整结果";
-                    await Task.Delay(300, token);
-                }
-                processingStatus.Text = "正在转换…";
-                doc = await Task.Run(() =>
-            {
-                return pipeline.Convert(pixels.pixels, pixels.width, pixels.height, revision, transform, options, family, token) with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height };
-            }, token);
-            }
-            finally { conversionGate.Release(); }
-            if (!token.IsCancellationRequested && ReferenceEquals(pending, tokenSource))
-            {
-                lastOptions = options; result.ClearTransientPreview();
-                await result.SetDocument(doc with { Title = title }, $"{sw.ElapsedMilliseconds} ms", cancellationToken: token);
-                if (!token.IsCancellationRequested) { processingStatus.Text = $"{sw.ElapsedMilliseconds} ms · {doc.Width} × {doc.Height} 字符"; cacheStatus.Text = $"缓存 {pipeline.RetainedBytes / 1048576d:0.0} MB · 累计复用 {pipeline.Hits} 个阶段"; }
-            }
+            var family = result.CharacterFontFamily; var metrics = FontCatalog.Measure(family);
+            var request = new ImageConversionRequest(controller.Source.Decoded.pixels, controller.Source.Decoded.width, controller.Source.Decoded.height, controller.Source.Revision,
+                geometry.Current, Options(), family, metrics.Width, metrics.Height, resolution.SelectedIndex == 4,
+                automatic, !result.HasManualEdits, controller.Source.Title);
+            var converted = await controller.Convert(request, result.ShowTransientPreview,
+                message => { if (operation.IsCurrent) processingStatus.Text = message; }, token);
+            if (!operation.IsCurrent) return;
+            lastOptions = converted.Options; result.ClearTransientPreview();
+            await result.SetDocument(converted.Document, $"{converted.ElapsedMilliseconds} ms", cancellationToken: token);
+            if (!operation.IsCurrent) return;
+            processingStatus.Text = $"{converted.ElapsedMilliseconds} ms · {converted.Document.Width} × {converted.Document.Height} 字符";
+            cacheStatus.Text = $"缓存 {pipeline.RetainedBytes / 1048576d:0.0} MB · 累计复用 {pipeline.Hits} 个阶段";
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        catch (ArgumentException ex) when (automatic && ReferenceEquals(pending, tokenSource)) { processingStatus.Text = ex.Message; }
-        finally { if (ReferenceEquals(pending, tokenSource)) { result.ClearTransientPreview(); progress.IsActive = false; progress.Visibility = Visibility.Collapsed; cancel.IsEnabled = false; cancel.Visibility = Visibility.Collapsed; pending = null; } tokenSource.Dispose(); }
+        catch (ArgumentException ex) when (automatic && operation.IsCurrent) { processingStatus.Text = ex.Message; }
+        finally
+        {
+            // A superseded operation must not clear a newer operation's progress or preview.
+            if (operation.IsCurrent || token.IsCancellationRequested && !HasNewerOperation(operation))
+            { result.ClearTransientPreview(); progress.IsActive = false; progress.Visibility = Visibility.Collapsed; cancel.IsEnabled = false; cancel.Visibility = Visibility.Collapsed; }
+        }
     }
+    private bool HasNewerOperation(LatestOperation.Lease operation) => controller.Operations.HasNewer(operation);
     private async Task PickImage()
     {
         var picker = new FileOpenPicker(); foreach (var ext in new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff" }) picker.FileTypeFilter.Add(ext); App.Window.InitializePicker(picker);
@@ -330,39 +300,36 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     private async Task LoadBytes(byte[] bytes, string name)
     {
         if (bytes.Length > 40_000_000) throw new InvalidDataException("输入文件超过 40MB，请先压缩图片。");
-        pending?.Cancel(); thumbnailVersion++; var version = ++loadVersion;
-        var cached = await Task.Run(() => pipeline.Decode(bytes)); var image = (pixels: cached.Frame.Pixels, width: cached.Frame.Width, height: cached.Frame.Height); var encoded = await Task.Run(() => Convert.ToBase64String(bytes));
-        var originalPreview = await Task.Run(() => ImagingService.Thumbnail(image.pixels, image.width, image.height, 2400));
-        if (version != loadVersion) return; sourceKey = cached.Key; source = bytes; encodedSource = encoded; decoded = image; title = name; comparisonOriginal = originalPreview;
+        controller.Operations.Cancel(); controller.Source.ThumbnailVersion++; var version = ++controller.Source.LoadVersion;
+        var prepared = await controller.PrepareSource(bytes, name);
+        if (version != controller.Source.LoadVersion) return;
+        controller.Source.Apply(prepared);
         geometry.Load(); geometry.SourceAvailable = true;
-        await RefreshThumbnail(); if (version != loadVersion) return;
+        await RefreshThumbnail(); if (version != controller.Source.LoadVersion) return;
         await ConvertAsync();
     }
     private async Task RefreshThumbnail()
     {
-        if (source is null) return;
-        var version = ++thumbnailVersion; var pixels = decoded; var transform = geometry.Current; var name = title;
-        var revision = sourceKey; var trim = trimAlpha.IsChecked == true; var alpha = ReadDimension(alphaThreshold, "透明阈值");
+        if (controller.Source.Source is null) return;
+        var version = ++controller.Source.ThumbnailVersion; var pixels = controller.Source.Decoded; var transform = geometry.Current; var name = controller.Source.Title;
+        var revision = controller.Source.Revision; var trim = trimAlpha.IsChecked == true; var alpha = ReadDimension(alphaThreshold, "透明阈值");
         (byte[] bytes, byte[] Comparison, int Width, int Height) preview;
-        await thumbnailGate.WaitAsync();
+        await controller.Source.ThumbnailGate.WaitAsync();
         try
         {
-            if (version != thumbnailVersion) return;
-            preview = await Task.Run(() =>
-            {
-                var image = pipeline.Transform(pixels.pixels, pixels.width, pixels.height, revision, transform, trim, alpha);
-                return (bytes: pipeline.Thumbnail(image, revision, transform, trim, alpha, 300), Comparison: pipeline.Thumbnail(image, revision, transform, trim, alpha, 2400), image.Width, image.Height);
-            });
+            if (version != controller.Source.ThumbnailVersion) return;
+            var prepared = await controller.Preview(new(pixels.pixels, pixels.width, pixels.height), revision, transform, trim, alpha);
+            preview = (prepared.Bytes, prepared.Comparison, prepared.Width, prepared.Height);
         }
-        finally { thumbnailGate.Release(); }
-        if (version != thumbnailVersion) return;
+        finally { controller.Source.ThumbnailGate.Release(); }
+        if (version != controller.Source.ThumbnailVersion) return;
         using var stream = new InMemoryRandomAccessStream();
         using (var writer = new DataWriter(stream.GetOutputStreamAt(0))) { writer.WriteBytes(preview.bytes); await writer.StoreAsync(); }
         stream.Seek(0);
         var bitmap = new BitmapImage(); await bitmap.SetSourceAsync(stream);
-        if (version != thumbnailVersion) return;
+        if (version != controller.Source.ThumbnailVersion) return;
         thumbnail.Source = bitmap; sourceInfo.Text = $"{name} · {preview.Width} × {preview.Height} px";
-        await result.SetComparisonSources(comparisonOriginal, preview.Comparison);
+        await result.SetComparisonSources(controller.Source.OriginalPreview, preview.Comparison);
     }
     private async Task LoadBitmapReference(RandomAccessStreamReference reference)
     {
@@ -390,7 +357,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     }
     public async Task LoadProject(StudioProject project)
     {
-        pending?.Cancel(); thumbnailVersion++; var version = ++loadVersion;
+        controller.Operations.Cancel(); controller.Source.ThumbnailVersion++; var version = ++controller.Source.LoadVersion;
         byte[]? bytes = null;
         (byte[] pixels, int width, int height) image = default;
         var key = "";
@@ -400,7 +367,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
             if (bytes.Length > 40_000_000) throw new InvalidDataException("项目中的图片超过 40MB。");
             var cached = await Task.Run(() => pipeline.Decode(bytes)); key = cached.Key; image = (cached.Frame.Pixels, cached.Frame.Width, cached.Frame.Height);
         }
-        if (version != loadVersion) return;
+        if (version != controller.Source.LoadVersion) return;
         suspend = true;
         try
         {
@@ -408,11 +375,11 @@ public sealed class ImagePage : Grid, IProjectSessionPage
             fontAspect.IsChecked = project.Parameters is { } parameters && parameters.TryGetValue("fontAspect", out var automatic) && bool.TryParse(automatic, out var enabled) && enabled;
             if (project.Parameters is { } presetParameters && presetParameters.TryGetValue("resolution", out var preset) && int.TryParse(preset, out var pi) && pi is >= 0 and <= 5) resolution.SelectedIndex = pi;
             geometry.Load(project.Geometry); geometry.SourceAvailable = bytes is not null;
-            sourceKey = key; source = bytes; encodedSource = project.SourceImage; decoded = image; title = project.Document.Title;
-            comparisonOriginal = bytes is null ? null : await Task.Run(() => ImagingService.Thumbnail(image.pixels!, image.width, image.height, 2400));
+            controller.Source.Revision = key; controller.Source.Source = bytes; controller.Source.Encoded = project.SourceImage; controller.Source.Decoded = image; controller.Source.Title = project.Document.Title;
+            controller.Source.OriginalPreview = bytes is null ? null : await Task.Run(() => ImagingService.Thumbnail(image.pixels!, image.width, image.height, 2400));
             if (bytes is not null) await RefreshThumbnail();
             else { thumbnail.Source = null; sourceInfo.Text = "PNG · JPEG · BMP · GIF · TIFF"; await result.SetComparisonSources(null, null); }
-            if (version == loadVersion) await result.LoadDocument(project);
+            if (version == controller.Source.LoadVersion) await result.LoadDocument(project);
         }
         finally { suspend = false; }
     }
