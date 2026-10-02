@@ -13,10 +13,12 @@ public sealed record AsciiDocument
     public string FontFamily { get; init; } = "Consolas";
     public double CellWidth { get; init; } = 9;
     public double CellHeight { get; init; } = 18;
+    public AnsiColorEncoding ColorEncoding { get; init; }
 
     public void Validate()
     {
         if (GridVersion is < 0 or > 1) throw new ArgumentException("不支持的字符网格版本。");
+        if (!Enum.IsDefined(ColorEncoding)) throw new ArgumentException("不支持的 ANSI 色彩模式。");
         if (string.IsNullOrWhiteSpace(FontFamily) || FontFamily.Length > 128 || FontFamily.Any(char.IsControl)) throw new ArgumentException("字体名称无效。");
         if (!double.IsFinite(CellWidth) || !double.IsFinite(CellHeight) || CellWidth is <= 0 or > 200 || CellHeight is <= 0 or > 200) throw new ArgumentException("字符尺寸无效。");
         if (Width < 0 || Height < 0 || (Height == 0 && Width != 0) || (long)Width * Height > 4_000_000)
@@ -45,6 +47,9 @@ public sealed record AsciiDocument
 }
 
 public enum DitherMode { None, FloydSteinberg, JarvisJudiceNinke, Stucki, Atkinson }
+public enum ImageArtStyle { Density, Structure, Braille, HalfBlock }
+public enum ImagePaletteMode { Original, TwoTone, Custom, Gradient, Ansi16, Ansi256, Limited }
+public enum AnsiColorEncoding { TrueColor, Ansi16, Ansi256 }
 
 public sealed record ConversionOptions
 {
@@ -68,4 +73,15 @@ public sealed record ConversionOptions
     public double Sharpness { get; init; }
     public DitherMode Dither { get; init; }
     public uint Background { get; init; } = 0xFFFFFFFF;
+    public ImageArtStyle Style { get; init; }
+    public bool MeasureGlyphDensity { get; init; }
+    public double AdaptiveStrength { get; init; }
+    public double StructureThreshold { get; init; } = .12;
+    public bool PreserveTransparent { get; init; }
+    public bool TrimTransparent { get; init; }
+    public int AlphaThreshold { get; init; } = 16;
+    public ImagePaletteMode PaletteMode { get; init; }
+    public string PaletteColors { get; init; } = "#172554,#FBBF24";
+    public int PaletteSize { get; init; } = 16;
+    public bool QuickPreview { get; init; } = true;
 }
