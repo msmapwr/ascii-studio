@@ -186,8 +186,20 @@ public sealed class ImageTests
     public void CancellationStopsAnActiveQualityComputation()
     {
         var large = new byte[2048 * 2048 * 4];
-        using var cancel = new CancellationTokenSource(); cancel.CancelAfter(10);
-        try { ImageConverter.Convert(large, 2048, 2048, new() { Columns = 1000, Rows = 500, Style = ImageArtStyle.Braille }, cancel.Token); throw new Exception("Active computation ignored cancellation"); }
-        catch (OperationCanceledException) { Assert.True(cancel.IsCancellationRequested, "Unexpected cancellation token"); }
+        using var cancel = new CancellationTokenSource();
+        using var started = new ManualResetEventSlim();
+        // CancelAfter uses the pool shared with parallel CPU tests. A dedicated thread
+        // keeps cancellation independent of pool starvation on small CI runners.
+        var cancellation = new Thread(() => { started.Wait(); Thread.Sleep(10); cancel.Cancel(); }) { IsBackground = true };
+        cancellation.Start();
+        try
+        {
+            Assert.False(cancel.IsCancellationRequested);
+            started.Set();
+            Assert.ThrowsAny<OperationCanceledException>(() => ImageConverter.Convert(large, 2048, 2048,
+                new() { Columns = 1000, Rows = 500, Style = ImageArtStyle.Braille }, cancel.Token));
+            Assert.True(cancel.IsCancellationRequested, "Unexpected cancellation token");
+        }
+        finally { started.Set(); cancellation.Join(); }
     }
 }
