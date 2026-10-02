@@ -114,14 +114,18 @@ public static class AnsiArt
             else if (c == '\b') terminal.Move(Math.Max(0, Math.Min(columns - 1, terminal.X) - 1), terminal.Y);
             else if (c == '\t') terminal.Move(Math.Min(columns - 1, (terminal.X / 8 + 1) * 8), terminal.Y);
             else if (char.IsControl(c)) { if (c != '\a') terminal.Ignored++; }
-            else terminal.Write(c);
+            else
+            {
+                var glyph = System.Globalization.StringInfo.GetNextTextElement(text, i);
+                terminal.Write(glyph); i += glyph.Length - 1;
+            }
         }
         return terminal.Result(title);
     }
 
     private sealed class Row(int width)
     {
-        public char[] Text { get; } = Enumerable.Repeat(' ', width).ToArray();
+        public string[] Text { get; } = Enumerable.Repeat(" ", width).ToArray();
         public uint[] Foreground { get; } = Enumerable.Repeat(Palette[7], width).ToArray();
         public uint[] Background { get; } = Enumerable.Repeat(Palette[0], width).ToArray();
     }
@@ -145,13 +149,39 @@ public static class AnsiArt
             X = Math.Clamp(x, 0, width - 1); Y = Math.Max(0, y);
             while (rows.Count <= Y) rows.Add(new(width));
         }
-        public void Write(char c)
+        private void ClearGlyph(Row row, int column)
+        {
+            if (row.Text[column] == "" && column > 0) row.Text[column - 1] = " ";
+            if (UnicodeGrid.GlyphWidth(row.Text[column]) == 2 && column + 1 < width) row.Text[column + 1] = " ";
+            row.Text[column] = " ";
+        }
+        public void Write(string text)
         {
             // Defer wrapping until a printable character arrives; a CR/LF after
             // exactly one full row must not create an extra blank row.
-            if (X == width) Move(0, Y + 1);
-            var row = rows[Y]; row.Text[X] = c; row.Foreground[X] = Foreground; row.Background[X] = Background; X++;
-            wide |= c >= '\u2e80' || char.IsSurrogate(c) || System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) is System.Globalization.UnicodeCategory.NonSpacingMark;
+            var columns = UnicodeGrid.GlyphWidth(text);
+            if (columns == 0)
+            {
+                if (X > 0 && text.EnumerateRunes().Any(r => Rune.GetUnicodeCategory(r) is System.Globalization.UnicodeCategory.NonSpacingMark or System.Globalization.UnicodeCategory.EnclosingMark))
+                {
+                    var previous = X - 1;
+                    if (rows[Y].Text[previous] == "" && previous > 0) previous--;
+                    rows[Y].Text[previous] += text;
+                }
+                return;
+            }
+            if (X + columns > width) Move(0, Y + 1);
+            var row = rows[Y];
+            ClearGlyph(row, X);
+            if (columns == 2) ClearGlyph(row, X + 1);
+            row.Text[X] = text;
+            for (var offset = 0; offset < columns; offset++)
+            {
+                if (offset > 0) row.Text[X + offset] = "";
+                row.Foreground[X + offset] = Foreground; row.Background[X + offset] = Background;
+            }
+            X += columns;
+            wide |= columns == 2;
         }
         public void Save() { savedX = X; savedY = Y; }
         public void Restore() => Move(savedX, savedY);
@@ -160,7 +190,7 @@ public static class AnsiArt
         private void Erase(int y, int start, int end)
         {
             var row = rows[y];
-            for (var x = Math.Max(0, start); x < Math.Min(width, end); x++) { row.Text[x] = ' '; row.Foreground[x] = Foreground; row.Background[x] = Background; }
+            for (var x = Math.Max(0, start); x < Math.Min(width, end); x++) { ClearGlyph(row, x); row.Foreground[x] = Foreground; row.Background[x] = Background; }
         }
         public void Command(char command, int[] parameters)
         {
@@ -234,10 +264,11 @@ public static class AnsiArt
         {
             var document = new AsciiDocument
             {
+                GridVersion = 1,
                 Width = width,
                 Height = rows.Count,
                 Title = title,
-                Text = string.Join('\n', rows.Select(r => new string(r.Text))),
+                Text = string.Join('\n', rows.Select(r => string.Concat(r.Text))),
                 Colors = rows.SelectMany(r => r.Foreground).ToArray(),
                 BackgroundColors = rows.SelectMany(r => r.Background).ToArray()
             };
