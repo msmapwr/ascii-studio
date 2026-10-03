@@ -177,9 +177,12 @@ addEventListener("history-refreshed", () => {
     scheduleReadingPosition();
 });
 if (document.querySelector("#history-status")) {
-    import("./changelog.js").then(({refreshChangelog}) => refreshChangelog()).catch(() => {
-        document.querySelector("#history-status").textContent = "当前显示随网站发布的记录。";
-    });
+    import("./changelog.js")
+        .then(({ refreshChangelog }) => refreshChangelog())
+        .catch(() => {
+            document.querySelector("#history-status").textContent =
+                "当前显示随网站发布的记录。";
+        });
 }
 
 async function loadFluent() {
