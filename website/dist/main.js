@@ -63,6 +63,14 @@ navigation.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+        const resources = /** @type {HTMLDetailsElement} */ (
+            document.querySelector("#resource-menu")
+        );
+        if (resources?.open) {
+            resources.open = false;
+            resources.querySelector("summary").focus();
+            return;
+        }
         if (
             compactScreen.matches &&
             menuButton.getAttribute("aria-expanded") === "true"
@@ -80,6 +88,11 @@ document.addEventListener("keydown", (event) => {
     }
 });
 document.addEventListener("click", (event) => {
+    const resources = /** @type {HTMLDetailsElement} */ (
+        document.querySelector("#resource-menu")
+    );
+    if (resources && !resources.contains(/** @type {Node} */ (event.target)))
+        resources.open = false;
     const picker = /** @type {HTMLDetailsElement} */ (
         document.querySelector("#theme-picker")
     );
