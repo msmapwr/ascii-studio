@@ -788,6 +788,49 @@
     }
 }
 @layer pages {
+    .roadmap-list {
+        list-style: none;
+        margin: 32px 0 0;
+        padding: 0 0 0 24px;
+        border-left: 2px solid var(--stroke);
+    }
+    .roadmap-list > li {
+        position: relative;
+        margin-bottom: 36px;
+    }
+    .roadmap-list > li::before {
+        content: "";
+        position: absolute;
+        left: -30px;
+        top: 12px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        outline: 4px solid var(--page);
+    }
+    .roadmap-state {
+        display: inline-block;
+        color: var(--accent);
+        background: var(--tint);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 13px;
+        margin-bottom: 12px;
+    }
+    .roadmap-state.planned {
+        color: var(--muted);
+        background: var(--surface-soft);
+    }
+    .roadmap-list h3 {
+        margin-bottom: 12px;
+        font-size: 22px;
+    }
+    .roadmap-list p {
+        color: var(--muted);
+        margin-bottom: 12px;
+        max-width: 46em;
+    }
     .help-search {
         display: grid;
         gap: 12px;

@@ -1,6 +1,6 @@
 # 网站开发与发布
 
-五页 HTML 共用一份 CSS 和 JavaScript，代码位于 `website/dist`，可直接由静态服务器提供。素材来自仓库的 `assets/branding` 和 `assets/showcase`，发布副本位于 `website/dist/assets`。页面正文直接写在 HTML 中，浏览器无需读取 XML。
+八页 HTML 共用一份 CSS 和 JavaScript，代码位于 `website/dist`，可直接由静态服务器提供。素材来自仓库的 `assets/branding` 和 `assets/showcase`，发布副本位于 `website/dist/assets`。页面正文直接写在 HTML 中，浏览器无需读取 XML。
 
 ## 修改内容
 
@@ -62,7 +62,7 @@ CSS 使用 Lightning CSS 解析验证，输出到临时目录，不覆盖源文�
 
 ## 访客页面
 
-入门教程及后续作品、下载页的文案与结构位于 [WEBSITE_PAGES.xml](WEBSITE_PAGES.xml)。修改后运行 `python scripts/build-website-pages.py`，公共导航与版本信息来自首页。随后运行原日志生成脚本更新共用导航。两个生成脚本均支持 `--check`，静态检查读取 XML 确认文案保留。新增页面继续共用 CSS、JavaScript 和 Fluent 外观控件。
+入门教程、作品、下载、格式、帮助及路线图的文案与结构位于 [WEBSITE_PAGES.xml](WEBSITE_PAGES.xml)。修改后运行 `python scripts/build-website-pages.py`，公共导航与版本信息来自首页。随后运行原日志生成脚本更新共用导航。两个生成脚本均支持 `--check`，静态检查读取 XML 确认文案保留。新增页面继续共用 CSS、JavaScript 和 Fluent 外观控件。
 
 本轮目标网站 0.11.0，三个 Medium 分别推送 alpha.1、alpha.2、alpha.3；全部检查后正式发布网站 0.11.0。桌面应用版本与发布标签不改变。
 
@@ -81,3 +81,5 @@ CSS 使用 Lightning CSS 解析验证，输出到临时目录，不覆盖源文�
 资源菜单使用原生 details，Escape 优先关闭资源并恢复焦点，点击外部关闭。格式表格在窄屏区域内滚动，可聚焦使用键盘；已检查 320px 与 1024px，无整页溢出。格式说明依据核心 ExportService、README 与 Unicode/ANSI 文档。
 
 帮助中心由 XML 生成全部问答，help.js 只增强本页搜索。搜索规范化全角字符并忽略大小写，多个关键词需同时命中；有查询时展开匹配答案，清除后恢复初始展开状态并聚焦输入。搜索内容不发送服务器。已验证多词、无结果、清除和 320px 布局。
+
+路线图是 2026-10-03 的现行文档摘要，依据 ROADMAP.md 与 CHANGELOG.md；更新方向时须同步 XML。已交付条目只概括有版本记录的能力；候选无承诺日期，验证边界与冻结项单列。0.12.0 全八页验证 320px/1024px 无整页溢出；动态日志真实请求和 fixture 新版本、字面 HTML、断网及版本锚点保护通过，帮助无脚本/CDN 故障/模拟减少动态效果通过。
