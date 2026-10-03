@@ -2,7 +2,7 @@
 <websiteContent product="AsciiStudio" language="zh-CN" status="content-plan" updated="2026-10-03">
   <planning render="false">
     <stack>HTML + CSS + JavaScript + Fluent UI Web Components</stack>
-    <scope>单页产品介绍；本文仅规划文案，不实现网页或浏览器转换工具。</scope>
+    <scope>产品介绍与独立更新日志页；页面文案按 HTML 实现，软件版本记录来自根目录 CHANGELOG.md。</scope>
     <voice>具体、简洁，说明功能和使用方式；不使用排名、效果保证或空泛宣传。</voice>
     <editorialReview method="humanizer" status="reviewed">已复核重复句式、夸大用语、无依据事实与结尾套话。技术名称、路径和链接保持原意。</editorialReview>
     <sources>
@@ -40,6 +40,7 @@
       <link href="#features">功能</link>
       <link href="#workflow">使用流程</link>
       <link href="#faq">常见问题</link>
+      <link href="changelog.html">更新日志</link>
     </navigation>
     <themeControl enhancement="fluent-web-component">
       <label>外观</label>
@@ -231,6 +232,7 @@
     <brand>AsciiStudio</brand>
     <description>Windows 上的 ASCII / ANSI 创作工具。</description>
     <navigation label="项目与文档">
+      <link href="changelog.html">更新日志</link>
       <link href="https://github.com/msmapwr/ascii-studio">GitHub 仓库</link>
       <link href="https://github.com/msmapwr/ascii-studio/releases">Release 更新说明</link>
       <link href="https://github.com/msmapwr/ascii-studio/blob/main/docs/ROADMAP.md">0.9 路线图</link>
@@ -238,4 +240,24 @@
     </navigation>
     <backToTop href="#top">回到顶部</backToTop>
   </footer>
+  <changelogPage path="changelog.html" source="CHANGELOG.md">
+    <title>更新日志 | AsciiStudio</title>
+    <description>查看 AsciiStudio 各版本的新增功能、调整、修复和测试记录。</description>
+    <heading>更新日志</heading>
+    <intro>查看图片转换、文字排版、编辑和导出的版本变化。</intro>
+    <downloadNote>版本记录包含预发布阶段的开发进展。可下载的安装包以 GitHub Releases 为准。</downloadNote>
+    <downloads>查看下载</downloads>
+    <back>返回产品介绍</back>
+    <index>版本索引</index>
+    <source>查看仓库原始记录</source>
+    <prerelease>预发布</prerelease>
+    <release>正式版本</release>
+    <category key="Added">新增</category>
+    <category key="Changed">调整</category>
+    <category key="Fixed">修复</category>
+    <category key="Tested">验证</category>
+    <category key="Removed">移除</category>
+    <category key="Deprecated">弃用</category>
+    <category key="Security">安全</category>
+  </changelogPage>
 </websiteContent>

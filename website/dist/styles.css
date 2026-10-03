@@ -1,4 +1,4 @@
-@layer base, layout, components, responsive;
+@layer base, layout, components, history, motion, responsive;
 @layer base {
     :root {
         color-scheme: light;
@@ -160,7 +160,7 @@
     }
     .navigation {
         display: flex;
-        gap: 26px;
+        gap: 20px;
         margin-left: auto;
     }
     .navigation a {
@@ -623,6 +623,375 @@
         height: 18px;
     }
 }
+
+@layer history {
+    .history-hero {
+        padding-block: 64px 56px;
+        display: grid;
+        gap: 20px;
+    }
+    .history-hero h1 {
+        font-size: clamp(36px, 4vw, 56px);
+    }
+    .history-hero > p {
+        color: var(--muted);
+    }
+    .back-link {
+        width: fit-content;
+        font-size: 14px;
+        text-decoration: none;
+    }
+    .history-note {
+        font-size: 14px;
+    }
+    .history-note a {
+        display: inline-block;
+        margin-left: 8px;
+    }
+    .history-layout {
+        display: grid;
+        grid-template-columns: 210px minmax(0, 1fr);
+        gap: 72px;
+        padding-bottom: 80px;
+        align-items: start;
+    }
+    .version-index {
+        position: sticky;
+        top: 116px;
+        max-height: calc(100dvh - 150px);
+        overflow-y: auto;
+        padding: 4px 8px 12px 0;
+        scrollbar-width: thin;
+    }
+    .version-index h2 {
+        font-size: 16px;
+        letter-spacing: 0;
+        margin-bottom: 16px;
+    }
+    .version-index nav {
+        display: grid;
+        gap: 4px;
+        border-left: 2px solid var(--stroke);
+    }
+    .version-index nav a {
+        color: var(--muted);
+        padding: 5px 14px;
+        font-size: 14px;
+        text-decoration: none;
+        border-left: 2px solid transparent;
+        margin-left: -2px;
+    }
+    .version-index nav a:hover,
+    .version-index nav a[aria-current="location"] {
+        color: var(--accent);
+        background: var(--tint);
+        border-left-color: var(--accent);
+    }
+    .history-source {
+        display: inline-block;
+        margin-top: 20px;
+        font-size: 13px;
+    }
+    .release-timeline {
+        border-left: 1px solid var(--stroke);
+        padding-left: 36px;
+        min-width: 0;
+    }
+    .release-entry {
+        position: relative;
+        padding: 0 0 40px;
+        margin-bottom: 40px;
+        border-bottom: 1px solid var(--stroke);
+        scroll-margin-top: 12px;
+    }
+    .release-entry:last-child {
+        margin-bottom: 0;
+        border-bottom: 0;
+    }
+    .release-entry::before {
+        content: "";
+        position: absolute;
+        top: 14px;
+        left: -43px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 2px solid var(--accent);
+        box-shadow: 0 0 0 5px var(--page);
+    }
+    .release-entry:first-child::before {
+        background: var(--accent);
+    }
+    .release-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+    }
+    .release-heading > div {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .release-heading h2 {
+        font-size: clamp(22px, 2.5vw, 30px);
+        letter-spacing: -0.6px;
+        overflow-wrap: anywhere;
+    }
+    .release-heading time {
+        color: var(--muted);
+        font-size: 14px;
+        white-space: nowrap;
+    }
+    .release-badge {
+        display: inline-block;
+        font-size: 12px;
+        padding: 2px 9px;
+        border: 1px solid var(--stroke);
+        border-radius: 4px;
+        background: var(--surface);
+        color: var(--muted);
+    }
+    .release-entry:first-child .release-badge {
+        color: var(--accent);
+        background: var(--tint);
+    }
+    .change-group + .change-group {
+        margin-top: 24px;
+    }
+    .change-group h3 {
+        font-size: 16px;
+    }
+    .change-group ul {
+        padding-left: 20px;
+        margin: 10px 0 0;
+        color: var(--muted);
+    }
+    .change-group li {
+        padding-left: 4px;
+        margin-block: 8px;
+        overflow-wrap: anywhere;
+    }
+    .change-group li::marker {
+        color: var(--accent);
+    }
+    .change-group code {
+        font-family: "Cascadia Code", Consolas, monospace;
+        font-size: 0.9em;
+        background: var(--surface-soft);
+        padding: 1px 4px;
+        border-radius: 3px;
+    }
+}
+@layer motion {
+    :root {
+        --ease-fluent: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero,
+    .history-hero {
+        position: relative;
+        isolation: isolate;
+    }
+    .hero::before,
+    .history-hero::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        pointer-events: none;
+        inset: 0;
+        background: radial-gradient(
+            ellipse at 76% 44%,
+            color-mix(in srgb, var(--accent) 16%, transparent),
+            transparent 62%
+        );
+    }
+    .history-hero::before {
+        background: radial-gradient(
+            ellipse at 15% 25%,
+            color-mix(in srgb, var(--accent) 12%, transparent),
+            transparent 65%
+        );
+    }
+    .hero-copy {
+        animation: copy-arrive 700ms var(--ease-fluent) both;
+    }
+    .hero-figure {
+        animation: preview-arrive 1000ms 100ms var(--ease-fluent) both;
+    }
+    .history-hero h1,
+    .history-hero > p {
+        animation: copy-arrive 650ms var(--ease-fluent) both;
+    }
+    .history-hero > p {
+        animation-delay: 90ms;
+    }
+    .app-frame {
+        position: relative;
+        overflow: hidden;
+    }
+    .app-frame::after {
+        content: "";
+        position: absolute;
+        pointer-events: none;
+        inset: -50%;
+        background: linear-gradient(
+            110deg,
+            transparent 40%,
+            #ffffff24 49%,
+            transparent 58%
+        );
+        transform: translateX(65%);
+        animation: preview-light 1400ms 200ms var(--ease-fluent) both;
+    }
+    .button {
+        transition:
+            background 160ms,
+            border-color 160ms,
+            transform 220ms var(--ease-fluent),
+            box-shadow 220ms;
+    }
+    .button:active {
+        transform: translateY(1px) scale(0.98);
+    }
+    .button-primary:focus-visible {
+        box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 16%, transparent);
+    }
+    .navigation a {
+        position: relative;
+        transition: color 160ms;
+    }
+    .navigation a::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -8px;
+        height: 2px;
+        background: var(--accent);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 220ms var(--ease-fluent);
+    }
+    .navigation a:hover::after,
+    .navigation a[aria-current="page"]::after {
+        transform: scaleX(1);
+    }
+    .theme-picker[open] .theme-options {
+        animation: panel-open 220ms var(--ease-fluent) both;
+        transform-origin: top right;
+    }
+    .faq-item[open] > p,
+    .faq-item[open] > a {
+        animation: copy-arrive 260ms var(--ease-fluent) both;
+    }
+    .faq-item summary::after {
+        transition: color 160ms;
+    }
+    .release-entry:target::before {
+        animation: timeline-focus 900ms var(--ease-fluent);
+    }
+    .version-index nav a {
+        transition:
+            color 160ms,
+            background 160ms,
+            border-color 160ms;
+    }
+    .reading-progress {
+        position: absolute;
+        left: 0;
+        bottom: -1px;
+        width: 100%;
+        height: 2px;
+        pointer-events: none;
+        background: var(--accent);
+        transform: scaleX(var(--reading-progress, 0));
+        transform-origin: left;
+    }
+    @media (hover: hover) and (pointer: fine) {
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 16px
+                color-mix(in srgb, var(--accent) 12%, transparent);
+        }
+        .button-primary:hover {
+            box-shadow: 0 6px 24px color-mix(in srgb, #7741d8 35%, transparent);
+        }
+        .example-figure,
+        .feature:nth-child(-n + 2),
+        .download-panel {
+            transition:
+                border-color 220ms,
+                box-shadow 220ms;
+        }
+        .example-figure:hover,
+        .feature:nth-child(-n + 2):hover,
+        .download-panel:hover {
+            border-color: color-mix(in srgb, var(--accent) 55%, var(--stroke));
+            box-shadow: 0 0 28px
+                color-mix(in srgb, var(--accent) 9%, transparent);
+        }
+    }
+    @keyframes copy-arrive {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    @keyframes preview-arrive {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.975);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    @keyframes preview-light {
+        from {
+            transform: translateX(-65%);
+            opacity: 0;
+        }
+        30% {
+            opacity: 1;
+        }
+        to {
+            transform: translateX(65%);
+            opacity: 0;
+        }
+    }
+    @keyframes panel-open {
+        from {
+            opacity: 0;
+            transform: translateY(-5px) scale(0.97);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    @keyframes timeline-focus {
+        from {
+            box-shadow:
+                0 0 0 5px var(--page),
+                0 0 0 16px color-mix(in srgb, var(--accent) 25%, transparent);
+        }
+        to {
+            box-shadow:
+                0 0 0 5px var(--page),
+                0 0 0 28px transparent;
+        }
+    }
+}
+
 @layer responsive {
     @media (min-width: 861px) {
         .navigation {
@@ -648,7 +1017,73 @@
             font-size: 16px;
         }
     }
+    @media (max-width: 1000px) and (min-width: 861px) {
+        .brand {
+            font-size: 18px;
+            gap: 6px;
+        }
+        .header-inner {
+            gap: 14px;
+        }
+        .navigation {
+            gap: 12px;
+        }
+        .navigation a {
+            font-size: 13px;
+        }
+    }
     @media (max-width: 860px) {
+        .history-hero {
+            padding-block: 40px;
+        }
+        .history-layout {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 36px;
+            padding-bottom: 48px;
+        }
+        .version-index {
+            position: static;
+            max-height: none;
+            overflow: visible;
+            padding: 0;
+        }
+        .version-index nav {
+            display: flex;
+            overflow-x: auto;
+            max-width: 100%;
+            border-left: 0;
+            border-bottom: 1px solid var(--stroke);
+            gap: 6px;
+            padding-bottom: 8px;
+        }
+        .version-index nav a {
+            flex-shrink: 0;
+            border-left: 0;
+            border-bottom: 2px solid transparent;
+            margin-left: 0;
+            padding: 6px 10px;
+        }
+        .version-index nav a[aria-current="location"] {
+            border-bottom-color: var(--accent);
+        }
+        .release-timeline {
+            padding-left: 24px;
+        }
+        .release-entry::before {
+            left: -31px;
+        }
+        .release-heading {
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .navigation {
+            flex-wrap: wrap;
+            gap: 18px;
+        }
+        .menu-ready .navigation:not([hidden]) {
+            animation: panel-open 220ms var(--ease-fluent);
+        }
+
         .container {
             width: calc(100% - 40px);
         }
@@ -785,6 +1220,14 @@
         }
     }
     @media (prefers-reduced-motion: reduce) {
+        .app-frame::after {
+            display: none;
+        }
+        .button:hover,
+        .button:active {
+            transform: none;
+        }
+
         html {
             scroll-behavior: auto;
         }
@@ -804,6 +1247,17 @@
         .download-instructions,
         .theme-options {
             border: 1px solid CanvasText;
+        }
+        .hero::before,
+        .history-hero::before,
+        .app-frame::after,
+        .reading-progress {
+            display: none;
+        }
+        .release-entry::before {
+            background: Canvas;
+            border-color: CanvasText;
+            box-shadow: none;
         }
         .button-primary,
         .step-number,
