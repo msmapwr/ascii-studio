@@ -64,6 +64,7 @@ def render():
             <section class="container history-hero" aria-labelledby="history-title">
                 <a class="back-link" href="index.html">{html.escape(copy.findtext('back'))}</a>
                 <h1 id="history-title">{html.escape(copy.findtext('heading'))}</h1>
+                <p id="history-status" role="status" aria-live="polite">当前显示随网站发布的记录；启用脚本后尝试读取仓库最新内容。</p>
                 <p>{html.escape(copy.findtext('intro'))}</p>
                 <p class="history-note">{html.escape(copy.findtext('downloadNote'))}
                     <a href="https://github.com/msmapwr/ascii-studio/releases" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">{html.escape(copy.findtext('downloads'))}</a>
