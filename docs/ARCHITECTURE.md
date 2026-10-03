@@ -2,6 +2,8 @@
 
 ## 职责边界
 
+`AsciiStudio.Application` 提供 Windows 原生但不依赖 WinUI 的共享服务，包含字体栅格化、转换 Controller、项目读写、偏好和位图导出。桌面项目仅保留 MotionService、WindowPlacementService 和页面会话接口等 UI 服务；`AsciiStudio.Cli` 引用同一应用服务层，负责参数解析、输入输出与显式覆盖策略。算法继续位于 Core。共享服务不访问页面控件，CLI 不加载 WindowsAppSDK。
+
 | 层 | 责任 | 不应承担 |
 |---|---|---|
 | ImagePage / TextPage | 控件、读取当前输入、呈现状态、文件选择器和对话框 | CPU 转换、缓存、生成项目状态 |

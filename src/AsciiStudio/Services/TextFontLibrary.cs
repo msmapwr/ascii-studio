@@ -11,7 +11,8 @@ namespace AsciiStudio.Services;
 public sealed record TextFontEntry(string Id, string Name, string Source, string Digest, int Height, int Baseline, int Layout, string Comments);
 public static class TextFontLibrary
 {
-    private static readonly string directory = Path.Combine(WorkspaceService.DataDirectory, "fonts");
+    private static readonly string directory = Environment.GetEnvironmentVariable("ASCIISTUDIO_FONT_DIRECTORY") is { Length: > 0 } sharedFonts
+        ? Path.GetFullPath(sharedFonts) : Path.Combine(WorkspaceService.DataDirectory, "fonts");
     private static readonly object gate = new();
     private static readonly Dictionary<string, string> builtins = LoadBuiltins();
     private static readonly Dictionary<(string, ArtPacking), FiggleFont> parsed = [];
