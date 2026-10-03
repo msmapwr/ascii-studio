@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
-    <meta name="application-version" content="0.11.0-alpha.2">
+    <meta name="application-version" content="0.11.0-alpha.3">
         <meta charset="utf-8" >
         <meta name="viewport" content="width=device-width, initial-scale=1" >
         <meta
@@ -38,7 +38,7 @@
                         alt=""
                     >AsciiStudio</a
                 >
-                <nav class="navigation" id="navigation" aria-label="页面导航"><a href="index.html">产品介绍</a><a href="guide.html" aria-current="page">入门教程</a><a href="gallery.html">作品展示</a><a href="changelog.html">更新日志</a></nav>
+                <nav class="navigation" id="navigation" aria-label="页面导航"><a href="index.html">产品介绍</a><a href="guide.html" aria-current="page">入门教程</a><a href="gallery.html">作品展示</a><a href="downloads.html">下载与运行</a><a href="changelog.html">更新日志</a></nav>
                 <div class="header-actions">
                     <details class="theme-picker" id="theme-picker" hidden>
                         <summary aria-label="外观">
@@ -83,7 +83,7 @@
                     </details>
                     <a
                         class="button button-primary button-small"
-                        href="index.html#download"
+                        href="downloads.html"
                         >下载</a
                     >
                     <button
@@ -143,7 +143,7 @@
             <h2 id="text-guide-title">输入文字，安排字形</h2><p>英文标题可以用 FIGlet；中文或中英文混排使用系统字体模式。</p>
             <figure class="example-figure"><img src="assets/text-before-after.png" width="1440" height="540" alt="ASCII 系统字形原图与密度字符转换结果的真实对照。" loading="lazy"><figcaption>系统字体文字转换的真实样例。</figcaption></figure>
             <ol class="tutorial-steps">
-              <li><h3>输入示例文字</h3><p>打开文字转换页，输入下方内容，选择系统字体模式和已安装的中文字体。</p><div class="copy-panel"><pre id="sample-text">你好，ASCII！</pre><button class="button button-small" type="button" data-copy-target="sample-text" hidden>复制示例文字</button></div></li>
+              <li><h3>输入示例文字</h3><p>打开文字转换页，输入下方内容，选择系统字体模式和已安装的中文字体。</p><div class="copy-panel"><pre id="sample-text">你好，ASCII！</pre><button class="button button-small" type="button" data-copy-target="sample-text" hidden>复制示例文字</button><span class="copy-feedback" role="status" aria-live="polite"></span></div></li>
               <li><h3>调整字体与排版</h3><p>先选择输入字体，再调整字距、行距和对齐。需要控制行宽时设置最大宽度与自动换行；边框可以最后添加。</p></li>
               <li><h3>检查中文与缺字</h3><p>中文可从“中文清晰”预设开始。出现缺字提示时，先换用包含这些字形的字体。FIGlet 接受 ASCII 输入，不能用来直接生成中文。</p></li>
             </ol>
@@ -158,7 +158,6 @@
           </section>
         </div>
       </div>
-      <div class="visually-hidden" id="copy-status" role="status" aria-live="polite"></div>
             </main>
         <footer class="site-footer">
             <div class="container footer-inner">
@@ -174,6 +173,7 @@
                     <p>Windows 上的 ASCII / ANSI 创作工具。</p>
                 </div>
                 <nav class="footer-links" aria-label="项目与文档">
+                    <a href="downloads.html">下载与运行</a>
                     <a href="gallery.html">作品展示</a>
                     <a href="guide.html">入门教程</a>
                     <a href="changelog.html">更新日志</a>

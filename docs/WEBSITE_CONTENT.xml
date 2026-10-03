@@ -35,7 +35,7 @@
       <alt>AsciiStudio</alt>
       <accessibleName>AsciiStudio，回到页面顶部</accessibleName>
     </brand>
-    <navigation label="页面导航"><link href="index.html">产品介绍</link><link href="guide.html">入门教程</link><link href="gallery.html">作品展示</link><link href="changelog.html">更新日志</link></navigation>
+    <navigation label="页面导航"><link href="index.html">产品介绍</link><link href="guide.html">入门教程</link><link href="gallery.html">作品展示</link><link href="downloads.html">下载与运行</link><link href="changelog.html">更新日志</link></navigation>
     <themeControl enhancement="fluent-web-component">
       <label>外观</label>
       <option value="system">跟随系统</option>
@@ -46,7 +46,7 @@
       <announcement value="dark">已切换为深色外观。</announcement>
       <fallback render="false">组件不可用时跟随系统外观，不显示无法操作的控件。</fallback>
     </themeControl>
-    <downloadLink href="#download">下载</downloadLink>
+    <downloadLink href="downloads.html">下载</downloadLink>
     <mobileMenu>
       <openLabel>打开导航</openLabel>
       <closeLabel>关闭导航</closeLabel>
@@ -226,6 +226,7 @@
     <brand>AsciiStudio</brand>
     <description>Windows 上的 ASCII / ANSI 创作工具。</description>
     <navigation label="项目与文档">
+      <link href="downloads.html">下载与运行</link>
       <link href="gallery.html">作品展示</link>
       <link href="guide.html">入门教程</link>
       <link href="changelog.html">更新日志</link>
