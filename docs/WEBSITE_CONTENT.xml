@@ -142,7 +142,7 @@
     </section>
 
     <section id="workflow" order="4">
-      <layout render="false">流程依照操作顺序排列，配合文字操作 GIF；减少动态效果时替换为静态结果图。</layout>
+      <layout render="false">流程依照操作顺序排列。文字操作 GIF 进入视野时播放，离开视野时恢复静态图；提供停止按钮，减少动态效果时始终显示静态结果图。</layout>
       <heading level="2">做一幅自己的字符画</heading>
       <step number="1">
         <heading level="3">打开图片或输入文字</heading>
@@ -183,7 +183,7 @@
         <item>将 ZIP 完整解压到一个文件夹。</item>
         <item>打开文件夹，运行 AsciiStudio.exe。</item>
       </instructions>
-      <linkBehavior>下载按钮会打开 GitHub Releases，请在该页面选择下载文件。</linkBehavior>
+      <linkBehavior>下载按钮将在新标签页打开 GitHub Releases，请在该页面选择下载文件。</linkBehavior>
     </section>
 
     <section id="faq" order="6">
