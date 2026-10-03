@@ -57,3 +57,10 @@ CSS 使用 Lightning CSS 解析验证，输出到临时目录，不覆盖源文�
 首版使用 `git subtree split --prefix=website/dist` 生成静态发布提交。后续从包含已发布历史的源代码分支生成发布提交并进行普通快进 Push；若远程发布分支出现独立修改，应先查明并整合，不默认强制覆盖。
 
 发布前完成适用检查、更新网站版本与 Changelog，并提交源代码。先推送源代码，再推送静态发布提交。等待 GitHub Pages 构建成功后检查在线页面与资源。
+
+
+## 访客页面
+
+入门教程及后续作品、下载页的文案与结构位于 [WEBSITE_PAGES.xml](WEBSITE_PAGES.xml)。修改后运行 `python scripts/build-website-pages.py`，公共导航与版本信息来自首页。随后运行原日志生成脚本更新共用导航。两个生成脚本均支持 `--check`，静态检查读取 XML 确认文案保留。新增页面继续共用 CSS、JavaScript 和 Fluent 外观控件。
+
+本轮目标网站 0.11.0，三个 Medium 分别推送 alpha.1、alpha.2、alpha.3；全部检查后正式发布网站 0.11.0。桌面应用版本与发布标签不改变。

@@ -44,7 +44,7 @@ def render():
     {''.join(groups)}
     </article>''')
     home = (SITE / "index.html").read_text(encoding="utf-8")
-    head = home[:home.index("    <body>")]
+    head = home[:re.search(r"    <body[^>]*>", home).start()]
     head = re.sub(r"<title>.*?</title>", f"<title>{html.escape(copy.findtext('title'))}</title>", head)
     head = re.sub(r'(name="description"\s+content=")[^"]*',
                   lambda m: m[1] + html.escape(copy.findtext("description"), quote=True), head)
@@ -58,7 +58,7 @@ def render():
     chrome = chrome.replace('href="changelog.html"', 'href="changelog.html" aria-current="page"')
     footer = home[home.index('        <footer class="site-footer"'):]
     footer = footer.replace('class="brand" href="#top"', 'class="brand" href="index.html"')
-    return f'''{head}    <body class="changelog-page">
+    return f'''{head}    <body id="top" class="changelog-page">
         <a class="skip-link" href="#main">跳到正文</a>
 {chrome}        <main id="main" aria-label="软件更新日志">
             <section class="container history-hero" aria-labelledby="history-title">

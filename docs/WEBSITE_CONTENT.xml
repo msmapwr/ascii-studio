@@ -40,6 +40,7 @@
       <link href="#features">功能</link>
       <link href="#workflow">使用流程</link>
       <link href="#faq">常见问题</link>
+      <link href="guide.html">入门教程</link>
       <link href="changelog.html">更新日志</link>
     </navigation>
     <themeControl enhancement="fluent-web-component">
@@ -232,6 +233,7 @@
     <brand>AsciiStudio</brand>
     <description>Windows 上的 ASCII / ANSI 创作工具。</description>
     <navigation label="项目与文档">
+      <link href="guide.html">入门教程</link>
       <link href="changelog.html">更新日志</link>
       <link href="https://github.com/msmapwr/ascii-studio">GitHub 仓库</link>
       <link href="https://github.com/msmapwr/ascii-studio/releases">Release 更新说明</link>
