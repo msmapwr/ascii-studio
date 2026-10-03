@@ -87,54 +87,90 @@ document.addEventListener("click", (event) => {
         picker.open = false;
 });
 
-const demoImage = /** @type {HTMLImageElement} */ (
-    document.querySelector("#demo-image")
-);
-const demoButton = /** @type {HTMLButtonElement} */ (
-    document.querySelector("#demo-toggle")
-);
-const demoCaption = document.querySelector("#demo-caption");
-let playing = false;
-let demoVisible = false;
-let manuallyPaused = false;
-function updateDemo() {
-    if (reducedMotion.matches) playing = false;
-    demoImage.src = playing
-        ? "assets/text-workflow.gif"
-        : "assets/text-result.png";
-    demoImage.alt = playing
-        ? "AsciiStudio 中输入文字、生成字符画并切换内容的操作过程。"
-        : "AsciiStudio 生成的文字字符画静态结果。";
-    demoCaption.textContent = playing
-        ? "文字转换的实际操作过程。"
-        : "文字转换结果。";
-    demoButton.hidden = reducedMotion.matches;
-    demoButton.textContent = playing ? "停止演示" : "播放操作演示";
-    demoButton.setAttribute("aria-pressed", String(playing));
-}
-demoButton.hidden = false;
-updateDemo();
-demoButton.addEventListener("click", () => {
-    playing = !playing;
-    manuallyPaused = !playing;
-    updateDemo();
-});
-function syncDemoPlayback() {
-    playing = demoVisible && !manuallyPaused && !reducedMotion.matches;
-    updateDemo();
-}
-if ("IntersectionObserver" in window) {
-    const observer = new IntersectionObserver(
-        (entries) => {
-            demoVisible = entries[0].isIntersecting;
-            if (!demoVisible) manuallyPaused = false;
-            syncDemoPlayback();
-        },
-        { threshold: 0.35 },
+function initDemo() {
+    const demoImage = /** @type {HTMLImageElement} */ (
+        document.querySelector("#demo-image")
     );
-    observer.observe(demoImage);
+    const demoButton = /** @type {HTMLButtonElement} */ (
+        document.querySelector("#demo-toggle")
+    );
+    const demoCaption = document.querySelector("#demo-caption");
+    if (!demoImage || !demoButton || !demoCaption) return;
+    let playing = false;
+    let demoVisible = false;
+    let manuallyPaused = false;
+    function updateDemo() {
+        if (reducedMotion.matches) playing = false;
+        demoImage.src = playing
+            ? "assets/text-workflow.gif"
+            : "assets/text-result.png";
+        demoImage.alt = playing
+            ? "AsciiStudio 中输入文字、生成字符画并切换内容的操作过程。"
+            : "AsciiStudio 生成的文字字符画静态结果。";
+        demoCaption.textContent = playing
+            ? "文字转换的实际操作过程。"
+            : "文字转换结果。";
+        demoButton.hidden = reducedMotion.matches;
+        demoButton.textContent = playing ? "停止演示" : "播放操作演示";
+        demoButton.setAttribute("aria-pressed", String(playing));
+    }
+    demoButton.hidden = false;
+    updateDemo();
+    demoButton.addEventListener("click", () => {
+        playing = !playing;
+        manuallyPaused = !playing;
+        updateDemo();
+    });
+    function syncDemoPlayback() {
+        playing = demoVisible && !manuallyPaused && !reducedMotion.matches;
+        updateDemo();
+    }
+    if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                demoVisible = entries[0].isIntersecting;
+                if (!demoVisible) manuallyPaused = false;
+                syncDemoPlayback();
+            },
+            { threshold: 0.35 },
+        );
+        observer.observe(demoImage);
+    }
+    reducedMotion.addEventListener("change", syncDemoPlayback);
 }
-reducedMotion.addEventListener("change", syncDemoPlayback);
+initDemo();
+
+// One frame per scroll update keeps the long version history readable without a timer.
+const releases = /** @type {NodeListOf<HTMLElement>} */ (
+    document.querySelectorAll(".release-entry")
+);
+const versionLinks = document.querySelectorAll(".version-index nav a");
+let readingFrame = 0;
+function updateReadingPosition() {
+    readingFrame = 0;
+    const range = root.scrollHeight - innerHeight;
+    root.style.setProperty(
+        "--reading-progress",
+        String(range > 0 ? Math.min(1, Math.max(0, scrollY / range)) : 0),
+    );
+    let current = releases[0]?.id;
+    releases.forEach((release) => {
+        if (release.getBoundingClientRect().top <= 170) current = release.id;
+    });
+    versionLinks.forEach((link) => {
+        if (link.getAttribute("href") === `#${current}`)
+            link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
+    });
+}
+function scheduleReadingPosition() {
+    if (!readingFrame)
+        readingFrame = requestAnimationFrame(updateReadingPosition);
+}
+addEventListener("scroll", scheduleReadingPosition, { passive: true });
+addEventListener("resize", scheduleReadingPosition);
+addEventListener("load", scheduleReadingPosition);
+updateReadingPosition();
 
 async function loadFluent() {
     try {
