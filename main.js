@@ -141,10 +141,10 @@ function initDemo() {
 initDemo();
 
 // One frame per scroll update keeps the long version history readable without a timer.
-const releases = /** @type {NodeListOf<HTMLElement>} */ (
+let releases = /** @type {NodeListOf<HTMLElement>} */ (
     document.querySelectorAll(".release-entry")
 );
-const versionLinks = document.querySelectorAll(".version-index nav a");
+let versionLinks = document.querySelectorAll(".version-index nav a");
 let readingFrame = 0;
 function updateReadingPosition() {
     readingFrame = 0;
@@ -171,6 +171,16 @@ addEventListener("scroll", scheduleReadingPosition, { passive: true });
 addEventListener("resize", scheduleReadingPosition);
 addEventListener("load", scheduleReadingPosition);
 updateReadingPosition();
+addEventListener("history-refreshed", () => {
+    releases = document.querySelectorAll(".release-entry");
+    versionLinks = document.querySelectorAll(".version-index nav a");
+    scheduleReadingPosition();
+});
+if (document.querySelector("#history-status")) {
+    import("./changelog.js").then(({refreshChangelog}) => refreshChangelog()).catch(() => {
+        document.querySelector("#history-status").textContent = "当前显示随网站发布的记录。";
+    });
+}
 
 async function loadFluent() {
     try {
