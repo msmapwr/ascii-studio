@@ -1,21 +1,21 @@
 # AsciiStudio 介绍网页计划
 
-日期：2026-10-03。状态：技术栈建议与首版范围，尚未开始网页开发。
+日期：2026-10-03。状态：技术栈已确定，页面文案已规划，尚未开始网页开发。
 
-## 1. 推荐技术栈
+## 1. 确定技术栈
 
-**推荐：HTML5 + CSS + 原生 JavaScript，使用 CSS 变量实现 Fluent 2 风格；需要复杂交互控件时，再按需引入 Fluent UI Web Components。**
+采用 HTML + CSS + JavaScript + Fluent UI Web Components。
 
 本次目标是介绍现有 Windows 应用，让访客了解功能、查看真实转换效果并找到下载入口。首版适合单页静态网站，不需要后台、数据库或客户端框架。推荐方案优先满足文件少、首屏内容直接可读、维护简单和静态托管便利。
 
-Fluent UI 主题可以通过颜色、排版、间距、圆角、层级和交互状态统一实现。使用官方组件库是另一个决策，并非实现 Fluent 风格的前提；首版的导航、下载链接、主题按钮和 FAQ 可以使用原生语义元素。
+官方组件用于主题选择等交互控件，CSS 变量统一页面的颜色、排版、间距与层级。正文、导航与下载链接使用语义 HTML；FAQ 使用原生 details / summary。组件加载失败时，访客仍能阅读内容和访问下载入口。
 
 ### 六种方案的取舍
 
 | 方案 | 优点 | 缺点 | 本项目建议 |
 | --- | --- | --- | --- |
-| HTML + CSS + 原生 JavaScript | 3 个主要代码文件；无需构建；内容直接存在于 HTML；易静态托管 | 多页面内容复用与复杂状态需要自己组织 | **首版推荐** |
-| HTML + CSS + JavaScript + Fluent UI Web Components | 可使用官方 Fluent 控件；无需 React；可通过 CDN 加载 | 增加依赖加载、组件注册、主题与版本管理；Shadow DOM 样式需适配 | 明确要求官方组件时的首选 |
+| HTML + CSS + 原生 JavaScript | 3 个主要代码文件；无需构建；内容直接存在于 HTML；易静态托管 | 需要自行实现控件样式与交互 | 初始备选 |
+| HTML + CSS + JavaScript + Fluent UI Web Components | 可使用官方 Fluent 控件；无需 React；可通过 CDN 加载 | 增加依赖加载、组件注册、主题与版本管理；Shadow DOM 样式需适配 | 用户已选定 |
 | Vite + TypeScript + Fluent UI Web Components | 模块化、类型检查、依赖锁定与生产打包方便 | 增加 package.json、锁文件、配置和构建产物 | 交互变多后采用 |
 | Astro 静态站点 + CSS | 多页内容、公共布局与静态输出容易维护 | 单页首版会增加框架和工程文件 | 后续扩展教程与文档中心时考虑 |
 | React + Vite + Fluent UI React | 官方 React 控件丰富，适合状态较多的交互界面 | 增加框架、构建与运行时代价；单页介绍不需要这么多结构 | 在线编辑器或复杂演示阶段再评估 |
@@ -27,9 +27,9 @@ Fluent UI 主题可以通过颜色、排版、间距、圆角、层级和交互�
 
 - 仓库：[msmapwr/ascii-studio](https://github.com/msmapwr/ascii-studio)，origin 使用该仓库的 SSH 地址。
 - 桌面技术栈：WinUI 3、C#、.NET 10、Windows App SDK；源项目版本为 `0.9.0-alpha.8`。
-- [README](README.md) 介绍当前已实现功能；[路线图](docs/ROADMAP.md) 约束后续范围。
-- [品牌规范](docs/BRANDING.md) 提供 SVG Logo 与紫色、蓝色、青色品牌色。
-- [展示素材说明](assets/showcase/README.md) 提供真实应用截图、操作 GIF 与可复现的转换效果。
+- [README](../README.md) 介绍当前已实现功能；[路线图](ROADMAP.md) 约束后续范围。
+- [品牌规范](BRANDING.md) 提供 SVG Logo 与紫色、蓝色、青色品牌色。
+- [展示素材说明](../assets/showcase/README.md) 提供真实应用截图、操作 GIF 与可复现的转换效果。
 - `docs/archive/WEBSITE_FEATURE_PLAN.md` 是历史桌面产品功能计划，不作为新介绍页的已实现能力清单。
 
 网页介绍现有产品。动画、摄像头和 3D 已冻结，不作为当前可用功能宣传。当前仍为 0.9 预发布阶段；未经用户明确许可，不宣传或发布正式版 1.0.0。
@@ -39,11 +39,13 @@ Fluent UI 主题可以通过颜色、排版、间距、圆角、层级和交互�
 建议将网页放在独立的 `website/` 目录，与桌面源代码分开：
 
 ```text
-WEBSITE_PLAN.md
+docs/
+  WEBSITE_PLAN.md
+  WEBSITE_CONTENT.xml  # 页面各位置的文案与素材规划
 website/
   index.html       # 页面内容、语义结构、标题与描述
   styles.css       # Fluent 风格变量、响应式布局、深浅主题
-  main.js          # 主题偏好、必要的渐进增强
+  main.js          # Fluent 组件注册、主题偏好、渐进增强
   assets/          # 发布所需的 Logo、截图与样例
 ```
 
@@ -51,7 +53,7 @@ website/
 
 不为了减少文件而把所有图片转成 Base64 塞进 HTML。把选用素材复制到网站发布目录，保留来源；部署包必须自包含，不能引用发布目录之外的 `../assets/`。
 
-采用当前推荐方案时无需 package.json、TypeScript 配置或打包器。未来引入 npm 依赖时增加清单与锁文件，接受必要的工程文件，不以减少文件数牺牲可维护性。
+首版计划通过固定版本的 CDN ESM 加载 Fluent UI Web Components，验证主题 API 和组件注册后再接入页面。该路线无需 package.json、TypeScript 配置或打包器。若后续改用 npm，则增加清单与锁文件；引入构建工具前重新评估，不自动更换已确定的技术栈。
 
 ## 4. Fluent 视觉方向
 
@@ -71,6 +73,8 @@ Fluent 2 官方使用设计 token 统一颜色、排版、间距与层级，可�
 
 默认假设：中文优先、单页、公开产品介绍；目标动作是了解产品后访问 GitHub Releases。以下为后续网页开发建议，不表示已实施。
 
+具体文案保存在 [WEBSITE_CONTENT.xml](WEBSITE_CONTENT.xml)。XML 按页面顺序记录每处标题、正文、链接文字、图片替代文本和交互提示；布局说明与事实来源单独存放，不显示在网页上。实现时把文案写入 HTML，不要求浏览器解析 XML。文案已按 humanizer 技能复核，保留功能边界，去除夸大承诺和重复句式。
+
 1. **导航与首屏**：Logo、用途简介、下载预发布版、查看 GitHub；说明 Windows 原生与本机离线处理。
 2. **真实作品展示**：图片转彩色 ANSI、文字转 ASCII 的原图／结果对照。
 3. **主要功能**：图片转换、文字排版、ANSI 查看、编辑与对比、项目保存及导出。内容以当前 README 为准。
@@ -82,21 +86,21 @@ Fluent 2 官方使用设计 token 统一颜色、排版、间距与层级，可�
 
 首版复用以下素材：
 
-- [横版 SVG Logo](assets/branding/asciistudio-horizontal.svg)。
-- [应用截图](assets/showcase/app.png)。
-- [图片转换对照](assets/showcase/landscape-before-after.png)。
-- [文字转换对照](assets/showcase/text-before-after.png)。
-- [文字操作 GIF](assets/showcase/text-workflow.gif)：作为次要内容；减少动态效果模式使用静态截图。
+- [横版 SVG Logo](../assets/branding/asciistudio-horizontal.svg)。
+- [应用截图](../assets/showcase/app.png)。
+- [图片转换对照](../assets/showcase/landscape-before-after.png)。
+- [文字转换对照](../assets/showcase/text-before-after.png)。
+- [文字操作 GIF](../assets/showcase/text-workflow.gif)：作为次要内容；减少动态效果模式使用静态截图。
 
 Logo 保留 SVG 源文件，不重新生成品牌。需要新增 PNG / ICO 时沿用现有脚本。图片声明固有尺寸，首屏外素材延迟加载；必要时生成适合网页的压缩副本，保留仓库原文件。
 
 ## 6. 官方组件与版本策略
 
-若后续明确要求使用官方 Fluent UI 控件，选择 Fluent UI Web Components，先验证主题切换与所需控件，再集成。官方 README 支持 CDN 模块加载，并建议部署时固定到已经开发与测试过的版本：[Fluent UI Web Components](https://github.com/microsoft/fluentui/blob/master/packages/web-components/README.md)。
+首版使用 Fluent UI Web Components，先验证主题切换与所需控件，再集成。官方 README 支持 CDN 模块加载，并建议部署时固定到已经开发与测试过的版本：[Fluent UI Web Components](https://github.com/microsoft/fluentui/blob/master/packages/web-components/README.md)。
 
 不直接复制技能文件中的版本示例：本次核实的官方文档使用 `setTheme` 与 `webLightTheme` / `webDarkTheme`，技能中的部分示例使用 `provideFluentDesignSystem`。实现时以选定发布版本的文档和实际导出为准，不能混用不同代际 API，也不使用浮动 latest 地址。
 
-如采用 CDN，确认 ESM 入口及其依赖能够在浏览器正确解析；下载入口与正文保持原生 HTML，组件加载失败时仍能访问。若需要可靠的按需打包与依赖管理，转为 Vite + TypeScript 方案。
+确认 CDN ESM 入口及其依赖能够在浏览器正确解析；下载入口与正文保持原生 HTML，组件加载失败时仍能访问。如有 CDN 兼容问题，先评估固定版本的本地组件资源；需要打包工具时另行确定，不默认转为 Vite + TypeScript。
 
 Fluent UI Blazor 是 ASP.NET Core Blazor 的组件库；它属于独立的 Web 技术路线：[官方仓库](https://github.com/microsoft/fluentui-blazor)。当前不安装该库。
 
@@ -104,7 +108,7 @@ Fluent UI Blazor 是 ASP.NET Core Blazor 的组件库；它属于独立的 Web �
 
 本次仅写计划，不创建 Site、不安装依赖、不开发或发布网页。
 
-实际单页介绍站预计为 **Medium**。开始实现前按照项目规则一次性澄清 6–12 个有效问题；关键决策包括目标访客、语言、页面内容、交互范围、是否必须使用官方组件、下载信息与发布方式。已从项目确认的品牌、技术栈和功能不重复询问。
+本次目录整理、技术栈更新和 XML 文案规划属于 Small。实际单页介绍站预计为 Medium，开始实现前按照项目规则一次性澄清 6 至 12 个有效问题。只确认仍未明确的目标访客、语言、交互细节、下载信息与发布方式；沿用已确定的技术栈、官方组件要求和页面文案，不重复询问。
 
 建议拆成以下 Small：
 

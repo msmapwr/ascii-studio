@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<websiteContent product="AsciiStudio" language="zh-CN" status="content-plan" updated="2026-10-03">
+  <planning render="false">
+    <stack>HTML + CSS + JavaScript + Fluent UI Web Components</stack>
+    <scope>单页产品介绍；本文仅规划文案，不实现网页或浏览器转换工具。</scope>
+    <voice>具体、简洁，说明功能和使用方式；不使用排名、效果保证或空泛宣传。</voice>
+    <editorialReview method="humanizer" status="reviewed">已复核重复句式、夸大用语、无依据事实与结尾套话。技术名称、路径和链接保持原意。</editorialReview>
+    <sources>
+      <source path="README.md">功能、运行方式、格式和限制。</source>
+      <source path="docs/ROADMAP.md">0.9 范围、预发布状态与冻结功能。</source>
+      <source path="docs/BRANDING.md">Logo、品牌色与使用规范。</source>
+      <source path="assets/showcase/README.md">真实展示素材与复现方式。</source>
+    </sources>
+    <conventions>素材 source 为仓库根目录相对路径；网页链接使用完整 GitHub URL 或页面锚点。实现时复制素材到网站发布目录。</conventions>
+    <versionPolicy>页面写“0.9 预发布阶段”，不写死最新 Release 版本。发布前核实下载包和系统要求。</versionPolicy>
+  </planning>
+
+  <metadata>
+    <title>AsciiStudio | Windows ASCII 与 ANSI 创作工具</title>
+    <description>用 AsciiStudio 将图片和文字转换为字符画，查看 ANSI 作品，编辑结果并导出。转换与导出在 Windows 本机完成。</description>
+    <socialTitle>AsciiStudio：用图片和文字创作字符画</socialTitle>
+    <socialDescription>查看真实转换效果，了解图片转换、文字排版、ANSI 查看与项目导出，下载 Windows 预发布版。</socialDescription>
+  </metadata>
+
+  <accessibility>
+    <skipLink href="#main">跳到正文</skipLink>
+    <mainLabel>AsciiStudio 产品介绍</mainLabel>
+    <backToTopLabel>回到页面顶部</backToTopLabel>
+  </accessibility>
+
+  <header id="top">
+    <layout render="false">Logo 左侧，章节导航居中；主题选择和下载入口右侧。窄屏折叠章节导航。</layout>
+    <brand href="#top" source="assets/branding/asciistudio-horizontal.svg">
+      <text>AsciiStudio</text>
+      <alt>AsciiStudio</alt>
+      <accessibleName>AsciiStudio，回到页面顶部</accessibleName>
+    </brand>
+    <navigation label="页面导航">
+      <link href="#examples">转换效果</link>
+      <link href="#features">功能</link>
+      <link href="#workflow">使用流程</link>
+      <link href="#faq">常见问题</link>
+    </navigation>
+    <themeControl enhancement="fluent-web-component">
+      <label>外观</label>
+      <option value="system">跟随系统</option>
+      <option value="light">浅色</option>
+      <option value="dark">深色</option>
+      <announcement value="system">外观已设为跟随系统。</announcement>
+      <announcement value="light">已切换为浅色外观。</announcement>
+      <announcement value="dark">已切换为深色外观。</announcement>
+      <fallback render="false">组件不可用时跟随系统外观，不显示无法操作的控件。</fallback>
+    </themeControl>
+    <downloadLink href="#download">下载</downloadLink>
+    <mobileMenu>
+      <openLabel>打开导航</openLabel>
+      <closeLabel>关闭导航</closeLabel>
+      <navigationLabel>页面导航</navigationLabel>
+      <fallback render="false">JavaScript 不可用时直接显示章节链接。</fallback>
+    </mobileMenu>
+  </header>
+
+  <main id="main">
+    <section id="hero" order="1">
+      <layout render="false">左侧标题与下载入口，右侧真实应用截图；窄屏先文字后截图。</layout>
+      <heading level="1">把图片和文字变成字符画</heading>
+      <body>AsciiStudio 是 Windows 上的 ASCII / ANSI 创作工具。导入图片或输入文字，调整转换效果，再编辑、保存和导出作品。</body>
+      <localProcessing>转换与导出在本机完成，可离线使用。</localProcessing>
+      <actions>
+        <link role="primary" href="https://github.com/msmapwr/ascii-studio/releases">下载预发布版</link>
+        <link role="secondary" href="https://github.com/msmapwr/ascii-studio">查看 GitHub</link>
+      </actions>
+      <availability>适用于 Windows x64，当前为 0.9 预发布阶段。</availability>
+      <figure source="assets/showcase/app.png">
+        <alt>AsciiStudio 的 Windows 创作界面，包含参数设置与字符画预览。</alt>
+        <caption>AsciiStudio 实际运行界面。</caption>
+      </figure>
+    </section>
+
+    <section id="examples" order="2">
+      <layout render="false">上下展示两组对照，保留图片完整比例；原图和转换结果标注清楚。</layout>
+      <heading level="2">看看转换后的效果</heading>
+      <intro>同一张图片可以转换为带颜色的字符画，文字也可以排成标题或图案。</intro>
+      <example id="image-example">
+        <heading level="3">图片转彩色 ANSI</heading>
+        <body>调整字符集、颜色和抖动方式，比较原图与转换结果。半块双色模式用字符的上下两部分呈现颜色。</body>
+        <originalLabel>原图</originalLabel>
+        <resultLabel>转换结果</resultLabel>
+        <figure source="assets/showcase/landscape-before-after.png">
+          <alt>山景原图与彩色 ANSI 半块字符画的对照。</alt>
+          <caption>山景原图与半块双色转换结果。</caption>
+        </figure>
+      </example>
+      <example id="text-example">
+        <heading level="3">文字转 ASCII</heading>
+        <body>选择字体，调整字距、行距和对齐方式，为文字加上边框。中文可以使用系统字体模式。</body>
+        <originalLabel>原始文字</originalLabel>
+        <resultLabel>字符画结果</resultLabel>
+        <figure source="assets/showcase/text-before-after.png">
+          <alt>系统字体渲染的原始文字与 ASCII 转换结果的对照。</alt>
+          <caption>系统字体文字与真实转换结果。</caption>
+        </figure>
+      </example>
+      <sourceNote>这些样例由应用使用的转换与导出代码生成。</sourceNote>
+      <sourceLink href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md">查看样例生成说明</sourceLink>
+    </section>
+
+    <section id="features" order="3">
+      <layout render="false">分组说明功能，突出图片与文字转换；辅助功能用简洁列表承接。</layout>
+      <heading level="2">从转换到导出</heading>
+      <feature id="image-conversion">
+        <heading level="3">调整图片转换效果</heading>
+        <body>打开或粘贴图片，调整尺寸、比例、亮度、对比度与字符集。支持 Braille、半块双色和多种抖动方式，也可以处理透明边缘。</body>
+        <detail>支持 PNG、JPEG、BMP、TIFF，以及 GIF 的第一帧。</detail>
+      </feature>
+      <feature id="text-layout">
+        <heading level="3">安排文字的形状与间距</heading>
+        <body>使用 FIGlet 或系统字体生成字符画，调整换行、对齐与间距。字体库支持搜索、收藏和导入，标题可以加上边框。</body>
+        <detail>中文请使用系统字体模式；FIGlet 模式接受 ASCII 输入。</detail>
+      </feature>
+      <feature id="ansi-viewer">
+        <heading level="3">查看 ANSI 作品</heading>
+        <body>打开 ANSI 文件或粘贴转义序列，查看带颜色的字符作品，并读取常见编码和 SAUCE 信息。</body>
+      </feature>
+      <feature id="editing">
+        <heading level="3">比较结果，继续编辑</heading>
+        <body>切换原图与结果，使用并排视图或拖动分界线比较。编辑字符画时可以撤销和重做；手工修改后，可选择更新结果或保留独立版本。</body>
+      </feature>
+      <feature id="projects">
+        <heading level="3">保存项目，之后接着做</heading>
+        <body>将作品保存为 .asciiproj 项目，重新打开时恢复创作来源，继续调整。</body>
+      </feature>
+      <feature id="export">
+        <heading level="3">按用途导出作品</heading>
+        <body>导出文本、图片或网页格式，用于终端展示、文档和网页。</body>
+        <formats>TXT、PNG、JPEG、静态 GIF、HTML、SVG、ANSI、JSON、Markdown。</formats>
+      </feature>
+      <supportingTools>
+        <heading level="3">辅助工具</heading>
+        <body>应用还提供边框与图案生成、文本整理、代码注释，以及本地加密和编码工具。</body>
+      </supportingTools>
+    </section>
+
+    <section id="workflow" order="4">
+      <layout render="false">流程依照操作顺序排列，配合文字操作 GIF；减少动态效果时替换为静态结果图。</layout>
+      <heading level="2">做一幅自己的字符画</heading>
+      <step number="1">
+        <heading level="3">打开图片或输入文字</heading>
+        <body>选择图片来源，或输入想要生成的文字。</body>
+      </step>
+      <step number="2">
+        <heading level="3">调整并比较</heading>
+        <body>尝试不同字符集、字体和颜色，比较原图与结果，再编辑需要修改的部分。</body>
+      </step>
+      <step number="3">
+        <heading level="3">保存项目</heading>
+        <body>保留创作来源，方便下次继续调整。</body>
+      </step>
+      <step number="4">
+        <heading level="3">导出作品</heading>
+        <body>根据用途选择文本、图片、ANSI 或网页格式。</body>
+      </step>
+      <figure source="assets/showcase/text-workflow.gif" reducedMotionSource="assets/showcase/text-result.png">
+        <alt>AsciiStudio 中输入文字、生成字符画并切换内容的操作过程。</alt>
+        <reducedMotionAlt>AsciiStudio 生成的文字字符画静态结果。</reducedMotionAlt>
+        <caption>文字转换的实际操作过程。</caption>
+        <reducedMotionCaption>文字转换结果。</reducedMotionCaption>
+      </figure>
+    </section>
+
+    <section id="download" order="5">
+      <layout render="false">下载入口与安装步骤同一区域呈现；预发布说明贴近按钮。</layout>
+      <heading level="2">在 Windows 上开始使用</heading>
+      <body>下载便携版 ZIP，完整解压后运行 AsciiStudio.exe。</body>
+      <requirements>Windows x64，最低目标为 Windows 10 1809。使用便携版无需安装开发 SDK。</requirements>
+      <releaseNote>当前为 0.9 预发布阶段，仍在进行稳定性与交付检查。各版本的变化见 Release 更新说明。</releaseNote>
+      <actions>
+        <link role="primary" href="https://github.com/msmapwr/ascii-studio/releases">前往 GitHub 下载</link>
+        <link role="secondary" href="https://github.com/msmapwr/ascii-studio/blob/main/CHANGELOG.md">查看更新记录</link>
+      </actions>
+      <instructions label="便携版使用步骤">
+        <item>在 GitHub Releases 中选择需要的版本，下载 Windows x64 ZIP。</item>
+        <item>将 ZIP 完整解压到一个文件夹。</item>
+        <item>打开文件夹，运行 AsciiStudio.exe。</item>
+      </instructions>
+      <linkBehavior>下载按钮会打开 GitHub Releases，请在该页面选择下载文件。</linkBehavior>
+    </section>
+
+    <section id="faq" order="6">
+      <layout render="false">使用原生 details / summary，每条问题单独展开；禁用脚本仍可阅读。</layout>
+      <heading level="2">常见问题</heading>
+      <item id="faq-offline">
+        <question>转换时需要联网吗？</question>
+        <answer>图片、文字的转换与导出都在本机完成，可离线使用。下载应用需要联网访问 GitHub。</answer>
+      </item>
+      <item id="faq-upload">
+        <question>图片和作品会上传到服务器吗？</question>
+        <answer>应用在本机处理图片和作品，保存项目与导出文件也在本机完成。</answer>
+      </item>
+      <item id="faq-chinese">
+        <question>可以把中文转成字符画吗？</question>
+        <answer>可以，请使用系统字体模式。FIGlet 模式接受 ASCII 输入。字符的实际显示效果可能因字体或终端而不同。</answer>
+      </item>
+      <item id="faq-gif">
+        <question>支持 GIF 动画吗？</question>
+        <answer>目前导入 GIF 只读取第一帧，导出的 GIF 也是静态图。动画、视频、摄像头和 3D 功能不在当前 0.9 开发范围内。</answer>
+      </item>
+      <item id="faq-project">
+        <question>怎样保存，才能下次接着修改？</question>
+        <answer>保存为 .asciiproj 项目。项目会保留创作来源，重新打开后可以继续调整；导出则用于生成需要的作品文件。</answer>
+      </item>
+      <item id="faq-large-images">
+        <question>大图片有大小限制吗？</question>
+        <answer>图片文件上限为 40 MB，源图上限为 8000 万像素；处理时最长边会缩至 2400 像素。较大的作品可以使用文本格式导出。</answer>
+        <link href="https://github.com/msmapwr/ascii-studio#文件与限制">查看完整资源限制</link>
+      </item>
+      <item id="faq-sdk">
+        <question>运行便携版需要安装开发工具吗？</question>
+        <answer>无需安装开发 SDK。下载 Windows x64 ZIP 并完整解压后，运行 AsciiStudio.exe 即可。</answer>
+      </item>
+      <item id="faq-feedback">
+        <question>遇到问题，在哪里反馈？</question>
+        <answer>可以前往仓库的 Issues 页面。说明使用的版本、操作步骤和出现的情况，方便排查。</answer>
+        <link href="https://github.com/msmapwr/ascii-studio/issues">前往 Issues</link>
+      </item>
+    </section>
+  </main>
+
+  <footer>
+    <layout render="false">品牌简介左侧，项目与文档链接右侧；移动端依次排列。</layout>
+    <brand>AsciiStudio</brand>
+    <description>Windows 上的 ASCII / ANSI 创作工具。</description>
+    <navigation label="项目与文档">
+      <link href="https://github.com/msmapwr/ascii-studio">GitHub 仓库</link>
+      <link href="https://github.com/msmapwr/ascii-studio/releases">Release 更新说明</link>
+      <link href="https://github.com/msmapwr/ascii-studio/blob/main/docs/ROADMAP.md">0.9 路线图</link>
+      <link href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md">展示素材说明</link>
+    </navigation>
+    <backToTop href="#top">回到顶部</backToTop>
+  </footer>
+</websiteContent>
