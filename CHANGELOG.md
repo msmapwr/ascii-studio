@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- 修复 Windows 便携发布包遗漏应用 PRI／XBF 资源导致启动时无窗口的问题；发布检查增加主窗口资源验证。
+
 ## [0.9.0-alpha.8] - 2026-10-02
 
 ### Changed

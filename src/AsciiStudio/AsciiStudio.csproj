@@ -26,4 +26,20 @@
     <PackageReference Include="Figgle.Fonts" Version="0.6.6" />
     <ProjectReference Include="../AsciiStudio.Core/AsciiStudio.Core.csproj" />
   </ItemGroup>
+  <!-- WinUI generates these after item evaluation; output-copy items alone do not
+       reliably reach dotnet publish for this unpackaged application. -->
+  <Target Name="PublishWinUIResources" AfterTargets="ComputeFilesToPublish">
+    <Error Condition="!Exists('$(TargetDir)$(AssemblyName).pri')"
+           Text="Missing WinUI resource index: $(TargetDir)$(AssemblyName).pri" />
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(TargetDir)$(AssemblyName).pri"
+                             RelativePath="$(AssemblyName).pri"
+                             CopyToPublishDirectory="PreserveNewest" />
+      <_StudioXbf Include="$(TargetDir)**/*.xbf" />
+      <ResolvedFileToPublish Include="@(_StudioXbf)">
+        <RelativePath>%(_StudioXbf.RecursiveDir)%(_StudioXbf.Filename)%(_StudioXbf.Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 </Project>
