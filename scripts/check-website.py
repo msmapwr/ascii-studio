@@ -98,3 +98,7 @@ for asset in (SITE / "assets").iterdir():
     if source.is_file():
         assert asset.read_bytes() == source.read_bytes(), f"Showcase asset differs: {asset.name}"
 print("PASS distributed showcase assets match source files")
+
+versions = {attrs.get("content") for parsed in pages.values() for tag, attrs in parsed.elements if tag == "meta" and attrs.get("name") == "application-version"}
+assert len(versions) == 1 and re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", next(iter(versions)) or ""), "Page versions differ or are invalid"
+print("PASS shared website version metadata")

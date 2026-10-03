@@ -1,6 +1,6 @@
 # 网站开发与发布
 
-两页 HTML 共用一份 CSS 和 JavaScript，代码位于 `website/dist`，可直接由静态服务器提供。素材来自仓库的 `assets/branding` 和 `assets/showcase`，发布副本位于 `website/dist/assets`。页面正文直接写在 HTML 中，浏览器无需读取 XML。
+五页 HTML 共用一份 CSS 和 JavaScript，代码位于 `website/dist`，可直接由静态服务器提供。素材来自仓库的 `assets/branding` 和 `assets/showcase`，发布副本位于 `website/dist/assets`。页面正文直接写在 HTML 中，浏览器无需读取 XML。
 
 ## 修改内容
 
@@ -40,10 +40,11 @@ python -m http.server 4173 --bind 127.0.0.1 --directory website/dist
 
 ```powershell
 python scripts/build-website-changelog.py --check
+python scripts/build-website-pages.py --check
 python scripts/check-website.py
 python scripts/check-doc-links.py
 node --check website/dist/main.js
-npx --yes --package=html-validate@10.2.1 html-validate website/dist/index.html website/dist/changelog.html
+npx --yes --package=html-validate@10.2.1 html-validate "website/dist/*.html"
 npx --yes --package=typescript@5.9.3 tsc --allowJs --checkJs --noEmit --target ES2022 --module ESNext --moduleResolution bundler --lib ES2022,DOM website/dist/main.js
 npx --yes --package=eslint@9.39.1 eslint website/dist/main.js --no-config-lookup --rule 'no-unused-vars:error' --rule 'no-unreachable:error' --rule 'no-constant-condition:error' --rule 'no-duplicate-imports:error' --rule 'valid-typeof:error'
 ```
@@ -70,3 +71,6 @@ CSS 使用 Lightning CSS 解析验证，输出到临时目录，不覆盖源文�
 
 
 下载页只链接仓库 Releases，不在浏览器请求 GitHub API，不写死最新安装包版本。便携包与 SHA256SUMS.txt 的存在已通过 Release API 核对；命令要求访客替换实际 ZIP 版本号。所有复制操作的状态显示在对应面板内，拒绝剪贴板权限时保留手动选择。下载及校验在访客设备进行，网页不读取、上传文件。
+
+
+0.11.0 本地验收覆盖五页 320px / 1024px 布局、跨页主题、手机菜单、复制成功及模拟拒绝、作品筛选与计数、滑块 Home/End、对话框关闭与焦点恢复、回到顶部、无脚本静态作品下载、组件 CDN 故障和模拟减少动态效果。生成检查确保文案与源文件一致，发布素材与仓库样例逐字节相同。桌面程序未修改，CI 仍执行原有构建与测试。
