@@ -788,6 +788,42 @@
     }
 }
 @layer pages {
+    .help-search {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 48px;
+        padding: 24px;
+        border: 1px solid var(--stroke);
+        border-radius: 8px;
+        background: var(--surface);
+    }
+    .help-search > label {
+        font-weight: 600;
+    }
+    .search-controls {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .search-controls input {
+        flex: 1 1 260px;
+        width: 100%;
+        min-width: 0;
+        color: var(--text);
+        background: var(--page);
+        border: 1px solid var(--stroke);
+        border-bottom: 2px solid var(--accent);
+        border-radius: 4px;
+        padding: 12px;
+        font: inherit;
+    }
+    .help-search > p {
+        color: var(--muted);
+        font-size: 14px;
+    }
+    #help-empty {
+        color: var(--text);
+    }
     .resource-content {
         max-width: 960px;
         padding-bottom: 48px;
