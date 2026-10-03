@@ -92,3 +92,9 @@ if extra_copy.exists():
                 if text and text.strip():
                     assert re.sub(r"\s+", "", text) in rendered_text, f"Missing visitor copy: {text}"
     print("PASS visitor page XML copy")
+
+for asset in (SITE / "assets").iterdir():
+    source = ROOT / "assets/showcase" / asset.name
+    if source.is_file():
+        assert asset.read_bytes() == source.read_bytes(), f"Showcase asset differs: {asset.name}"
+print("PASS distributed showcase assets match source files")
