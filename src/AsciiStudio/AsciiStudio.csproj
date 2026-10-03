@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <Version>0.9.0</Version>
+    <Version>1.0.0-alpha.1</Version>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>AsciiStudio</RootNamespace>
@@ -19,13 +19,13 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Services/*.cs" />
+    <Compile Include="Services/MotionService.cs;Services/WindowPlacementService.cs;Services/IProjectSessionPage.cs" />
     <Content Include="Assets/**" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../licenses/Unicode.txt" Link="licenses/Unicode.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.9169" />
-    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
-    <PackageReference Include="Figgle" Version="0.6.6" />
-    <PackageReference Include="Figgle.Fonts" Version="0.6.6" />
+    <ProjectReference Include="../AsciiStudio.Application/AsciiStudio.Application.csproj" />
     <ProjectReference Include="../AsciiStudio.Core/AsciiStudio.Core.csproj" />
   </ItemGroup>
   <!-- WinUI generates these after item evaluation; output-copy items alone do not

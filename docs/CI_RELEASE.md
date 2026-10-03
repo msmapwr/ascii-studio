@@ -48,3 +48,8 @@ GitHub Actions 无论构建成功或失败都尝试上传 `artifacts/test-result
 Windows 字体、项目与导出专项使用 `AsciiStudio.Creation.Tests` 的 xUnit；PowerShell UI 脚本在真实桌面执行，测试职责见[架构](ARCHITECTURE.md)。
 
 构建完成后运行 `./scripts/ci-checks.ps1`，用本地替身检查 Draft 发布顺序、重跑、上传失败和校验和错误，不调用真正的发布 API。
+# 1.0 预发布同包交付
+
+从 `1.0.0-alpha.1` 开始，每种架构的 ZIP 同时包含桌面程序 `AsciiStudio.exe` 和独立命令程序 `asciistudio-cli.exe`，两者版本一致。发布检查包含共享应用服务、CLI 运行时配置和完整 GUI PRI／XBF；x64 CI 运行真实 CLI 进程验证帮助、UTF-8 stdin 和转换。桌面主窗口在本地解压包上另行验收；ARM64 实机验收独立记录。
+
+正式 0.9.0 保留稳定下载入口。`v1.0.0-alpha.1` 等预发布标签通过同一流水线发布为 prerelease，不能改标为正式 1.0.0；最终正式版须用户明确许可。

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0-windows10.0.26100": {
+      "Figgle": {
+        "type": "Transitive",
+        "resolved": "0.6.6",
+        "contentHash": "RJQXdtKNAl5RX+4LjpstVtJCoDS8V8Bk8CylokeSbUtMpNE1eZcx4xuq7+RcBFuWQE1SiIFVcxEwBSLsHYt88w=="
+      },
+      "Figgle.Fonts": {
+        "type": "Transitive",
+        "resolved": "0.6.6",
+        "contentHash": "JjJNPD6exo64ql7HajUy40cVIHpwtj4QXuEp4xB8OnzeuUP+89OCZ3KZBtiLzzX6sh//AXrIF6/krNkLO0fg2w==",
+        "dependencies": {
+          "Figgle": "0.6.6"
+        }
+      },
+      "Microsoft.Win32.SystemEvents": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "bYdnhuD0XxcVTrxc8RyBjXo+AXYWJPnda3clhGz2Kakleyun1PyrzYV8RezT7ZYmR9OBSOgvpFQcvHo/K8Y90w=="
+      },
+      "System.Drawing.Common": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "kohT9ZZlkB5R5ifihCBnPJLdIUQGiTj1ZI6z4LKatr+F4MmIJJu7qQpBkqt9280ivtnSvlTx9qZEY+CpJ0zMkA==",
+        "dependencies": {
+          "Microsoft.Win32.SystemEvents": "10.0.0"
+        }
+      },
+      "asciistudio.application": {
+        "type": "Project",
+        "dependencies": {
+          "AsciiStudio.Core": "[1.0.0, )",
+          "Figgle": "[0.6.6, )",
+          "Figgle.Fonts": "[0.6.6, )",
+          "System.Drawing.Common": "[10.0.0, )"
+        }
+      },
+      "asciistudio.core": {
+        "type": "Project"
+      }
+    },
+    "net10.0-windows10.0.26100/win-arm64": {
+      "Microsoft.Win32.SystemEvents": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "bYdnhuD0XxcVTrxc8RyBjXo+AXYWJPnda3clhGz2Kakleyun1PyrzYV8RezT7ZYmR9OBSOgvpFQcvHo/K8Y90w=="
+      }
+    },
+    "net10.0-windows10.0.26100/win-x64": {
+      "Microsoft.Win32.SystemEvents": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "bYdnhuD0XxcVTrxc8RyBjXo+AXYWJPnda3clhGz2Kakleyun1PyrzYV8RezT7ZYmR9OBSOgvpFQcvHo/K8Y90w=="
+      }
+    }
+  }
+}
