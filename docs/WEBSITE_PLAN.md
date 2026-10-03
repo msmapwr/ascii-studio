@@ -1,6 +1,6 @@
 # AsciiStudio 介绍网页计划
 
-日期：2026-10-03。状态：技术栈已确定，页面文案已规划，尚未开始网页开发。
+日期：2026-10-03。状态：首版已实现并完成本地验证，使用 GitHub Pages 发布。
 
 ## 1. 确定技术栈
 
@@ -43,10 +43,11 @@ docs/
   WEBSITE_PLAN.md
   WEBSITE_CONTENT.xml  # 页面各位置的文案与素材规划
 website/
-  index.html       # 页面内容、语义结构、标题与描述
-  styles.css       # Fluent 风格变量、响应式布局、深浅主题
-  main.js          # Fluent 组件注册、主题偏好、渐进增强
-  assets/          # 发布所需的 Logo、截图与样例
+  dist/            # 可直接发布的静态目录
+    index.html     # 页面内容、语义结构、标题与描述
+    styles.css     # Fluent 风格变量、响应式布局、深浅主题
+    main.js        # Fluent 组件加载、主题偏好、渐进增强
+    assets/        # 发布所需的 Logo、截图与样例
 ```
 
 首版仅 3 个主要代码文件，图片与 Logo 另计。FAQ 使用原生 details / summary，下载使用 a 链接；内容和下载入口在 JavaScript 不可用时仍可使用。
@@ -104,11 +105,11 @@ Logo 保留 SVG 源文件，不重新生成品牌。需要新增 PNG / ICO 时�
 
 Fluent UI Blazor 是 ASP.NET Core Blazor 的组件库；它属于独立的 Web 技术路线：[官方仓库](https://github.com/microsoft/fluentui-blazor)。当前不安装该库。
 
-## 7. 后续开发与 Sites 托管
+## 7. 开发与 GitHub Pages 发布
 
-本次仅写计划，不创建 Site、不安装依赖、不开发或发布网页。
+用户已确定：固定顶部导航、手机折叠菜单、Release 链接新标签页打开、GIF 进入视野播放、不添加访问统计、发布到 GitHub Pages。减少动态效果时使用静态图。
 
-本次目录整理、技术栈更新和 XML 文案规划属于 Small。实际单页介绍站预计为 Medium，开始实现前按照项目规则一次性澄清 6 至 12 个有效问题。只确认仍未明确的目标访客、语言、交互细节、下载信息与发布方式；沿用已确定的技术栈、官方组件要求和页面文案，不重复询问。
+单页介绍站按 Medium 实施，开始前已提出并收到六项交互与交付选择。内容来自 XML 文案，Fluent Web Components 固定为 `3.1.3`，主题 token 固定为 `1.0.0-alpha.24`。CDN 不可用时隐藏外观控件，正文和下载入口保持可用。
 
 建议拆成以下 Small：
 
@@ -117,11 +118,13 @@ Fluent UI Blazor 是 ASP.NET Core Blazor 的组件库；它属于独立的 Web �
 3. 主题切换、键盘操作与渐进增强。
 4. 浏览器验证、版本／Changelog 整理与发布准备。
 
-后续使用独立的 `feat/website-introduction` 分支，并以最新 main 为基础。提交遵循 Conventional Commits；适用检查通过后按项目流程 Commit / Push。
+实现位于 `feat/website-introduction`，基于最新 main 并带入既有网页计划提交。因共享目录被其他任务切换分支，网页改动转移至独立工作目录。提交遵循 Conventional Commits。
 
-Sites 可按静态资源路线承载该介绍页，无需为托管强制引入 React、Blazor 或服务端。实际发布时再使用 Sites 的注册、打包和发布流程；按要求准备公开静态输出目录及 `.openai/hosting.json`，配置只指向网站公开输出，不把整个桌面仓库打包。网页源文件数量与托管配置文件数量分别计算。
+使用 GitHub Pages 分支发布：把 `website/dist` 导出到 `release/website-pages`，Pages 仅发布该分支根目录。应用代码、规划 XML 与开发工具不进入发布目录。后续更新网页后重新导出并推送该分支，不手工修改发布副本。未创建 Sites 项目。
 
-本次文档任务为 Small，不准备 Push，因此不调整应用版本。后续 Medium 完成并准备 Push 时，应明确网站与应用的版本管理关系、更新对应版本和 Changelog；遵守 0.9 预发布约束，不自动推进到 1.0.0。
+网站独立版本为 `0.9.0-alpha.1`，记录在 HTML 的 `application-version` 元数据和 [网站 Changelog](WEBSITE_CHANGELOG.md) 中。桌面应用版本保持 `0.9.0-alpha.8`，遵守预发布约束，不发布 1.0.0。源代码与静态发布分支均 Push。
+
+开发与验证方式见 [网站开发说明](WEBSITE_DEVELOPMENT.md)。
 
 ## 8. 验收标准
 
@@ -133,4 +136,4 @@ Sites 可按静态资源路线承载该介绍页，无需为托管强制引入 R
 - Logo、图片和内部链接在实际发布路径下正常加载；无浏览器控制台阻断错误。
 - HTML / CSS 检查与 JavaScript 静态检查通过；使用 TypeScript 时执行类型检查；框架路线执行适用构建。
 - 完成真实浏览器截图核验；网页使用浏览器验证，WinUI UI 测试仅在桌面应用代码发生变化时适用。
-- Sites 发布后验证实际 URL、静态资源与下载链接。
+- GitHub Pages 发布后验证实际 URL、静态资源与下载链接。
