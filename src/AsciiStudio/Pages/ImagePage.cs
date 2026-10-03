@@ -139,7 +139,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
             await RefreshThumbnail(); if (IsLoaded) Queue();
         });
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(sourceInfo, "ImageSourceInfo");
-        Unloaded += (_, _) => { controller.Operations.Cancel(); result.ClearTransientPreview(); controller.Source.ThumbnailVersion++; };
+        Unloaded += (_, _) => { controller.Operations.Cancel(); controller.Loads.Cancel(); result.ClearTransientPreview(); controller.Source.LoadVersion++; controller.Source.ThumbnailVersion++; };
         var body = Ui.Page(Ui.Heading("图片转换", "把照片变成字符画。调整滑块，细节即刻变化。"), Ui.Workspace(input, result)); Children.Add(body);
         AllowDrop = true;
         DragOver += (_, e) => { if (e.DataView.Contains(StandardDataFormats.StorageItems) || e.DataView.Contains(StandardDataFormats.Bitmap)) e.AcceptedOperation = DataPackageOperation.Copy; };
@@ -294,15 +294,18 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     }
     private async Task LoadFile(StorageFile file)
     {
-        if (new FileInfo(file.Path).Length > 40_000_000) throw new InvalidDataException("输入文件超过 40MB，请先压缩图片。");
-        await LoadBytes(await File.ReadAllBytesAsync(file.Path), Path.GetFileNameWithoutExtension(file.Name));
+        using var loading = controller.Loads.Begin(); controller.Operations.Cancel();
+        controller.Source.LoadVersion++; controller.Source.ThumbnailVersion++;
+        var bytes = await BoundedFile.ReadAsync(file.Path, 40_000_000, loading.Token);
+        if (loading.IsCurrent) await LoadBytes(bytes, Path.GetFileNameWithoutExtension(file.Name));
     }
     private async Task LoadBytes(byte[] bytes, string name)
     {
         if (bytes.Length > 40_000_000) throw new InvalidDataException("输入文件超过 40MB，请先压缩图片。");
+        using var loading = controller.Loads.Begin();
         controller.Operations.Cancel(); controller.Source.ThumbnailVersion++; var version = ++controller.Source.LoadVersion;
-        var prepared = await controller.PrepareSource(bytes, name);
-        if (version != controller.Source.LoadVersion) return;
+        var prepared = await controller.PrepareSource(bytes, name, token: loading.Token);
+        if (version != controller.Source.LoadVersion || !loading.IsCurrent) return;
         controller.Source.Apply(prepared);
         geometry.Load(); geometry.SourceAvailable = true;
         await RefreshThumbnail(); if (version != controller.Source.LoadVersion) return;
@@ -333,8 +336,12 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     }
     private async Task LoadBitmapReference(RandomAccessStreamReference reference)
     {
+        using var loading = controller.Loads.Begin(); controller.Operations.Cancel();
+        controller.Source.LoadVersion++; controller.Source.ThumbnailVersion++;
         using var stream = await reference.OpenReadAsync(); if (stream.Size > 40_000_000) throw new InvalidDataException("剪贴板图片过大。");
-        using var reader = new DataReader(stream); await reader.LoadAsync((uint)stream.Size); var bytes = new byte[(int)stream.Size]; reader.ReadBytes(bytes); await LoadBytes(bytes, "Clipboard");
+        loading.Token.ThrowIfCancellationRequested();
+        using var reader = new DataReader(stream); await reader.LoadAsync((uint)stream.Size); var bytes = new byte[(int)stream.Size]; reader.ReadBytes(bytes);
+        if (loading.IsCurrent) await LoadBytes(bytes, "Clipboard");
     }
     private async Task Paste()
     {
@@ -357,27 +364,19 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     }
     public async Task LoadProject(StudioProject project)
     {
+        using var loading = controller.Loads.Begin();
         controller.Operations.Cancel(); controller.Source.ThumbnailVersion++; var version = ++controller.Source.LoadVersion;
-        byte[]? bytes = null;
-        (byte[] pixels, int width, int height) image = default;
-        var key = "";
-        if (project.SourceImage is not null)
-        {
-            bytes = Convert.FromBase64String(project.SourceImage);
-            if (bytes.Length > 40_000_000) throw new InvalidDataException("项目中的图片超过 40MB。");
-            var cached = await Task.Run(() => pipeline.Decode(bytes)); key = cached.Key; image = (cached.Frame.Pixels, cached.Frame.Width, cached.Frame.Height);
-        }
-        if (version != controller.Source.LoadVersion) return;
+        var restored = await controller.RestoreProject(project, loading.Token);
+        if (version != controller.Source.LoadVersion || !loading.IsCurrent) return;
         suspend = true;
         try
         {
-            lastOptions = project.Options ?? new(); Apply(lastOptions); suspend = true;
-            fontAspect.IsChecked = project.Parameters is { } parameters && parameters.TryGetValue("fontAspect", out var automatic) && bool.TryParse(automatic, out var enabled) && enabled;
-            if (project.Parameters is { } presetParameters && presetParameters.TryGetValue("resolution", out var preset) && int.TryParse(preset, out var pi) && pi is >= 0 and <= 5) resolution.SelectedIndex = pi;
-            geometry.Load(project.Geometry); geometry.SourceAvailable = bytes is not null;
-            controller.Source.Revision = key; controller.Source.Source = bytes; controller.Source.Encoded = project.SourceImage; controller.Source.Decoded = image; controller.Source.Title = project.Document.Title;
-            controller.Source.OriginalPreview = bytes is null ? null : await Task.Run(() => ImagingService.Thumbnail(image.pixels!, image.width, image.height, 2400));
-            if (bytes is not null) await RefreshThumbnail();
+            lastOptions = restored.Options; Apply(lastOptions); suspend = true;
+            fontAspect.IsChecked = restored.FontAspect; resolution.SelectedIndex = restored.Resolution;
+            geometry.Load(restored.Geometry); geometry.SourceAvailable = restored.Source is not null;
+            if (restored.Source is { } source) controller.Source.Apply(source);
+            else { controller.Source.Source = null; controller.Source.Encoded = null; controller.Source.OriginalPreview = null; controller.Source.Revision = ""; controller.Source.Decoded = default; controller.Source.Title = project.Document.Title; }
+            if (restored.Source is not null) await RefreshThumbnail();
             else { thumbnail.Source = null; sourceInfo.Text = "PNG · JPEG · BMP · GIF · TIFF"; await result.SetComparisonSources(null, null); }
             if (version == controller.Source.LoadVersion) await result.LoadDocument(project);
         }

@@ -38,8 +38,8 @@ public static class TextFontLibrary
     }
     private static HashSet<string> LoadFavorites()
     {
-        try { return (JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(directory, "favorites.json"))) ?? []).Take(1024).ToHashSet(); }
-        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException) { return []; }
+        try { return (JsonSerializer.Deserialize<string[]>(BoundedFile.JsonBytes(BoundedFile.Read(Path.Combine(directory, "favorites.json"), 1_000_000)).Span) ?? []).Where(id => id is { Length: > 0 and <= 256 }).Take(1024).ToHashSet(); }
+        catch (Exception e) when (e is IOException or InvalidDataException or JsonException or UnauthorizedAccessException) { return []; }
     }
     public static async Task ToggleFavorite(string id)
     {

@@ -11,6 +11,9 @@ public static class ImagingService
 {
     public static byte[] Thumbnail(byte[] rgba, int width, int height, int maximumSide = 300)
     {
+        if (maximumSide is < 1 or > 2400 || width is < 1 or > 32767 || height is < 1 or > 32767
+            || (long)width * height > 80_000_000 || rgba.LongLength != (long)width * height * 4)
+            throw new ArgumentException("预览图像尺寸或 RGBA 数据无效。");
         using var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
         var locked = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
         try
@@ -27,7 +30,6 @@ public static class ImagingService
             }
         }
         finally { bitmap.UnlockBits(locked); }
-        if (maximumSide is < 1 or > 2400) throw new ArgumentException("预览图像尺寸无效。");
         var scale = Math.Min(1d, maximumSide / (double)Math.Max(width, height));
         using var preview = new Bitmap(Math.Max(1, (int)(width * scale)), Math.Max(1, (int)(height * scale)), PixelFormat.Format32bppArgb);
         using (var graphics = Graphics.FromImage(preview))
@@ -129,6 +131,7 @@ public static class ImagingService
         using var font = new Font(document.FontFamily, size, FontStyle.Regular, GraphicsUnit.Pixel);
         using var measure = new Bitmap(1, 1); using var mg = Graphics.FromImage(measure);
         var cell = mg.MeasureString("M", font, new PointF(0, 0), StringFormat.GenericTypographic).Width;
+        var monospaced = new[] { "i", "W", "0", " " }.All(glyph => Math.Abs(mg.MeasureString(glyph, font, new PointF(0, 0), StringFormat.GenericTypographic).Width - cell) < .05f);
         var lineHeight = font.GetHeight(mg);
         var width = dimensions.Width;
         var height = dimensions.Height;
@@ -150,12 +153,12 @@ public static class ImagingService
                         var left = padding + start * cell; var right = padding + x * cell;
                         g.FillRectangle(brush, (float)Math.Floor(left), (float)Math.Floor(padding + y * lineHeight), (float)Math.Ceiling(right) - (float)Math.Floor(left), (float)Math.Ceiling(padding + (y + 1) * lineHeight) - (float)Math.Floor(padding + y * lineHeight));
                     }
-                if (document.Colors is null && lines[y].All(char.IsAscii))
+                if (monospaced && document.Colors is null && lines[y].All(char.IsAscii))
                 {
                     using var brush = new SolidBrush(Color.FromArgb(231, 237, 247));
                     g.DrawString(lines[y], font, brush, padding, padding + y * lineHeight, StringFormat.GenericTypographic);
                 }
-                else if (document.Colors is not null && lines[y].All(char.IsAscii))
+                else if (monospaced && document.Colors is not null && lines[y].All(char.IsAscii))
                 {
                     for (var x = 0; x < lines[y].Length;)
                     {

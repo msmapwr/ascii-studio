@@ -9,6 +9,8 @@
 | ImageSourceState | 输入数据、原图预览、来源及加载版本 | 页面控件 |
 | TextCreationController | 生成、缺字检查、字体样本、已生成来源快照 | 控件读写 |
 | TextProjectMapper | 文字项目快照、旧布局参数兼容 | 导航与对话框 |
+| ProjectFileService / BoundedFile | 打开句柄后检查资源上限、统一项目与恢复校验 | 页面赋值、自动丢弃损坏数据 |
+| AnsiProjectMapper | ANSI 来源字节和恢复参数校验 | 解析任务调度和控件读写 |
 | LatestOperation | 取消前次操作、判断最新结果提交权、独立生命周期 | 线程池同步；由 UI 线程持有 |
 | ImagePipelineService | 解码／几何／采样／过滤／结果缓存与预算 | 结果编辑或保存策略 |
 | AsciiStudio.Core | 算法、文档网格、ANSI、历史、导出文本格式 | Windows UI |
@@ -41,7 +43,6 @@ flowchart LR
 ```powershell
 dotnet test tests/AsciiStudio.Core.Tests/AsciiStudio.Core.Tests.csproj -c Release --logger trx
 dotnet test tests/AsciiStudio.Creation.Tests/AsciiStudio.Creation.Tests.csproj -c Release --logger trx
-dotnet run --project tests/AsciiStudio.Text.Checks/AsciiStudio.Text.Checks.csproj -c Release
 ```
 
 核心原有 75 个检查迁为 59 个 Fact 和 16 个 Theory 数据项，分成 11 个领域文件；原断言保留。
@@ -49,7 +50,8 @@ dotnet run --project tests/AsciiStudio.Text.Checks/AsciiStudio.Text.Checks.cspro
 LegacyImageConverter / LegacyImageQualityConverter 是固定在 Git `4e2b953` 的测试参考实现，
 只用于回归比较，不参与应用编译。算法行为有意改变时须明确记录兼容性并评审参考基线。
 
-Windows 字体检查暂保留控制台入口，后续迁移到 Windows xUnit 专项项目。
-独立的 Creation.Tests 已使用 xUnit 验证 Controller 的原图准备、取消、预览尺寸及项目映射。
+原有 10 项 Windows 字体控制台检查已完整迁入 Creation.Tests 的 NativeFontTests，保留原断言。
+字体导入、收藏和原名兼容检查使用隔离工作目录与串行 xUnit Collection。
+Creation.Tests 同时验证 Controller 的原图准备、取消、预览尺寸、项目映射、恢复、迁移备份和快照隔离。
 PowerShell 保留为 UI / 端到端编排，核心质量不再依赖自定义测试计数器。
 GitHub Actions 上传 TRX；UI 验收需要真实桌面，CI 编译不能替代 DPI 和辅助功能实测。

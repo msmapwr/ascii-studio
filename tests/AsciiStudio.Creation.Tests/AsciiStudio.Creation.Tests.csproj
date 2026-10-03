@@ -19,6 +19,11 @@
     <Compile Include="../../src/AsciiStudio/Services/ImagePipelineService.cs" Link="ImagePipelineService.cs" />
     <Compile Include="../../src/AsciiStudio/Services/ImageCreationController.cs" Link="ImageCreationController.cs" />
     <Compile Include="../../src/AsciiStudio/Services/TextCreationController.cs" Link="TextCreationController.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/BoundedFile.cs" Link="BoundedFile.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/ProjectFileService.cs" Link="ProjectFileService.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/AnsiProjectMapper.cs" Link="AnsiProjectMapper.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/WorkspaceSessionService.cs" Link="WorkspaceSessionService.cs" />
+    <Compile Include="../../src/AsciiStudio/Services/CreationSnapshot.cs" Link="CreationSnapshot.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />

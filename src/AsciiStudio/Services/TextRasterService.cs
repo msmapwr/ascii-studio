@@ -9,6 +9,13 @@ namespace AsciiStudio.Services;
 public sealed record TextRasterOptions(string Family, int Columns = 120, int Style = 0, bool Bold = true, double Stroke = 0, bool Filled = true);
 public static class TextRasterService
 {
+    public static void ValidateOptions(TextRasterOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.Family) || options.Family.Length > 128 || options.Family.Any(char.IsControl)
+            || options.Columns is < 16 or > 600 || options.Style is < 0 or > 4 || !double.IsFinite(options.Stroke)
+            || options.Stroke is < 0 or > 12 || !options.Filled && options.Stroke == 0)
+            throw new ArgumentException("系统字体样式无效；空心字需要大于0的描边。");
+    }
     [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern uint GetGlyphIndicesW(IntPtr dc, string text, int count, [Out] ushort[] glyphs, uint flags);
     [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr obj);
     [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
@@ -31,9 +38,8 @@ public static class TextRasterService
     }
     private static (byte[] pixels, int width, int height) Raster(string line, TextRasterOptions options, int spacing)
     {
-        if (!FontCatalog.Names.Contains(options.Family) || options.Columns is < 16 or > 600 || options.Style is < 0 or > 4
-            || !double.IsFinite(options.Stroke) || options.Stroke is < 0 or > 12 || !options.Filled && options.Stroke == 0)
-            throw new ArgumentException("系统字体样式无效；空心字需要大于0的描边。");
+        ValidateOptions(options);
+        if (!FontCatalog.Names.Contains(options.Family)) throw new ArgumentException("所选系统字体未安装，请选择其他字体。");
         using var font = new Font(options.Family, 96, options.Bold ? FontStyle.Bold : FontStyle.Regular, GraphicsUnit.Pixel);
         using var probe = new Bitmap(1, 1); using var graphics = Graphics.FromImage(probe);
         using var format = (StringFormat)StringFormat.GenericTypographic.Clone(); format.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;

@@ -6,26 +6,19 @@ namespace AsciiStudio.Core;
 
 public static class ExportService
 {
+    public const int MaximumMarkupCharacters = 16_000_000;
+    private static void AppendMarkup(StringBuilder output, string markup)
+    {
+        if ((long)output.Length + markup.Length > MaximumMarkupCharacters) throw new ArgumentException("HTML / SVG 标记超过 1600 万字符上限，请降低网格尺寸。");
+        output.Append(markup);
+    }
     public static string Html(AsciiDocument document)
     {
         document = UnicodeGrid.Upgrade(document);
         var content = new StringBuilder(); var lines = document.Text.Split('\n');
         for (var y = 0; y < lines.Length; y++)
         {
-            if (document.Colors is null && document.BackgroundColors is null && lines[y].All(char.IsAscii))
-                content.Append(WebUtility.HtmlEncode(lines[y]));
-            else if (lines[y].All(char.IsAscii))
-            {
-                for (var x = 0; x < lines[y].Length;)
-                {
-                    var start = x; var color = document.Colors?[y * document.Width + x] ?? 0xFFE7EDF7;
-                    var background = document.BackgroundColors?[y * document.Width + x];
-                    while (x < lines[y].Length && (document.Colors?[y * document.Width + x] ?? 0xFFE7EDF7) == color && document.BackgroundColors?[y * document.Width + x] == background) x++;
-                    var bg = background.HasValue ? $";background-color:{CssColor(background.Value)}" : "";
-                    content.Append($"<span style=\"color:{CssColor(color)}{bg}\">{WebUtility.HtmlEncode(lines[y][start..x])}</span>");
-                }
-            }
-            else foreach (var glyph in UnicodeGrid.Glyphs(lines[y]))
+            foreach (var glyph in UnicodeGrid.Glyphs(lines[y]))
             {
                 if (glyph.Width == 0) continue;
                 var color = document.Colors?[y * document.Width + glyph.Column] ?? 0xFFE7EDF7;
@@ -41,7 +34,7 @@ public static class ExportService
                     foreground = $"color:transparent;background-image:linear-gradient(to bottom,{baseColor} 0%,{baseColor} {top}%,{CssColor(color)} {top}%,{CssColor(color)} {end}%,{baseColor} {end}%)";
                     bg = "";
                 }
-                content.Append($"<span style=\"display:inline-block;width:{width}px;{foreground}{bg}\">{WebUtility.HtmlEncode(glyph.Text)}</span>");
+                AppendMarkup(content, $"<span style=\"display:inline-block;vertical-align:top;width:{width}px;{foreground}{bg}\">{WebUtility.HtmlEncode(glyph.Text)}</span>");
             }
             if (y < lines.Length - 1) content.Append('\n');
         }
@@ -52,7 +45,8 @@ public static class ExportService
 
     public static string Svg(AsciiDocument document)
     {
-        document = UnicodeGrid.Upgrade(document); var cw = document.CellWidth; var ch = document.CellHeight; const int pad = 20;
+        document = UnicodeGrid.Upgrade(document); System.Xml.XmlConvert.VerifyXmlChars(document.Text); System.Xml.XmlConvert.VerifyXmlChars(document.FontFamily);
+        var cw = document.CellWidth; var ch = document.CellHeight; const int pad = 20;
         string Number(double value) => value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
         var result = new StringBuilder($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{Number(document.Width * cw + 2 * pad)}\" height=\"{Number(document.Height * ch + 2 * pad)}\"><rect width=\"100%\" height=\"100%\" fill=\"#121822\"/><g font-family=\"{WebUtility.HtmlEncode(document.FontFamily)},Microsoft YaHei UI,Segoe UI Emoji,monospace\" font-size=\"13\" fill=\"#e7edf7\" xml:space=\"preserve\">");
         var lines = document.Text.Split('\n');
@@ -62,12 +56,12 @@ public static class ExportService
                 {
                     var start = x; var background = document.BackgroundColors[y * document.Width + x];
                     while (x < document.Width && document.BackgroundColors[y * document.Width + x] == background) x++;
-                    result.Append($"<rect x=\"{Number(pad + start * cw)}\" y=\"{Number(pad + y * ch)}\" width=\"{Number((x - start) * cw)}\" height=\"{Number(ch)}\" fill=\"#{background & 0xFFFFFF:X6}\"{SvgAlpha(background)}/>");
+                    AppendMarkup(result, $"<rect x=\"{Number(pad + start * cw)}\" y=\"{Number(pad + y * ch)}\" width=\"{Number((x - start) * cw)}\" height=\"{Number(ch)}\" fill=\"#{background & 0xFFFFFF:X6}\"{SvgAlpha(background)}/>");
                 }
         for (var y = 0; y < lines.Length; y++)
         {
             if (document.Colors is null && lines[y].All(char.IsAscii))
-                result.Append($"<text x=\"{pad}\" y=\"{Number(pad + (y + 1) * ch)}\">{WebUtility.HtmlEncode(lines[y])}</text>");
+                AppendMarkup(result, $"<text x=\"{pad}\" y=\"{Number(pad + (y + 1) * ch)}\" textLength=\"{Number(lines[y].Length * cw)}\" lengthAdjust=\"spacingAndGlyphs\">{WebUtility.HtmlEncode(lines[y])}</text>");
             else foreach (var glyph in UnicodeGrid.Glyphs(lines[y]))
             {
                 if (glyph.Width == 0) continue;
@@ -75,11 +69,11 @@ public static class ExportService
                 if (ImageQualityConverter.BlockFill(glyph.Text) is { } block)
                 {
                     if (color >> 24 < 255)
-                        result.Append($"<rect x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + block.Top) * ch)}\" width=\"{Number(cw)}\" height=\"{Number(block.Height * ch)}\" fill=\"#121822\"/>");
-                    result.Append($"<rect x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + block.Top) * ch)}\" width=\"{Number(cw)}\" height=\"{Number(block.Height * ch)}\" fill=\"#{color & 0xFFFFFF:X6}\"{SvgAlpha(color)}/>");
+                        AppendMarkup(result, $"<rect x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + block.Top) * ch)}\" width=\"{Number(cw)}\" height=\"{Number(block.Height * ch)}\" fill=\"#121822\"/>");
+                    AppendMarkup(result, $"<rect x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + block.Top) * ch)}\" width=\"{Number(cw)}\" height=\"{Number(block.Height * ch)}\" fill=\"#{color & 0xFFFFFF:X6}\"{SvgAlpha(color)}/>");
                     continue;
                 }
-                result.Append($"<text x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + 1) * ch)}\" fill=\"#{color & 0xFFFFFF:X6}\"{SvgAlpha(color)}>{WebUtility.HtmlEncode(glyph.Text)}</text>");
+                AppendMarkup(result, $"<text x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + 1) * ch)}\" textLength=\"{Number(glyph.Width * cw)}\" lengthAdjust=\"spacingAndGlyphs\" fill=\"#{color & 0xFFFFFF:X6}\"{SvgAlpha(color)}>{WebUtility.HtmlEncode(glyph.Text)}</text>");
             }
         }
         return result.Append("</g></svg>").ToString();

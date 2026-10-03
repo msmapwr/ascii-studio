@@ -7,8 +7,11 @@ public sealed record CreationSnapshot(StudioProject Project, bool Edited, AsciiD
     public static CreationSnapshot Capture(StudioProject project, bool edited, AsciiDocument? generated)
     {
         project.Document.Validate();
+        generated?.Validate();
         var document = project.Document with { Colors = project.Document.Colors?.ToArray(), BackgroundColors = project.Document.BackgroundColors?.ToArray() };
-        return new(project with { Document = document, Parameters = project.Parameters is null ? null : new(project.Parameters), Edited = edited, GeneratedDocument = generated }, edited, generated);
+        var original = ReferenceEquals(generated, project.Document) ? document : generated is null ? null
+            : generated with { Colors = generated.Colors?.ToArray(), BackgroundColors = generated.BackgroundColors?.ToArray() };
+        return new(project with { Document = document, Parameters = project.Parameters is null ? null : new(project.Parameters), Edited = edited, GeneratedDocument = original }, edited, original);
     }
 
     public long EstimateBytes() => 512L + Project.Document.Text.Length * 2L + (Project.Document.Colors?.LongLength ?? 0) * 4

@@ -56,6 +56,18 @@ public sealed class TextCreationController
 
 public static class TextProjectMapper
 {
+    public sealed record State(int Mode, string Font, int Style, TextArtOptions Layout, TextRasterOptions Raster, int Preset, bool AllowMissing);
+    public static State Restore(StudioProject project)
+    {
+        var p = project.Parameters ?? new();
+        var mode = p.GetValueOrDefault("mode") == "1" ? 1 : 0;
+        var style = int.TryParse(p.GetValueOrDefault("systemStyle"), out var oldStyle) && oldStyle is >= 0 and < 5 ? oldStyle : 0;
+        var raster = p.TryGetValue("raster", out var json) ? JsonSerializer.Deserialize<TextRasterOptions>(json) ?? throw new ArgumentException("项目文字栅格参数为空。")
+            : new(p.GetValueOrDefault("systemFont", "Microsoft YaHei UI"), Math.Clamp(project.Options?.Columns ?? 120, 16, 600), style, style != 1);
+        TextRasterService.ValidateOptions(raster);
+        var preset = int.TryParse(p.GetValueOrDefault("readabilityPreset"), out var value) && value is >= 0 and <= 3 ? value : 0;
+        return new(mode, p.GetValueOrDefault("font", "Standard"), style, Layout(p), raster, preset, p.GetValueOrDefault("allowMissing") == "True");
+    }
     public static StudioProject Project(AsciiDocument doc, int columns, string? source,
         Dictionary<string, string>? parameters) => new(WorkspaceService.CurrentProjectVersion, doc,
         new ConversionOptions { Columns = columns }, null, source, "text", parameters is null ? null : new(parameters));
