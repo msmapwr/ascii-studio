@@ -17,6 +17,11 @@ try {
 
     & dotnet restore 'src/AsciiStudio/AsciiStudio.csproj' --locked-mode
     if ($LASTEXITCODE) { throw 'Dependency restore failed.' }
+    # A fresh directory prevents an old PRI/XBF from hiding a broken publish.
+    $taskPublish = [IO.Path]::GetFullPath((Join-Path $taskRoot 'artifacts/publish'))
+    $taskArtifacts = [IO.Path]::GetFullPath((Join-Path $taskRoot 'artifacts')) + [IO.Path]::DirectorySeparatorChar
+    if (!$taskPublish.StartsWith($taskArtifacts, [StringComparison]::OrdinalIgnoreCase)) { throw 'Publish directory escapes artifacts.' }
+    if (Test-Path -LiteralPath $taskPublish) { Remove-Item -LiteralPath $taskPublish -Recurse -Force }
     # CI has no desktop skill installation; local development retains its analyzer wrapper.
     & dotnet publish 'src/AsciiStudio/AsciiStudio.csproj' -c Release --no-restore --self-contained true -p:WindowsAppSDKSelfContained=true -o artifacts/publish -v minimal
     if ($LASTEXITCODE) { throw 'Release compilation failed.' }
@@ -27,7 +32,7 @@ try {
     & dotnet run --project 'tests/AsciiStudio.Text.Checks/AsciiStudio.Text.Checks.csproj' -c Release
     if ($LASTEXITCODE) { throw 'Windows text checks failed.' }
 
-    foreach ($taskRequired in @('AsciiStudio.exe', 'AsciiStudio.dll', 'Microsoft.UI.Xaml.dll', 'Assets/AsciiStudio.ico')) {
+    foreach ($taskRequired in @('AsciiStudio.exe', 'AsciiStudio.dll', 'AsciiStudio.pri', 'App.xbf', 'MainWindow.xbf', 'Microsoft.UI.Xaml.dll', 'Assets/AsciiStudio.ico')) {
         if (!(Test-Path -LiteralPath (Join-Path 'artifacts/publish' $taskRequired))) { throw "Missing publish payload: $taskRequired" }
     }
     $taskOutput = Join-Path $taskRoot 'artifacts/release'

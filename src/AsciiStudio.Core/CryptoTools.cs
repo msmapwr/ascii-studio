@@ -28,13 +28,14 @@ public static class CryptoTools
         _ => true
     };
 
-    public static string Apply(string algorithm, string text, string secret = "", bool decrypt = false, string keyPem = "")
+    public static string Apply(string algorithm, string text, string secret = "", bool decrypt = false, string keyPem = "", TextProcessingOptions? processingOptions = null)
     {
         if (secret.Length > 4096) throw new ArgumentException("口令或密钥最多 4096 字符。");
         if (!IsSupported(algorithm)) throw new PlatformNotSupportedException("当前 Windows 版本不支持此算法，请选择其他方法。");
         if (text.Length > OutputLimit || Utf8.GetByteCount(text) > (decrypt ? OutputLimit : InputLimit)) throw new ArgumentException("文本超过限制：输入最多 1 MB，编码或密文最多 4 MB。");
         string result;
-        if (Modern.Contains(algorithm)) result = decrypt ? Decrypt(text, secret, keyPem) : Encrypt(algorithm, text, secret, keyPem);
+        if (TextProcessing.Contains(algorithm)) result = TextProcessing.Apply(algorithm, text, decrypt, processingOptions);
+        else if (Modern.Contains(algorithm)) result = decrypt ? Decrypt(text, secret, keyPem) : Encrypt(algorithm, text, secret, keyPem);
         else if (Digests.Contains(algorithm))
         {
             if (decrypt) throw new ArgumentException("摘要不可还原。需要还原时请选择可解密加密或编码。");
