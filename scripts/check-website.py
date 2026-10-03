@@ -81,3 +81,14 @@ for node in content.find("changelogPage"):
         assert re.sub(r"\s+", "", node.text or "") in history_text or node.tag in ("title", "description"), f"Missing history copy: {node.text}"
 assert all(any(a.get("href") == "changelog.html" for _, a in p.elements) for p in pages.values()), "Missing changelog navigation"
 print(f"PASS {len(pages)} pages: planned copy, assets, cross-page links and accessibility labels")
+
+extra_copy = ROOT / "docs/WEBSITE_PAGES.xml"
+if extra_copy.exists():
+    for planned in ET.parse(extra_copy).getroot().findall("page"):
+        rendered = pages[planned.get("file")]
+        rendered_text = re.sub(r"\s+", "", " ".join(rendered.text))
+        for node in planned.find("content").iter():
+            for text in (node.text, node.tail):
+                if text and text.strip():
+                    assert re.sub(r"\s+", "", text) in rendered_text, f"Missing visitor copy: {text}"
+    print("PASS visitor page XML copy")

@@ -1,4 +1,4 @@
-@layer base, layout, components, history, motion, responsive;
+@layer base, layout, components, history, pages, motion, responsive;
 @layer base {
     :root {
         color-scheme: light;
@@ -787,6 +787,115 @@
         border-radius: 3px;
     }
 }
+@layer pages {
+    .task-links {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+    }
+    .guide-layout {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 64px;
+        padding-bottom: 64px;
+        align-items: start;
+    }
+    .guide-index {
+        position: sticky;
+        top: 116px;
+    }
+    .guide-index h2 {
+        font-size: 16px;
+        letter-spacing: 0;
+        margin-bottom: 16px;
+    }
+    .guide-index nav {
+        display: grid;
+        gap: 12px;
+    }
+    .guide-index a {
+        font-size: 14px;
+        text-decoration: none;
+    }
+    .guide-content {
+        min-width: 0;
+    }
+    .guide-section {
+        scroll-margin-top: 12px;
+        padding-bottom: 48px;
+        margin-bottom: 48px;
+        border-bottom: 1px solid var(--stroke);
+    }
+    .guide-section:last-child {
+        border-bottom: 0;
+        margin-bottom: 0;
+    }
+    .guide-section > p {
+        margin-block: 20px;
+        color: var(--muted);
+    }
+    .guide-section > .text-link {
+        display: inline-block;
+        margin-top: 20px;
+    }
+    .tutorial-steps {
+        padding-left: 28px;
+        margin: 28px 0;
+    }
+    .tutorial-steps > li {
+        padding-left: 12px;
+        margin-bottom: 24px;
+    }
+    .tutorial-steps > li::marker {
+        color: var(--accent);
+        font-weight: 600;
+    }
+    .tutorial-steps h3 {
+        font-size: 19px;
+        margin-bottom: 8px;
+    }
+    .tutorial-steps p {
+        color: var(--muted);
+    }
+    .copy-panel {
+        background: var(--surface);
+        border: 1px solid var(--stroke);
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    pre {
+        margin: 0;
+        font-family: "Cascadia Code", Consolas, monospace;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        max-width: 100%;
+    }
+    .format-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-block: 28px;
+    }
+    .format-grid article {
+        border-left: 2px solid var(--accent);
+        padding-left: 20px;
+    }
+    .format-grid h3 {
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+    .format-grid p {
+        color: var(--muted);
+        font-size: 15px;
+    }
+}
 @layer motion {
     :root {
         --ease-fluent: cubic-bezier(0.16, 1, 0.3, 1);
@@ -993,7 +1102,7 @@
 }
 
 @layer responsive {
-    @media (min-width: 861px) {
+    @media (min-width: 1001px) {
         .navigation {
             display: flex !important;
         }
@@ -1017,7 +1126,7 @@
             font-size: 16px;
         }
     }
-    @media (max-width: 1000px) and (min-width: 861px) {
+    @media (max-width: 1100px) and (min-width: 1001px) {
         .brand {
             font-size: 18px;
             gap: 6px;
@@ -1032,7 +1141,20 @@
             font-size: 13px;
         }
     }
-    @media (max-width: 860px) {
+    @media (max-width: 1000px) {
+        .guide-layout {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 32px;
+        }
+        .guide-index {
+            position: static;
+        }
+        .guide-index nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
         .history-hero {
             padding-block: 40px;
         }
@@ -1159,6 +1281,10 @@
         }
     }
     @media (max-width: 520px) {
+        .format-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
         .container {
             width: calc(100% - 32px);
         }
