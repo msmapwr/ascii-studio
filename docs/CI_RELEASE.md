@@ -2,7 +2,7 @@
 
 工作流：`.github/workflows/build-release.yml`。
 
-- main 推送、PR 与手动运行：Windows x64 Release 编译，执行核心检查，上传自包含 ZIP、SHA256SUMS.txt、发布说明，保留 14 天。
+- main、feat／fix／refactor 分支推送、PR 与手动运行：x64 / ARM64 Release 编译，执行 xUnit 检查，上传自包含 ZIP、SHA256SUMS.txt、发布说明，保留 14 天。
 - 推送 `v*` 标签：上述检查全部通过后创建 GitHub Release。普通标签成为最新版；alpha/beta/rc 为预发布。
 - 发布版本必须与 csproj、MSIX manifest、Changelog 一致。失败不创建公开 Release。
 - 先创建 Draft，上传成功再公开；重跑会继续未完成 Draft，不覆盖已经公开的 Release。
@@ -23,7 +23,7 @@ git push origin "v$releaseVersion"
 
 ## 使用下载文件
 
-在 Releases 下载 `AsciiStudio-<版本>-win-x64.zip`，解压完整目录后运行 `AsciiStudio.exe`。Windows x64，目标 Windows 10 1809 及以后；包含 .NET 和 Windows App SDK 运行时。ZIP 未代码签名，当前不自动发布 MSIX。
+在 Releases 下载对应架构的 `AsciiStudio-<版本>-win-x64.zip` 或 `AsciiStudio-<版本>-win-arm64.zip`，解压完整目录后运行 `AsciiStudio.exe`。目标 Windows 10 1809 及以后；包含 .NET 和 Windows App SDK 运行时。ZIP 未代码签名，当前不自动发布 MSIX。ARM64 和干净机器实机验收独立记录，不以交叉编译代替。
 
 SHA256SUMS.txt 可用于核对下载完整性：
 
@@ -35,6 +35,7 @@ Get-FileHash ./AsciiStudio-<版本>-win-x64.zip -Algorithm SHA256
 
 ```powershell
 ./scripts/ci-build.ps1
+./scripts/ci-build.ps1 -Architecture arm64
 # 标签校验也可在本机复现
 $releaseVersion = ([xml](Get-Content ./src/AsciiStudio/AsciiStudio.csproj -Raw)).Project.PropertyGroup.Version
 ./scripts/ci-build.ps1 -Tag "v$releaseVersion"
@@ -44,6 +45,6 @@ $releaseVersion = ([xml](Get-Content ./src/AsciiStudio/AsciiStudio.csproj -Raw))
 
 核心检查现在使用 `dotnet test tests/AsciiStudio.Core.Tests/AsciiStudio.Core.Tests.csproj -c Release --logger trx`。
 GitHub Actions 无论构建成功或失败都尝试上传 `artifacts/test-results/*.trx`。
-Windows 字体专项暂保留控制台检查，PowerShell UI 脚本在真实桌面执行；测试职责见[架构](ARCHITECTURE.md)。
+Windows 字体、项目与导出专项使用 `AsciiStudio.Creation.Tests` 的 xUnit；PowerShell UI 脚本在真实桌面执行，测试职责见[架构](ARCHITECTURE.md)。
 
 构建完成后运行 `./scripts/ci-checks.ps1`，用本地替身检查 Draft 发布顺序、重跑、上传失败和校验和错误，不调用真正的发布 API。
