@@ -1059,6 +1059,57 @@
         width: 100%;
     }
 }
+@layer pages {
+    .download-content {
+        padding-bottom: 64px;
+    }
+    .download-start {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 56px;
+        align-items: start;
+        padding-bottom: 48px;
+    }
+    .download-start > div > p {
+        color: var(--muted);
+        margin-top: 20px;
+    }
+    .download-start figure {
+        margin-top: 8px;
+    }
+    .download-section {
+        max-width: 900px;
+        padding-block: 48px;
+        border-top: 1px solid var(--stroke);
+    }
+    .download-section > p {
+        margin-block: 20px;
+        color: var(--muted);
+    }
+    .download-section .copy-panel {
+        display: grid;
+        justify-content: stretch;
+    }
+    .download-section .copy-panel button {
+        justify-self: start;
+    }
+    .download-help > h2 {
+        margin-bottom: 24px;
+    }
+    .download-help > .actions {
+        margin-top: 28px;
+    }
+    .availability {
+        font-size: 13px;
+    }
+}
+@layer pages {
+    .copy-feedback {
+        font-size: 13px;
+        color: var(--muted);
+        max-width: 60ch;
+    }
+}
 @layer motion {
     :root {
         --ease-fluent: cubic-bezier(0.16, 1, 0.3, 1);
@@ -1305,6 +1356,11 @@
         }
     }
     @media (max-width: 1000px) {
+        .download-start {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 24px;
+        }
+
         .guide-layout {
             grid-template-columns: minmax(0, 1fr);
             gap: 32px;

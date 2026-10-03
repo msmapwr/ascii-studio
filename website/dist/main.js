@@ -234,7 +234,9 @@ document.querySelectorAll("[data-copy-target]").forEach((control) => {
     button.hidden = false;
     button.addEventListener("click", async () => {
         const target = document.getElementById(button.dataset.copyTarget);
-        const status = document.querySelector("#copy-status");
+        const status = button
+            .closest(".copy-panel")
+            ?.querySelector("[role=status]");
         if (!target || !status) return;
         try {
             await navigator.clipboard.writeText(target.textContent.trim());
