@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" >
+        <meta name="viewport" content="width=device-width, initial-scale=1" >
+        <meta
+            name="description"
+            content="用 AsciiStudio 将图片和文字转换为字符画，查看 ANSI 作品，编辑结果并导出。转换与导出在 Windows 本机完成。"
+        >
+        <meta
+            property="og:title"
+            content="AsciiStudio：用图片和文字创作字符画"
+        >
+        <meta
+            property="og:description"
+            content="查看真实转换效果，了解图片转换、文字排版、ANSI 查看与项目导出，下载 Windows 预发布版。"
+        >
+        <meta property="og:type" content="website" >
+        <meta name="twitter:card" content="summary" >
+        <title>AsciiStudio | Windows ASCII 与 ANSI 创作工具</title>
+        <link rel="icon" type="image/svg+xml" href="assets/logo.svg" >
+        <link rel="stylesheet" href="styles.css" >
+        <script type="module" src="main.js"></script>
+    </head>
+    <body>
+        <a class="skip-link" href="#main">跳到正文</a>
+        <header class="site-header" id="top">
+            <div class="container header-inner">
+                <a
+                    class="brand"
+                    href="#top"
+                    aria-label="AsciiStudio，回到页面顶部"
+                    ><img
+                        src="assets/logo.svg"
+                        width="38"
+                        height="38"
+                        alt=""
+                    >AsciiStudio</a
+                >
+                <nav class="navigation" id="navigation" aria-label="页面导航">
+                    <a class="" href="#examples">转换效果</a
+                    ><a class="" href="#features">功能</a
+                    ><a class="" href="#workflow">使用流程</a
+                    ><a class="" href="#faq">常见问题</a>
+                </nav>
+                <div class="header-actions">
+                    <details class="theme-picker" id="theme-picker" hidden>
+                        <summary aria-label="外观">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.6"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                aria-hidden="true"
+                            >
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 3v18" /></svg
+                            ><span class="theme-word">外观</span>
+                        </summary>
+                        <div
+                            class="theme-options"
+                            id="theme-options"
+                            role="group"
+                            aria-label="外观"
+                        >
+                            <fluent-button
+                                data-theme-choice="system"
+                                aria-label="跟随系统"
+                                aria-pressed="true"
+                                >跟随系统</fluent-button
+                            >
+                            <fluent-button
+                                data-theme-choice="light"
+                                aria-label="浅色"
+                                aria-pressed="false"
+                                >浅色</fluent-button
+                            >
+                            <fluent-button
+                                data-theme-choice="dark"
+                                aria-label="深色"
+                                aria-pressed="false"
+                                >深色</fluent-button
+                            >
+                        </div>
+                    </details>
+                    <a
+                        class="button button-primary button-small"
+                        href="#download"
+                        >下载</a
+                    >
+                    <button
+                        class="button button-small menu-toggle"
+                        id="menu-toggle"
+                        type="button"
+                        aria-label="打开导航"
+                        aria-controls="navigation"
+                        aria-expanded="false"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.6"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+        <div
+            class="visually-hidden"
+            id="theme-status"
+            role="status"
+            aria-live="polite"
+        ></div>
+        <div class="visually-hidden" id="new-tab-note">在新标签页打开</div>
+        <main id="main" aria-label="AsciiStudio 产品介绍">
+            <section class="container hero" aria-labelledby="hero-title">
+                <div class="hero-copy">
+                    <h1 id="hero-title">把图片和文字变成字符画</h1>
+                    <p>
+                        AsciiStudio 是 Windows 上的 ASCII / ANSI
+                        创作工具。导入图片或输入文字，调整转换效果，再编辑、保存和导出作品。
+                    </p>
+                    <div class="local-note">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.6"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z" />
+                            <path d="m8 12 3 3 5-6" /></svg
+                        ><span>转换与导出在本机完成，可离线使用。</span>
+                    </div>
+                    <div class="actions">
+                        <a
+                            class="button button-primary"
+                            href="https://github.com/msmapwr/ascii-studio/releases"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-describedby="new-tab-note"
+                            >下载预发布版</a
+                        ><a
+                            class="button"
+                            href="https://github.com/msmapwr/ascii-studio"
+                            >查看 GitHub</a
+                        >
+                    </div>
+                    <p class="availability">
+                        适用于 Windows x64，当前为 0.9 预发布阶段。
+                    </p>
+                </div>
+                <figure class="hero-figure">
+                    <div class="app-frame">
+                        <img
+                            src="assets/app.png"
+                            width="1862"
+                            height="1079"
+                            alt="AsciiStudio 的 Windows 创作界面，包含参数设置与字符画预览。"
+                            fetchpriority="high"
+                        >
+                    </div>
+                    <figcaption>AsciiStudio 实际运行界面。</figcaption>
+                </figure>
+            </section>
+            <section
+                class="section"
+                id="examples"
+                aria-labelledby="examples-title"
+            >
+                <div class="container">
+                    <div class="section-heading">
+                        <h2 id="examples-title">看看转换后的效果</h2>
+                        <p>
+                            同一张图片可以转换为带颜色的字符画，文字也可以排成标题或图案。
+                        </p>
+                    </div>
+                    <article class="example">
+                        <div class="example-copy">
+                            <h3>图片转彩色 ANSI</h3>
+                            <p>
+                                调整字符集、颜色和抖动方式，比较原图与转换结果。半块双色模式用字符的上下两部分呈现颜色。
+                            </p>
+                        </div>
+                        <figure class="example-figure">
+                            <div class="comparison-labels">
+                                <span>原图</span><span>转换结果</span>
+                            </div>
+                            <img
+                                src="assets/landscape-before-after.png"
+                                width="1440"
+                                height="540"
+                                alt="山景原图与彩色 ANSI 半块字符画的对照。"
+                                loading="lazy"
+                            >
+                            <figcaption>
+                                山景原图与半块双色转换结果。
+                            </figcaption>
+                        </figure>
+                    </article>
+                    <article class="example">
+                        <div class="example-copy">
+                            <h3>文字转 ASCII</h3>
+                            <p>
+                                选择字体，调整字距、行距和对齐方式，为文字加上边框。中文可以使用系统字体模式。
+                            </p>
+                        </div>
+                        <figure class="example-figure">
+                            <div class="comparison-labels">
+                                <span>原始文字</span><span>字符画结果</span>
+                            </div>
+                            <img
+                                src="assets/text-before-after.png"
+                                width="1440"
+                                height="540"
+                                alt="系统字体渲染的原始文字与 ASCII 转换结果的对照。"
+                                loading="lazy"
+                            >
+                            <figcaption>
+                                系统字体文字与真实转换结果。
+                            </figcaption>
+                        </figure>
+                    </article>
+                    <p class="source-note">
+                        这些样例由应用使用的转换与导出代码生成。<a
+                            class=""
+                            href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md"
+                            >查看样例生成说明</a
+                        >
+                    </p>
+                </div>
+            </section>
+            <section
+                class="section"
+                id="features"
+                aria-labelledby="features-title"
+            >
+                <div class="container">
+                    <div class="section-heading">
+                        <h2 id="features-title">从转换到导出</h2>
+                    </div>
+                    <div class="features">
+                        <article class="feature">
+                            <span class="feature-symbol"
+                                ><svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.6"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <rect
+                                        x="3"
+                                        y="3"
+                                        width="18"
+                                        height="18"
+                                        rx="3"
+                                    />
+                                    <circle cx="8" cy="8" r="2" />
+                                    <path d="m3 17 6-6 4 4 3-3 5 5" /></svg
+                            ></span>
+                            <h3>调整图片转换效果</h3>
+                            <p>
+                                打开或粘贴图片，调整尺寸、比例、亮度、对比度与字符集。支持
+                                Braille、半块双色和多种抖动方式，也可以处理透明边缘。
+                            </p>
+                            <p class="detail">
+                                支持 PNG、JPEG、BMP、TIFF，以及 GIF 的第一帧。
+                            </p>
+                        </article>
+                        <article class="feature">
+                            <span class="feature-symbol"
+                                ><svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.6"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M4 5h16M12 5v15M8 20h8M4 5v3m16-3v3"
+                                    /></svg
+                            ></span>
+                            <h3>安排文字的形状与间距</h3>
+                            <p>
+                                使用 FIGlet
+                                或系统字体生成字符画，调整换行、对齐与间距。字体库支持搜索、收藏和导入，标题可以加上边框。
+                            </p>
+                            <p class="detail">
+                                中文请使用系统字体模式；FIGlet 模式接受 ASCII
+                                输入。
+                            </p>
+                        </article>
+                        <article class="feature">
+                            <h3>查看 ANSI 作品</h3>
+                            <p>
+                                打开 ANSI
+                                文件或粘贴转义序列，查看带颜色的字符作品，并读取常见编码和
+                                SAUCE 信息。
+                            </p>
+                        </article>
+                        <article class="feature">
+                            <h3>比较结果，继续编辑</h3>
+                            <p>
+                                切换原图与结果，使用并排视图或拖动分界线比较。编辑字符画时可以撤销和重做；手工修改后，可选择更新结果或保留独立版本。
+                            </p>
+                        </article>
+                        <article class="feature">
+                            <h3>保存项目，之后接着做</h3>
+                            <p>
+                                将作品保存为 .asciiproj
+                                项目，重新打开时恢复创作来源，继续调整。
+                            </p>
+                        </article>
+                        <article class="feature">
+                            <h3>按用途导出作品</h3>
+                            <p>
+                                导出文本、图片或网页格式，用于终端展示、文档和网页。
+                            </p>
+                            <p class="detail">
+                                TXT、PNG、JPEG、静态
+                                GIF、HTML、SVG、ANSI、JSON、Markdown。
+                            </p>
+                        </article>
+                    </div>
+                    <div class="supporting-tools">
+                        <h3>辅助工具</h3>
+                        <p>
+                            应用还提供边框与图案生成、文本整理、代码注释，以及本地加密和编码工具。
+                        </p>
+                    </div>
+                </div>
+            </section>
+            <section
+                class="section"
+                id="workflow"
+                aria-labelledby="workflow-title"
+            >
+                <div class="container">
+                    <div class="section-heading">
+                        <h2 id="workflow-title">做一幅自己的字符画</h2>
+                    </div>
+                    <div class="workflow-grid">
+                        <ol class="steps">
+                            <li>
+                                <span class="step-number" aria-hidden="true"
+                                    >1</span
+                                >
+                                <div>
+                                    <h3>打开图片或输入文字</h3>
+                                    <p>选择图片来源，或输入想要生成的文字。</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="step-number" aria-hidden="true"
+                                    >2</span
+                                >
+                                <div>
+                                    <h3>调整并比较</h3>
+                                    <p>
+                                        尝试不同字符集、字体和颜色，比较原图与结果，再编辑需要修改的部分。
+                                    </p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="step-number" aria-hidden="true"
+                                    >3</span
+                                >
+                                <div>
+                                    <h3>保存项目</h3>
+                                    <p>保留创作来源，方便下次继续调整。</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="step-number" aria-hidden="true"
+                                    >4</span
+                                >
+                                <div>
+                                    <h3>导出作品</h3>
+                                    <p>
+                                        根据用途选择文本、图片、ANSI
+                                        或网页格式。
+                                    </p>
+                                </div>
+                            </li>
+                        </ol>
+                        <figure class="workflow-figure">
+                            <div class="workflow-media">
+                                <img
+                                    id="demo-image"
+                                    src="assets/text-result.png"
+                                    width="960"
+                                    height="556"
+                                    alt="AsciiStudio 生成的文字字符画静态结果。"
+                                    loading="lazy"
+                                >
+                            </div>
+                            <figcaption class="demo-controls">
+                                <span id="demo-caption">文字转换结果。</span
+                                ><button
+                                    id="demo-toggle"
+                                    class="button button-small"
+                                    type="button"
+                                    aria-pressed="false"
+                                    aria-controls="demo-image"
+                                    hidden
+                                >
+                                    播放操作演示
+                                </button>
+                            </figcaption>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section
+                class="section"
+                id="download"
+                aria-labelledby="download-title"
+            >
+                <div class="container download-panel">
+                    <div class="download-copy">
+                        <h2 id="download-title">在 Windows 上开始使用</h2>
+                        <p>下载便携版 ZIP，完整解压后运行 AsciiStudio.exe。</p>
+                        <p class="detail">
+                            Windows x64，最低目标为 Windows 10
+                            1809。使用便携版无需安装开发 SDK。
+                        </p>
+                        <div class="actions">
+                            <a
+                                class="button button-primary"
+                                href="https://github.com/msmapwr/ascii-studio/releases"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-describedby="new-tab-note"
+                                >前往 GitHub 下载</a
+                            ><a
+                                class="button"
+                                href="https://github.com/msmapwr/ascii-studio/blob/main/CHANGELOG.md"
+                                >查看更新记录</a
+                            >
+                        </div>
+                        <p class="release-note">
+                            当前为 0.9
+                            预发布阶段，仍在进行稳定性与交付检查。各版本的变化见
+                            Release 更新说明。
+                        </p>
+                    </div>
+                    <div class="download-instructions">
+                        <h3>便携版使用步骤</h3>
+                        <ol>
+                            <li>
+                                在 GitHub Releases 中选择需要的版本，下载
+                                Windows x64 ZIP。
+                            </li>
+                            <li>将 ZIP 完整解压到一个文件夹。</li>
+                            <li>打开文件夹，运行 AsciiStudio.exe。</li>
+                        </ol>
+                        <p class="detail">
+                            下载按钮将在新标签页打开 GitHub
+                            Releases，请在该页面选择下载文件。
+                        </p>
+                    </div>
+                </div>
+            </section>
+            <section class="section" id="faq" aria-labelledby="faq-title">
+                <div class="container faq-grid">
+                    <h2 id="faq-title">常见问题</h2>
+                    <div>
+                        <details class="faq-item">
+                            <summary>转换时需要联网吗？</summary>
+                            <p>
+                                图片、文字的转换与导出都在本机完成，可离线使用。下载应用需要联网访问
+                                GitHub。
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>图片和作品会上传到服务器吗？</summary>
+                            <p>
+                                应用在本机处理图片和作品，保存项目与导出文件也在本机完成。
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>可以把中文转成字符画吗？</summary>
+                            <p>
+                                可以，请使用系统字体模式。FIGlet 模式接受 ASCII
+                                输入。字符的实际显示效果可能因字体或终端而不同。
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>支持 GIF 动画吗？</summary>
+                            <p>
+                                目前导入 GIF 只读取第一帧，导出的 GIF
+                                也是静态图。动画、视频、摄像头和 3D 功能不在当前
+                                0.9 开发范围内。
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>怎样保存，才能下次接着修改？</summary>
+                            <p>
+                                保存为 .asciiproj
+                                项目。项目会保留创作来源，重新打开后可以继续调整；导出则用于生成需要的作品文件。
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>大图片有大小限制吗？</summary>
+                            <p>
+                                图片文件上限为 40 MB，源图上限为 8000
+                                万像素；处理时最长边会缩至 2400
+                                像素。较大的作品可以使用文本格式导出。
+                            </p>
+                            <a
+                                class=""
+                                href="https://github.com/msmapwr/ascii-studio#文件与限制"
+                                >查看完整资源限制</a
+                            >
+                        </details>
+                        <details class="faq-item">
+                            <summary>运行便携版需要安装开发工具吗？</summary>
+                            <p>
+                                无需安装开发 SDK。下载 Windows x64 ZIP
+                                并完整解压后，运行 AsciiStudio.exe 即可。
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>遇到问题，在哪里反馈？</summary>
+                            <p>
+                                可以前往仓库的 Issues
+                                页面。说明使用的版本、操作步骤和出现的情况，方便排查。
+                            </p>
+                            <a
+                                class=""
+                                href="https://github.com/msmapwr/ascii-studio/issues"
+                                >前往 Issues</a
+                            >
+                        </details>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <footer class="site-footer">
+            <div class="container footer-inner">
+                <div>
+                    <a class="brand" href="#top"
+                        ><img
+                            src="assets/logo.svg"
+                            width="38"
+                            height="38"
+                            alt=""
+                        >AsciiStudio</a
+                    >
+                    <p>Windows 上的 ASCII / ANSI 创作工具。</p>
+                </div>
+                <nav class="footer-links" aria-label="项目与文档">
+                    <a class="" href="https://github.com/msmapwr/ascii-studio"
+                        >GitHub 仓库</a
+                    ><a
+                        class=""
+                        href="https://github.com/msmapwr/ascii-studio/releases"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-describedby="new-tab-note"
+                        >Release 更新说明</a
+                    ><a
+                        class=""
+                        href="https://github.com/msmapwr/ascii-studio/blob/main/docs/ROADMAP.md"
+                        >0.9 路线图</a
+                    ><a
+                        class=""
+                        href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md"
+                        >展示素材说明</a
+                    ><a class="" href="#top">回到顶部</a>
+                </nav>
+            </div>
+        </footer>
+    </body>
+</html>
