@@ -22,7 +22,7 @@ def render(page):
     chrome = chrome.replace(f'href="{page.get("file")}"', f'href="{page.get("file")}" aria-current="page"')
     footer = home[home.index('        <footer class="site-footer"'):].replace('class="brand" href="#top"', 'class="brand" href="index.html"')
     content = "".join(ET.tostring(node, encoding="unicode", method="html") for node in page.find("content"))
-    content = re.sub(r' (hidden|open)="\1"', r' \1', content)
+    content = re.sub(r' (hidden|open|autofocus)="\1"', r' \1', content)
     return f'''{head}    <body id="top" class="{page.get('class', '')}">
         <a class="skip-link" href="#main">跳到正文</a>
 {chrome}        <main id="main" aria-label="{html.escape(page.get('label'), quote=True)}">
