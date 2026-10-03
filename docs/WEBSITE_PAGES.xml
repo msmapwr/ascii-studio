@@ -47,4 +47,42 @@
       <div class="visually-hidden" id="copy-status" role="status" aria-live="polite"></div>
     </content>
   </page>
+  <page file="gallery.html" class="gallery-page" label="作品展示">
+    <title>作品展示 | AsciiStudio</title>
+    <description>比较真实图片与文字转换结果，查看参数，下载 TXT 和 ANSI 示例作品。</description>
+    <content>
+      <section class="container history-hero" aria-labelledby="gallery-title">
+        <a class="back-link" href="index.html">返回产品介绍</a><h1 id="gallery-title">看看字符能画出什么</h1>
+        <p>这里的图片和文字样例由软件实际转换、导出。拖动滑块比较原图与结果，展开参数后可以在软件中尝试相同设置。</p>
+        <a class="text-link" href="guide.html">跟着教程做一幅作品</a>
+      </section>
+      <div class="container gallery-content">
+        <div class="gallery-toolbar" id="gallery-filters" hidden="hidden"><div class="actions" role="group" aria-label="作品类型"><button class="button button-small" type="button" data-gallery-filter="all" aria-pressed="true">全部</button><button class="button button-small" type="button" data-gallery-filter="image" aria-pressed="false">图片</button><button class="button button-small" type="button" data-gallery-filter="text" aria-pressed="false">文字</button></div><p id="gallery-count" role="status" aria-live="polite">显示 2 件作品</p></div>
+        <article class="gallery-work" data-work-type="image" aria-labelledby="landscape-title">
+          <div class="work-heading"><div><h2 id="landscape-title">山景，半块双色</h2><p>一个字符的上下两部分分别呈现颜色，保留天空与山脊的层次。</p></div><a class="button button-small" href="assets/landscape.ans" download="landscape.ans">下载 ANSI 示例</a></div>
+          <figure class="comparison-fallback"><img src="assets/landscape-before-after.png" width="1440" height="540" alt="山景原图与半块双色 ANSI 作品并排对照。" loading="lazy"/><figcaption>原图与转换结果。</figcaption></figure>
+          <div class="interactive-comparison" data-comparison="landscape" hidden="hidden">
+            <div class="comparison-stage" id="landscape-stage"><img id="landscape-result" src="assets/landscape-result.png" width="692" height="440" alt="山景的彩色半块 ANSI 转换结果。" loading="lazy"/><div class="comparison-original"><img src="assets/landscape-source.png" width="720" height="420" alt="仓库工具绘制的山景原图。" loading="lazy"/></div><span class="comparison-divider" aria-hidden="true"></span><span class="comparison-source-label" aria-hidden="true">原图</span><span class="comparison-result-label" aria-hidden="true">结果</span></div>
+            <div class="comparison-control"><label for="landscape-range">原图显示比例</label><input id="landscape-range" type="range" min="0" max="100" value="50" data-compare-stage="landscape-stage" aria-valuetext="原图显示 50%"/><output for="landscape-range">50%</output></div>
+            <p class="comparison-hint">拖动滑块或用方向键调整，两张图保持完整比例。</p>
+          </div>
+          <div class="actions work-actions"><button class="button button-small" type="button" data-enlarge-target="landscape-result" aria-haspopup="dialog" hidden="hidden">放大山景结果</button><a class="text-link" data-image-fallback="landscape-result" href="assets/landscape-result.png" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">打开山景结果原图</a><span class="file-hint">ANSI 文件请用软件的 ANSI 查看器打开，或在支持颜色序列的终端查看。</span></div>
+          <details class="faq-item"><summary>查看山景参数</summary><p>100 列，字符宽高比 0.5，半块双色，彩色输出。样例采用固定比例，实际创作也可以使用所选字体的比例补偿。</p></details>
+        </article>
+        <article class="gallery-work" data-work-type="text" aria-labelledby="letters-title">
+          <div class="work-heading"><div><h2 id="letters-title">ASCII，字形与密度</h2><p>先绘制系统字体的文字，再将明暗映射为字符，保留笔画轮廓。</p></div><a class="button button-small" href="assets/text.txt" download="text.txt">下载 TXT 示例</a></div>
+          <figure class="comparison-fallback"><img src="assets/text-before-after.png" width="1440" height="540" alt="ASCII 系统字体原图与密度字符作品并排对照。" loading="lazy"/><figcaption>原始字形与转换结果。</figcaption></figure>
+          <div class="interactive-comparison" data-comparison="letters" hidden="hidden">
+            <div class="comparison-stage" id="letters-stage"><img id="letters-result" src="assets/text-result.png" width="692" height="440" alt="ASCII 字形的密度字符转换结果。" loading="lazy"/><div class="comparison-original"><img src="assets/text-source.png" width="318" height="187" alt="Segoe UI 系统字体绘制的 ASCII 原始字形。" loading="lazy"/></div><span class="comparison-divider" aria-hidden="true"></span><span class="comparison-source-label" aria-hidden="true">原图</span><span class="comparison-result-label" aria-hidden="true">结果</span></div>
+            <div class="comparison-control"><label for="letters-range">原图显示比例</label><input id="letters-range" type="range" min="0" max="100" value="50" data-compare-stage="letters-stage" aria-valuetext="原图显示 50%"/><output for="letters-range">50%</output></div>
+            <p class="comparison-hint">系统字体的像素边缘可能随 Windows 版本变化。</p>
+          </div>
+          <div class="actions work-actions"><button class="button button-small" type="button" data-enlarge-target="letters-result" aria-haspopup="dialog" hidden="hidden">放大文字结果</button><a class="text-link" data-image-fallback="letters-result" href="assets/text-result.png" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">打开文字结果原图</a><span class="file-hint">TXT 是纯文本，请用等宽字体查看。</span></div>
+          <details class="faq-item"><summary>查看文字样例参数</summary><p>输入 ASCII，Segoe UI 字体，110 字号，粗体；100 列，字符宽高比 0.5，字符集为“空格 . : + # @”。这是字形转图片后经图片管线生成的真实样例。</p></details>
+        </article>
+        <p class="source-note">素材为仓库工具绘制的山景与系统字形，未使用访客上传内容。<a href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md">查看素材与复现说明</a></p>
+      </div>
+      <dialog class="image-dialog" id="image-dialog" aria-labelledby="image-dialog-title"><div class="dialog-toolbar"><h2 id="image-dialog-title">作品结果</h2><form method="dialog"><button class="button button-small" type="submit" autofocus="autofocus">关闭</button></form></div><img id="image-dialog-image" src="assets/landscape-result.png" width="692" height="440" alt="山景的彩色半块 ANSI 转换结果。"/></dialog>
+    </content>
+  </page>
 </visitorPages>
