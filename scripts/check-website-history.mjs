@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
+const code = await readFile(new URL("../website/dist/changelog.js", import.meta.url), "utf8");
+const {parseChangelog} = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
+const source = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
+const versions = parseChangelog(source);
+assert.equal(versions.length, [...source.matchAll(/^## \[[^\]]+\] - \d{4}-\d{2}-\d{2}$/gm)].length);
+assert.equal(versions.flatMap(v => v.categories.flatMap(c => c.items)).length, [...source.slice(source.indexOf("## [", source.indexOf("## [Unreleased]") + 1)).matchAll(/^- (.+)$/gm)].length);
+assert(!versions.some(v => v.version === "Unreleased"));
+const hostile = "## [1.2.3] - 2026-10-03\r\n\r\n### Added\r\n\r\n- <img src=x onerror=alert(1)> `code`\r\n\r\n### Custom\r\n\r\n- 第二类";
+assert.equal(parseChangelog(hostile)[0].categories.length, 2);
+assert.equal(parseChangelog(hostile)[0].categories[0].items[0], "<img src=x onerror=alert(1)> `code`");
+assert.throws(() => parseChangelog("no history"));
+assert.throws(() => parseChangelog("## [invalid] - 2026-10-03\n### Added\n- item"));
+assert.throws(() => parseChangelog("## [1.2.3] - 2026-10-03\n"));
+console.log(`PASS dynamic history: ${versions.length} complete versions, CRLF, categories, literal markup and invalid input`);

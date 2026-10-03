@@ -18,7 +18,7 @@
 python scripts/build-website-changelog.py
 ```
 
-将生成的 HTML 一并提交。`--check` 可确认页面仍与源文件一致。浏览器直接读取静态 HTML，不请求 GitHub API；禁用脚本或组件加载失败时，日志和版本链接仍可使用。
+将生成的 HTML 一并提交。`--check` 可确认页面仍与源文件一致。浏览器先显示静态 HTML，再通过 changelog.js 请求 raw.githubusercontent.com 的 main/CHANGELOG.md。只读取有日期的版本，用文本节点渲染，不执行源内容。请求限时 8 秒；失败保留静态记录。正在阅读、焦点位于日志或跟随版本锚点时不替换。禁用脚本时日志仍可使用。来源状态在标题下说明。
 
 ## 动画与光效
 
@@ -74,3 +74,6 @@ CSS 使用 Lightning CSS 解析验证，输出到临时目录，不覆盖源文�
 
 
 0.11.0 本地验收覆盖五页 320px / 1024px 布局、跨页主题、手机菜单、复制成功及模拟拒绝、作品筛选与计数、滑块 Home/End、对话框关闭与焦点恢复、回到顶部、无脚本静态作品下载、组件 CDN 故障和模拟减少动态效果。生成检查确保文案与源文件一致，发布素材与仓库样例逐字节相同。桌面程序未修改，CI 仍执行原有构建与测试。
+
+
+动态日志额外执行 `node scripts/check-website-history.mjs`，验证当前仓库全部版本/条目、CRLF、分类、非法输入和原样保留 HTML 文本。JavaScript 类型与 lint 检查包含 `website/dist/changelog.js`。

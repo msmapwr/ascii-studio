@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
-    <meta name="application-version" content="0.11.0">
+    <meta name="application-version" content="0.12.0-alpha.1">
         <meta charset="utf-8" >
         <meta name="viewport" content="width=device-width, initial-scale=1" >
         <meta
@@ -121,6 +121,7 @@
             <section class="container history-hero" aria-labelledby="history-title">
                 <a class="back-link" href="index.html">返回产品介绍</a>
                 <h1 id="history-title">更新日志</h1>
+                <p id="history-status" role="status" aria-live="polite">当前显示随网站发布的记录；启用脚本后尝试读取仓库最新内容。</p>
                 <p>查看图片转换、文字排版、编辑和导出的版本变化。</p>
                 <p class="history-note">版本记录包含预发布阶段的开发进展。可下载的安装包以 GitHub Releases 为准。
                     <a href="https://github.com/msmapwr/ascii-studio/releases" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">查看下载</a>
@@ -128,10 +129,18 @@
             </section>
             <div class="container history-layout">
                 <aside class="version-index" aria-label="版本索引"><h2>版本索引</h2>
-                    <nav aria-label="跳到版本"><a href="#version-0-9-0-alpha-8">0.9.0-alpha.8</a><a href="#version-0-9-0-alpha-7">0.9.0-alpha.7</a><a href="#version-0-9-0-alpha-6">0.9.0-alpha.6</a><a href="#version-0-9-0-alpha-5">0.9.0-alpha.5</a><a href="#version-0-9-0-alpha-4">0.9.0-alpha.4</a><a href="#version-0-9-0-alpha-3">0.9.0-alpha.3</a><a href="#version-0-9-0-alpha-2">0.9.0-alpha.2</a><a href="#version-0-9-0-alpha-1">0.9.0-alpha.1</a><a href="#version-0-8-0">0.8.0</a><a href="#version-0-7-0">0.7.0</a><a href="#version-0-6-0">0.6.0</a><a href="#version-0-6-0-alpha-5">0.6.0-alpha.5</a><a href="#version-0-6-0-alpha-4">0.6.0-alpha.4</a><a href="#version-0-6-0-alpha-3">0.6.0-alpha.3</a><a href="#version-0-6-0-alpha-2">0.6.0-alpha.2</a><a href="#version-0-6-0-alpha-1">0.6.0-alpha.1</a><a href="#version-0-5-0">0.5.0</a><a href="#version-0-4-0">0.4.0</a><a href="#version-0-3-0">0.3.0</a></nav>
+                    <nav aria-label="跳到版本"><a href="#version-0-9-0">0.9.0</a><a href="#version-0-9-0-alpha-9">0.9.0-alpha.9</a><a href="#version-0-9-0-alpha-8">0.9.0-alpha.8</a><a href="#version-0-9-0-alpha-7">0.9.0-alpha.7</a><a href="#version-0-9-0-alpha-6">0.9.0-alpha.6</a><a href="#version-0-9-0-alpha-5">0.9.0-alpha.5</a><a href="#version-0-9-0-alpha-4">0.9.0-alpha.4</a><a href="#version-0-9-0-alpha-3">0.9.0-alpha.3</a><a href="#version-0-9-0-alpha-2">0.9.0-alpha.2</a><a href="#version-0-9-0-alpha-1">0.9.0-alpha.1</a><a href="#version-0-8-0">0.8.0</a><a href="#version-0-7-0">0.7.0</a><a href="#version-0-6-0">0.6.0</a><a href="#version-0-6-0-alpha-5">0.6.0-alpha.5</a><a href="#version-0-6-0-alpha-4">0.6.0-alpha.4</a><a href="#version-0-6-0-alpha-3">0.6.0-alpha.3</a><a href="#version-0-6-0-alpha-2">0.6.0-alpha.2</a><a href="#version-0-6-0-alpha-1">0.6.0-alpha.1</a><a href="#version-0-5-0">0.5.0</a><a href="#version-0-4-0">0.4.0</a><a href="#version-0-3-0">0.3.0</a></nav>
                     <a class="history-source" href="https://github.com/msmapwr/ascii-studio/blob/main/CHANGELOG.md">查看仓库原始记录</a>
                 </aside>
-                <div class="release-timeline"><article class="release-entry" id="version-0-9-0-alpha-8" aria-labelledby="version-0-9-0-alpha-8-title">
+                <div class="release-timeline"><article class="release-entry" id="version-0-9-0" aria-labelledby="version-0-9-0-title">
+    <header class="release-heading"><div><h2 id="version-0-9-0-title">0.9.0</h2>
+    <span class="release-badge">正式版本</span></div><time datetime="2026-10-03">2026-10-03</time></header>
+    <section class="change-group"><h3>调整</h3><ul><li>将已合并的 0.9 预发布成果整理为正式版 0.9.0；本次发布仅调整版本信息、文档和下载入口，没有新增应用功能。</li><li>README 增加 GitHub Pages 官网、教程、作品、下载和网站源文件入口，区分便携版运行要求与开发环境。</li><li>发布提供 x64 / ARM64 自包含 ZIP 和 SHA-256 校验文件；ARM64 实机验收仍独立记录。</li></ul></section><section class="change-group"><h3>验证</h3><ul><li>x64 / ARM64 Release 编译、175 项核心及 34 项 Windows 字体／项目／导出 xUnit 测试通过。</li><li>x64 ZIP 完整解压后的真实主窗口启动验证通过；发布脚本的重跑、失败和校验保护检查通过。</li></ul></section>
+    </article><article class="release-entry" id="version-0-9-0-alpha-9" aria-labelledby="version-0-9-0-alpha-9-title">
+    <header class="release-heading"><div><h2 id="version-0-9-0-alpha-9-title">0.9.0-alpha.9</h2>
+    <span class="release-badge">预发布</span></div><time datetime="2026-10-03">2026-10-03</time></header>
+    <section class="change-group"><h3>新增</h3><ul><li>加密与编码页新增 25 种处理方法：8 种字符编码、8 种 Unicode／转义表示、4 种二进制文本编码、3 种压缩和 2 种校验。</li><li>字符编码提供 Hex／Base64 切换、可选 UTF BOM 和严格错误处理；规范化与校验禁用还原，压缩提供 Base64 输出和 4 MB 解压上限。</li><li>新方法使用独立核心服务，增加标准样例、中文／emoji 往返、非法输入和资源上限的 xUnit 与真实 WinUI 批量检查。</li></ul></section><section class="change-group"><h3>修复</h3><ul><li>修复 Windows 便携发布包遗漏应用 PRI／XBF 资源导致启动时无窗口的问题；发布检查增加主窗口资源验证。</li><li>编码操作不再主动统一输入换行，避免改变原始文本的字节和校验值；失败继续保留上一份结果。</li></ul></section>
+    </article><article class="release-entry" id="version-0-9-0-alpha-8" aria-labelledby="version-0-9-0-alpha-8-title">
     <header class="release-heading"><div><h2 id="version-0-9-0-alpha-8-title">0.9.0-alpha.8</h2>
     <span class="release-badge">预发布</span></div><time datetime="2026-10-02">2026-10-02</time></header>
     <section class="change-group"><h3>调整</h3><ul><li>0.9 聚焦图片／文字转 ASCII、ANSI、编辑、项目保存和导出；冻结动画、摄像头与 3D。alpha.9 专注稳定性和交付。</li><li>图片与文字转换提取独立 Controller；图片来源状态、项目快照和文字旧布局映射移出页面。过期转换与字体预览不能提交结果。</li><li>图片管线明确拆分采样、颜色调整、边缘、自适应、抖动与字符映射，保留旧密度路径的精度和取整规则。</li><li>原有 75 项核心检查迁入 xUnit，按 11 个领域组织；CI 输出和上传 TRX，PowerShell 保留端到端／UI 编排。</li><li>README 增加真实 Before / After、应用截图、功能 GIF 与下载入口；历史迭代计划归档，路线与架构成为长期入口。</li></ul></section><section class="change-group"><h3>修复</h3><ul><li>新文字生成和项目恢复取消过期任务；过期字体样本停止刷新，过期错误不覆盖当前状态。</li><li>图片生成快照使用当前项目版本，继续通过已有保存流程迁移与备份旧项目。</li></ul></section><section class="change-group"><h3>验证</h3><ul><li>82 项核心 xUnit 测试通过，含与 alpha.7 的 5 组抖动模式逐字符／颜色回归及调度、阶段不变性检查。</li><li>6 项 Windows Controller xUnit 测试通过，覆盖来源准备、预览、取消后继续转换和项目快照。</li><li>Windows 字体 10 项检查、文字 UI 和图片质量／取消流程通过；Release 构建及 WinUI 分析器通过。</li></ul></section>
