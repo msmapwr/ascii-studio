@@ -2,7 +2,7 @@ name: Build and Release
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**', 'fix/**', 'refactor/**']
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -16,6 +16,10 @@ concurrency:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x64, arm64]
     runs-on: windows-2025
     timeout-minutes: 30
     defaults:
@@ -39,20 +43,20 @@ jobs:
           RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
           DOTNET_CLI_TELEMETRY_OPTOUT: '1'
           DOTNET_NOLOGO: '1'
-        run: ./scripts/ci-build.ps1 -Tag $env:RELEASE_TAG
+        run: ./scripts/ci-build.ps1 -Tag $env:RELEASE_TAG -Architecture '${{ matrix.architecture }}'
       - name: Check release failure and rerun behavior
         run: ./scripts/ci-checks.ps1
       - name: Upload unit test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: unit-test-results
+          name: unit-test-results-${{ matrix.architecture }}
           path: artifacts/test-results/*.trx
           if-no-files-found: warn
-      - name: Upload Windows x64 package
+      - name: Upload Windows package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: AsciiStudio-${{ steps.build.outputs.version }}-win-x64
+          name: AsciiStudio-${{ steps.build.outputs.version }}-win-${{ matrix.architecture }}
           path: artifacts/release/*
           if-no-files-found: error
           retention-days: 14
@@ -72,8 +76,11 @@ jobs:
       - name: Download verified build
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: AsciiStudio-${{ needs.build.outputs.version }}-win-x64
-          path: artifacts/release
+          pattern: AsciiStudio-${{ needs.build.outputs.version }}-win-*
+          path: artifacts/downloads
+      - name: Verify and collect both architectures
+        shell: pwsh
+        run: ./scripts/collect-release.ps1 -Version '${{ needs.build.outputs.version }}'
       - name: Publish GitHub Release
         shell: pwsh
         env:

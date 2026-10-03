@@ -31,11 +31,7 @@ public static class WorkspaceService
 
     public static async Task SaveProject(string path, StudioProject project)
     {
-        if (project.Document is null) throw new InvalidDataException("项目缺少字符画。");
-        project.Document.Validate();
-        project.GeneratedDocument?.Validate();
-        project.Geometry?.Validate();
-        if (project.Options is not null) ImageQualityConverter.Validate(project.Options);
+        ProjectFileService.Validate(project);
         var savedProject = project with
         {
             Version = CurrentProjectVersion,
@@ -51,7 +47,7 @@ public static class WorkspaceService
             if (current < CurrentProjectVersion)
             {
                 var backup = path + ".bak";
-                await AtomicWrite(backup, await File.ReadAllBytesAsync(path));
+                await AtomicWrite(backup, await BoundedFile.ReadAsync(path, ProjectFileService.MaximumBytes));
             }
         }
         await AtomicWrite(path, bytes);
@@ -60,29 +56,16 @@ public static class WorkspaceService
 
     public static async Task<StudioProject> OpenProject(string path)
     {
-        if (new FileInfo(path).Length > 100_000_000) throw new InvalidDataException("项目超过 100MB 限制。");
-        var project = JsonSerializer.Deserialize<StudioProject>(await File.ReadAllTextAsync(path)) ?? throw new InvalidDataException("项目为空。");
-        if (project.Version is < 1 or > CurrentProjectVersion) throw new InvalidDataException("不支持此项目版本。");
-        if (project.Document is null) throw new InvalidDataException("项目缺少字符画。");
-        project.Document.Validate();
-        project.GeneratedDocument?.Validate();
-        project.Geometry?.Validate();
-        if (project.Options is not null) ImageQualityConverter.Validate(project.Options);
+        var project = await ProjectFileService.Read(path);
         await UpdateSettings(s => s with { RecentFiles = new[] { path }.Concat(s.RecentFiles ?? []).Distinct(StringComparer.OrdinalIgnoreCase).Take(15).ToArray() });
-        return project with
-        {
-            Version = CurrentProjectVersion,
-            Document = UnicodeGrid.Upgrade(project.Document),
-            GeneratedDocument = project.GeneratedDocument is null ? null : UnicodeGrid.Upgrade(project.GeneratedDocument)
-        };
+        return project;
     }
 
     private static async Task<int> ReadProjectVersion(string path)
     {
-        if (new FileInfo(path).Length > 100_000_000) throw new InvalidDataException("目标项目超过 100MB 限制，请另存为新文件。");
         try
         {
-            using var document = JsonDocument.Parse(await File.ReadAllTextAsync(path));
+            using var document = JsonDocument.Parse(BoundedFile.JsonBytes(await BoundedFile.ReadAsync(path, ProjectFileService.MaximumBytes)));
             return document.RootElement.TryGetProperty("Version", out var version) && version.TryGetInt32(out var value) ? value : 1;
         }
         catch (JsonException) { throw new InvalidDataException("旧项目文件损坏，无法创建迁移备份。"); }
@@ -115,12 +98,13 @@ public static class WorkspaceService
         DefaultColumns = Math.Clamp(settings.DefaultColumns, 8, 2000),
         ConversionDelay = Math.Clamp(settings.ConversionDelay, 0, 1000),
         DefaultExportFormat = new[] { "TXT", "PNG", "JPEG", "GIF", "HTML", "SVG", "ANSI", "JSON", "Markdown" }.Contains(settings.DefaultExportFormat) ? settings.DefaultExportFormat : "TXT",
-        FilePrefix = new string((settings.FilePrefix ?? "").Where(c => !Path.GetInvalidFileNameChars().Contains(c)).Take(32).ToArray())
+        FilePrefix = new string((settings.FilePrefix ?? "").Where(c => !Path.GetInvalidFileNameChars().Contains(c)).Take(32).ToArray()),
+        RecentFiles = (settings.RecentFiles ?? []).Where(p => !string.IsNullOrWhiteSpace(p) && p.Length <= 32767 && !p.Contains('\0')).Distinct(StringComparer.OrdinalIgnoreCase).Take(15).ToArray()
     };
 
     private static StudioSettings LoadSettings()
     {
-        try { return Normalize(JsonSerializer.Deserialize<StudioSettings>(File.ReadAllText(Path.Combine(DataDirectory, "settings.json"))) ?? new()); }
-        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { return new(); }
+        try { return Normalize(JsonSerializer.Deserialize<StudioSettings>(BoundedFile.JsonBytes(BoundedFile.Read(Path.Combine(DataDirectory, "settings.json"), 1_000_000)).Span) ?? new()); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException) { return new(); }
     }
 }

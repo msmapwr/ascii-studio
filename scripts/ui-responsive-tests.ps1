@@ -110,7 +110,7 @@ Check 'Narrow home preserves all creation cards' {
 }
 Check 'Window placement persists through restart' {
  Resize-Window 900 600;UI invoke Close
- $taskLaunch=& (Join-Path (Split-Path $PSScriptRoot -Parent) 'BuildAndRun.ps1') (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/AsciiStudio/AsciiStudio.csproj') --no-build --detach
+ $taskLaunch=& (Join-Path (Split-Path $PSScriptRoot -Parent) 'BuildAndRun.ps1') (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/AsciiStudio/AsciiStudio.csproj') -c Release --no-build --detach
  if($LASTEXITCODE -ne 0){throw 'App relaunch failed.'}
  $script:AppPid=[int]($taskLaunch | Select-Object -Last 1);Main-Window
  $taskState=Window-Snapshot;$taskRect=$taskState.elements[0]

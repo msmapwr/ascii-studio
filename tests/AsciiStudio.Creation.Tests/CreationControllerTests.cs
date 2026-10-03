@@ -4,6 +4,7 @@ using Xunit;
 
 namespace AsciiStudio.Creation.Tests;
 
+[Collection("Workspace")]
 public sealed class CreationControllerTests
 {
     [Fact]

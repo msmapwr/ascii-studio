@@ -160,15 +160,19 @@ public sealed class TextPage : Grid, IProjectSessionPage
     }
     public async Task LoadProject(StudioProject project)
     {
+        var restored = TextProjectMapper.Restore(project);
         controller.Restore(project); loading = true;
         try
         {
-            input.Text = project.SourceText ?? ""; columns.Value = project.Options?.Columns ?? 120; var p = project.Parameters ?? new(); mode.SelectedIndex = p.GetValueOrDefault("mode") == "1" ? 1 : 0; var value = p.GetValueOrDefault("font", "Standard"); selectedFont = value.StartsWith("user:", StringComparison.Ordinal) ? value : TextFontLibrary.ResolveId(value, fonts); figFont.Text = fonts.FirstOrDefault(f => f.Id == selectedFont)?.Name ?? "缺失的字体"; systemFont.Select(p.GetValueOrDefault("systemFont", "Microsoft YaHei UI")); systemStyle.SelectedIndex = int.TryParse(p.GetValueOrDefault("systemStyle"), out var style) && style is >= 0 and < 5 ? style : 0;
-            if (!p.ContainsKey("raster")) weight.SelectedIndex = systemStyle.SelectedIndex == 1 ? 0 : 1;
-            var o = TextProjectMapper.Layout(p); letterSpacing.Value = o.LetterSpacing; lineSpacing.Value = o.LineSpacing; maximumWidth.Value = o.MaximumWidth; alignment.SelectedIndex = (int)o.Alignment; horizontal.SelectedIndex = (int)o.Horizontal; vertical.SelectedIndex = (int)o.Vertical; wrap.IsChecked = o.Wrap; border.SelectedIndex = o.Border; paddingX.Value = o.PaddingX; paddingY.Value = o.PaddingY; borderTitle.Text = o.Title; trim.IsChecked = o.Trim; replacement.Text = o.Replacement;
-            if (p.TryGetValue("raster", out var rjson) && JsonSerializer.Deserialize<TextRasterOptions>(rjson) is { } ro) { systemFont.Select(ro.Family); weight.SelectedIndex = ro.Bold ? 1 : 0; stroke.Value = ro.Stroke; fill.SelectedIndex = ro.Filled ? 0 : 1; }
-            preset.SelectedIndex = int.TryParse(p.GetValueOrDefault("readabilityPreset"), out var pi) && pi is >= 0 and <= 3 ? pi : 0;
-            allowMissing.IsChecked = p.GetValueOrDefault("allowMissing") == "True"; warning.IsOpen = mode.SelectedIndex == 0 && !TextFontLibrary.Available(selectedFont); warning.Title = "项目字体缺失"; warning.Message = "已保留原结果；导入对应字体或选择其他字体后可生成。"; UpdateDetails(); result.SetReadablePreview(mode.SelectedIndex == 1); await result.LoadDocument(project);
+            input.Text = project.SourceText ?? ""; columns.Value = restored.Raster.Columns; mode.SelectedIndex = restored.Mode;
+            selectedFont = restored.Font.StartsWith("user:", StringComparison.Ordinal) ? restored.Font : TextFontLibrary.ResolveId(restored.Font, fonts);
+            figFont.Text = fonts.FirstOrDefault(f => f.Id == selectedFont)?.Name ?? "缺失的字体"; systemStyle.SelectedIndex = restored.Style;
+            var o = restored.Layout; letterSpacing.Value = o.LetterSpacing; lineSpacing.Value = o.LineSpacing; maximumWidth.Value = o.MaximumWidth; alignment.SelectedIndex = (int)o.Alignment; horizontal.SelectedIndex = (int)o.Horizontal; vertical.SelectedIndex = (int)o.Vertical; wrap.IsChecked = o.Wrap; border.SelectedIndex = o.Border; paddingX.Value = o.PaddingX; paddingY.Value = o.PaddingY; borderTitle.Text = o.Title; trim.IsChecked = o.Trim; replacement.Text = o.Replacement;
+            var ro = restored.Raster; var missingSystemFont = !FontCatalog.Names.Contains(ro.Family);
+            systemFont.Select(missingSystemFont ? FontCatalog.Names.FirstOrDefault(f => f == "Microsoft YaHei UI") ?? FontCatalog.Names.First() : ro.Family);
+            weight.SelectedIndex = ro.Bold ? 1 : 0; stroke.Value = ro.Stroke; fill.SelectedIndex = ro.Filled ? 0 : 1; preset.SelectedIndex = restored.Preset;
+            allowMissing.IsChecked = restored.AllowMissing; warning.IsOpen = mode.SelectedIndex == 0 ? !TextFontLibrary.Available(selectedFont) : missingSystemFont;
+            warning.Title = "项目字体缺失"; warning.Message = "已保留原结果；导入对应字体或选择其他字体后可生成。"; UpdateDetails(); result.SetReadablePreview(mode.SelectedIndex == 1); await result.LoadDocument(project);
         }
         finally { loading = false; QueuePreview(); }
     }

@@ -3,15 +3,16 @@ $ErrorActionPreference = 'Stop'
 if ($Tag -notmatch '^v\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$') { throw 'Invalid release tag.' }
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskOutput = Join-Path $taskRoot 'artifacts/release'
-$taskArchive = Join-Path $taskOutput "AsciiStudio-$($Tag.Substring(1))-win-x64.zip"
+$taskArchives = @(Get-ChildItem -LiteralPath $taskOutput -Filter "AsciiStudio-$($Tag.Substring(1))-win-*.zip" | Where-Object { $_.Name -match '-win-(x64|arm64)\.zip$' } | Sort-Object Name)
+if (!$taskArchives.Count) { throw 'Missing release archives.' }
 $taskChecksums = Join-Path $taskOutput 'SHA256SUMS.txt'
 $taskNotes = Join-Path $taskOutput 'release-notes.md'
-foreach ($taskFile in @($taskArchive, $taskChecksums, $taskNotes)) {
+foreach ($taskFile in @($taskChecksums, $taskNotes)) {
     if (!(Test-Path -LiteralPath $taskFile)) { throw "Missing release file: $taskFile" }
 }
 $taskExpected = (Get-Content $taskChecksums -Raw).Trim()
-$taskActual = (Get-FileHash -LiteralPath $taskArchive -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($taskArchive)
-if ($taskExpected -cne $taskActual) { throw 'Release archive checksum mismatch.' }
+$taskActual = @($taskArchives | ForEach-Object { (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + $_.Name })
+if ((@($taskExpected -split '\r?\n' | Sort-Object) -join "`n") -cne (($taskActual | Sort-Object) -join "`n")) { throw 'Release archive checksum mismatch.' }
 $taskPrerelease = $Tag.Contains('-')
 $taskExisting = & gh release view $Tag --json isDraft 2>$null
 if ($LASTEXITCODE -eq 0) {
@@ -22,7 +23,7 @@ if ($LASTEXITCODE -eq 0) {
     & gh @taskArguments
     if ($LASTEXITCODE) { throw 'Could not create draft release.' }
 }
-& gh release upload $Tag $taskArchive $taskChecksums --clobber
+& gh release upload $Tag @($taskArchives.FullName) $taskChecksums --clobber
 if ($LASTEXITCODE) { throw 'Asset upload failed; release remains a draft.' }
 $taskLatest = if ($taskPrerelease) { '--latest=false' } else { '--latest=true' }
 & gh release edit $Tag --draft=false $taskLatest

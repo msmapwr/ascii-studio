@@ -32,7 +32,7 @@ public sealed class AnsiPage : Grid, IProjectSessionPage
     private string? parsedText;
     private int parsedColumns = 80, version;
     private bool parsedIce, applying;
-    private CancellationTokenSource? pending;
+    private readonly LatestOperation operations = new();
 
     public AnsiPage()
     {
@@ -68,12 +68,12 @@ public sealed class AnsiPage : Grid, IProjectSessionPage
             if (applying || normalized == sourceText.Replace("\r\n", "\n").Replace('\r', '\n')) return;
             sourceText = normalized; sourceBytes = null; metadata.Text = "";
             result.InputChanged();
-            pending?.Cancel(); version++; progress.IsActive = false; info.Text = "原文已修改，点击“查看”更新结果。";
+            operations.Cancel(); version++; progress.IsActive = false; info.Text = "原文已修改，点击“查看”更新结果。";
         };
-        encoding.SelectionChanged += async (_, _) => { if (!applying) { result.InputChanged(); if (sourceBytes is not null) await App.Window.Guard(Parse); } };
-        columns.ValueChanged += (_, _) => { if (!applying) result.InputChanged(); };
-        ice.Toggled += (_, _) => { if (!applying) result.InputChanged(); };
-        Unloaded += (_, _) => { pending?.Cancel(); version++; progress.IsActive = false; };
+        encoding.SelectionChanged += async (_, _) => { if (!applying) { Invalidate(); if (sourceBytes is not null) await App.Window.Guard(Parse); } };
+        columns.ValueChanged += (_, _) => { if (!applying) Invalidate(); };
+        ice.Toggled += (_, _) => { if (!applying) Invalidate(); };
+        Unloaded += (_, _) => { operations.Cancel(); version++; progress.IsActive = false; };
         Children.Add(Ui.Page(Ui.Heading("ANSI 查看器", ""), Ui.Workspace(Ui.Card(panel), result)));
         AllowDrop = true;
         DragOver += (_, args) => { if (args.DataView.Contains(StandardDataFormats.StorageItems)) args.AcceptedOperation = DataPackageOperation.Copy; };
@@ -83,6 +83,11 @@ public sealed class AnsiPage : Grid, IProjectSessionPage
         });
     }
     private string EncodingName => encoding.SelectedIndex switch { 1 => "UTF-8", 2 => "CP437", _ => "Auto" };
+    private void Invalidate()
+    {
+        operations.Cancel(); version++; progress.IsActive = false; result.InputChanged();
+        info.Text = "设置已修改，点击“查看”更新结果。";
+    }
     private void SetText(string text)
     {
         var previous = applying; applying = true; try { sourceText = text; input.Text = text; } finally { applying = previous; }
@@ -94,14 +99,10 @@ public sealed class AnsiPage : Grid, IProjectSessionPage
     }
     public async Task Open(string path)
     {
-        pending?.Cancel(); var current = ++version;
-        var selected = EncodingName; byte[] bytes;
-        await using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, true))
-        {
-            if (stream.Length > AnsiArt.InputLimit) throw new ArgumentException("ANSI 文件超过 4 MB 限制。");
-            bytes = new byte[(int)stream.Length]; await stream.ReadExactlyAsync(bytes);
-        }
-        var source = await Task.Run(() => AnsiArt.Decode(bytes, selected));
+        using var loading = operations.Begin(); var current = ++version;
+        var selected = EncodingName;
+        var bytes = await BoundedFile.ReadAsync(path, AnsiArt.InputLimit, loading.Token);
+        var source = await Task.Run(() => AnsiArt.Decode(bytes, selected), loading.Token);
         if (current != version) return;
         sourceBytes = bytes; title = Path.GetFileNameWithoutExtension(path); SetText(source.Text);
         applying = true;
@@ -111,7 +112,7 @@ public sealed class AnsiPage : Grid, IProjectSessionPage
     }
     private async Task Paste()
     {
-        pending?.Cancel(); var current = ++version;
+        operations.Cancel(); var current = ++version;
         var data = Clipboard.GetContent(); if (!data.Contains(StandardDataFormats.Text)) throw new ArgumentException("剪贴板中没有文本。");
         var text = await data.GetTextAsync(); if (Encoding.UTF8.GetByteCount(text) > AnsiArt.InputLimit) throw new ArgumentException("粘贴文本超过 4 MB 限制。");
         if (current != version) return;
@@ -127,36 +128,33 @@ public sealed class AnsiPage : Grid, IProjectSessionPage
     {
         if (!double.IsFinite(columns.Value) || columns.Value is < 20 or > 300 || columns.Value != Math.Truncate(columns.Value)) throw new ArgumentException("请输入 20–300 的整数列数。");
         if (sourceBytes is null && Encoding.UTF8.GetByteCount(sourceText) > AnsiArt.InputLimit) throw new ArgumentException("ANSI 原文超过 4 MB 限制。");
-        pending?.Cancel(); var cancellation = new CancellationTokenSource(); pending = cancellation; var current = ++version;
+        using var operation = operations.Begin(); var current = ++version; var token = operation.Token;
         var bytes = sourceBytes; var raw = sourceText; var selected = EncodingName; var width = (int)columns.Value; var useIce = ice.IsOn; var name = title; progress.IsActive = true;
         try
         {
-            var source = bytes is null ? new AnsiSource(raw, "Unicode 粘贴", null, 0) : await Task.Run(() => AnsiArt.Decode(bytes, selected));
-            var parsed = await Task.Run(() => AnsiArt.Parse(source.Text, width, useIce, source.Metadata?.Title is { Length: > 0 } t ? t : name, cancellation.Token));
-            if (current != version) return;
+            var source = bytes is null ? new AnsiSource(raw, "Unicode 粘贴", null, 0) : await Task.Run(() => AnsiArt.Decode(bytes, selected), token);
+            var parsed = await Task.Run(() => AnsiArt.Parse(source.Text, width, useIce, source.Metadata?.Title is { Length: > 0 } t ? t : name, token), token);
+            if (current != version || !operation.IsCurrent) return;
             var metrics = FontCatalog.Measure(result.CharacterFontFamily);
             var document = parsed.Document with { FontFamily = result.CharacterFontFamily, CellWidth = metrics.Width, CellHeight = metrics.Height };
             parsedBytes = bytes; parsedText = source.Text; parsedEncoding = selected; parsedColumns = width; parsedIce = useIce; SetText(source.Text);
-            result.ShowColorPreview(true); await result.SetDocument(document);
-            if (current != version) return;
+            result.ShowColorPreview(true); await result.SetDocument(document, cancellationToken: token);
+            if (current != version || !operation.IsCurrent) return;
             info.Text = $"{source.Encoding} · {document.Width} × {document.Height} · 忽略 {parsed.IgnoredSequences} · 未完成 {parsed.IncompleteSequences}" + (source.MetadataWarnings > 0 ? " · 元数据异常" : "") + (parsed.HasWideCharacters ? " · 双列 Unicode 网格" : "");
             metadata.Text = source.Metadata is { } m ? $"SAUCE · {m.Title} · {m.Author} · {m.Group} · {m.Date}" + (m.Comments.Length > 0 ? "\n" + string.Join('\n', m.Comments) : "") : "";
         }
-        finally { if (current == version) progress.IsActive = false; if (ReferenceEquals(pending, cancellation)) pending = null; cancellation.Dispose(); }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        finally { if (current == version) progress.IsActive = false; }
     }
     public async Task LoadProject(StudioProject project)
     {
-        var parameters = project.Parameters; applying = true;
+        var restored = AnsiProjectMapper.Restore(project);
+        operations.Cancel(); version++; progress.IsActive = false; applying = true;
         try
         {
-            encoding.SelectedIndex = parameters?.GetValueOrDefault("encoding") switch { "UTF-8" => 1, "CP437" => 2, _ => 0 };
-            columns.Value = int.TryParse(parameters?.GetValueOrDefault("columns"), out var width) && width is >= 20 and <= 300 ? width : 80;
-            ice.IsOn = bool.TryParse(parameters?.GetValueOrDefault("ice"), out var useIce) && useIce;
-            var encoded = parameters?.GetValueOrDefault("bytes");
-            if (encoded?.Length > (AnsiArt.InputLimit + 2L) / 3 * 4) throw new ArgumentException("项目的 ANSI 来源超过 4 MB 限制。");
-            sourceBytes = string.IsNullOrEmpty(encoded) ? null : Convert.FromBase64String(encoded);
-            if (sourceBytes?.Length > AnsiArt.InputLimit) throw new ArgumentException("项目的 ANSI 来源超过 4 MB 限制。");
-            SetText(project.SourceText ?? ""); title = project.Document.Title;
+            encoding.SelectedIndex = restored.Encoding switch { "UTF-8" => 1, "CP437" => 2, _ => 0 };
+            columns.Value = restored.Columns; ice.IsOn = restored.Ice; sourceBytes = restored.Bytes;
+            SetText(restored.Text); title = restored.Title;
         }
         finally { applying = false; }
         parsedText = sourceText; parsedBytes = sourceBytes; parsedEncoding = EncodingName; parsedColumns = (int)columns.Value; parsedIce = ice.IsOn;
