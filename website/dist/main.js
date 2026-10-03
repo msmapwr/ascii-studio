@@ -38,7 +38,7 @@ const menuButton = /** @type {HTMLButtonElement} */ (
 const navigation = /** @type {HTMLElement} */ (
     document.querySelector("#navigation")
 );
-const compactScreen = matchMedia("(max-width: 860px)");
+const compactScreen = matchMedia("(max-width: 1000px)");
 function closeMenu() {
     navigation.hidden = compactScreen.matches;
     menuButton.setAttribute("aria-expanded", "false");
@@ -227,3 +227,102 @@ async function loadFluent() {
     }
 }
 void loadFluent();
+
+// Copy is optional; the original text stays selectable when permission is unavailable.
+document.querySelectorAll("[data-copy-target]").forEach((control) => {
+    const button = /** @type {HTMLButtonElement} */ (control);
+    button.hidden = false;
+    button.addEventListener("click", async () => {
+        const target = document.getElementById(button.dataset.copyTarget);
+        const status = button
+            .closest(".copy-panel")
+            ?.querySelector("[role=status]");
+        if (!target || !status) return;
+        try {
+            await navigator.clipboard.writeText(target.textContent.trim());
+            status.textContent = "已复制。";
+        } catch {
+            status.textContent = "无法自动复制，请选中上方文字手动复制。";
+        }
+    });
+});
+
+// Native range controls provide keyboard and touch input without a custom drag handler.
+document.querySelectorAll("[data-comparison]").forEach((element) => {
+    const comparison = /** @type {HTMLElement} */ (element);
+    const range = /** @type {HTMLInputElement} */ (
+        comparison.querySelector('input[type="range"]')
+    );
+    const stage = document.getElementById(range.dataset.compareStage);
+    const output = comparison.querySelector("output");
+    if (!stage || !output) return;
+    function updateComparison() {
+        stage.style.setProperty("--split", `${range.value}%`);
+        output.textContent = `${range.value}%`;
+        range.setAttribute("aria-valuetext", `原图显示 ${range.value}%`);
+    }
+    range.addEventListener("input", updateComparison);
+    updateComparison();
+    comparison.hidden = false;
+    const fallback = /** @type {HTMLElement} */ (
+        comparison.previousElementSibling
+    );
+    if (fallback?.classList.contains("comparison-fallback"))
+        fallback.hidden = true;
+});
+const filters = /** @type {HTMLElement} */ (
+    document.querySelector("#gallery-filters")
+);
+if (filters) {
+    const works = /** @type {NodeListOf<HTMLElement>} */ (
+        document.querySelectorAll("[data-work-type]")
+    );
+    const choices = filters.querySelectorAll("[data-gallery-filter]");
+    filters.hidden = false;
+    choices.forEach((element) => {
+        const choice = /** @type {HTMLButtonElement} */ (element);
+        choice.addEventListener("click", () => {
+            let visible = 0;
+            works.forEach((work) => {
+                work.hidden =
+                    choice.dataset.galleryFilter !== "all" &&
+                    work.dataset.workType !== choice.dataset.galleryFilter;
+                if (!work.hidden) visible++;
+            });
+            choices.forEach((button) =>
+                button.setAttribute("aria-pressed", String(button === choice)),
+            );
+            document.querySelector("#gallery-count").textContent =
+                `显示 ${visible} 件作品`;
+        });
+    });
+}
+const imageDialog = /** @type {HTMLDialogElement} */ (
+    document.querySelector("#image-dialog")
+);
+if (imageDialog && typeof imageDialog.showModal === "function") {
+    document.querySelectorAll("[data-enlarge-target]").forEach((element) => {
+        const button = /** @type {HTMLButtonElement} */ (element);
+        const source = /** @type {HTMLImageElement} */ (
+            document.getElementById(button.dataset.enlargeTarget)
+        );
+        if (!source) return;
+        button.hidden = false;
+        const fallback = /** @type {HTMLElement} */ (
+            document.querySelector(`[data-image-fallback="${source.id}"]`)
+        );
+        if (fallback) fallback.hidden = true;
+        button.addEventListener("click", () => {
+            const image = /** @type {HTMLImageElement} */ (
+                imageDialog.querySelector("img")
+            );
+            image.src = source.src;
+            image.alt = source.alt;
+            image.width = source.width;
+            image.height = source.height;
+            document.querySelector("#image-dialog-title").textContent =
+                source.alt;
+            imageDialog.showModal();
+        });
+    });
+}

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+    <meta name="application-version" content="0.11.0-alpha.3">
+        <meta charset="utf-8" >
+        <meta name="viewport" content="width=device-width, initial-scale=1" >
+        <meta
+            name="description"
+            content="从图片或文字开始创作字符画，了解常用参数、中文排版、项目保存与导出。"
+        >
+        <meta
+            property="og:title"
+            content="入门教程 | AsciiStudio"
+        >
+        <meta
+            property="og:description"
+            content="从图片或文字开始创作字符画，了解常用参数、中文排版、项目保存与导出。"
+        >
+        <meta property="og:type" content="website" >
+        <meta name="twitter:card" content="summary" >
+        <title>入门教程 | AsciiStudio</title>
+        <link rel="icon" type="image/svg+xml" href="assets/logo.svg" >
+        <link rel="stylesheet" href="styles.css" >
+        <script type="module" src="main.js"></script>
+    </head>
+    <body id="top" class="guide-page">
+        <a class="skip-link" href="#main">跳到正文</a>
+        <header class="site-header">
+            <div class="container header-inner">
+                <a
+                    class="brand"
+                    href="index.html#top"
+                    aria-label="AsciiStudio，返回首页"
+                    ><img
+                        src="assets/logo.svg"
+                        width="38"
+                        height="38"
+                        alt=""
+                    >AsciiStudio</a
+                >
+                <nav class="navigation" id="navigation" aria-label="页面导航"><a href="index.html">产品介绍</a><a href="guide.html" aria-current="page">入门教程</a><a href="gallery.html">作品展示</a><a href="downloads.html">下载与运行</a><a href="changelog.html">更新日志</a></nav>
+                <div class="header-actions">
+                    <details class="theme-picker" id="theme-picker" hidden>
+                        <summary aria-label="外观">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.6"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                aria-hidden="true"
+                            >
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 3v18" /></svg
+                            ><span class="theme-word">外观</span>
+                        </summary>
+                        <div
+                            class="theme-options"
+                            id="theme-options"
+                            role="group"
+                            aria-label="外观"
+                        >
+                            <fluent-button
+                                data-theme-choice="system"
+                                aria-label="跟随系统"
+                                aria-pressed="true"
+                                >跟随系统</fluent-button
+                            >
+                            <fluent-button
+                                data-theme-choice="light"
+                                aria-label="浅色"
+                                aria-pressed="false"
+                                >浅色</fluent-button
+                            >
+                            <fluent-button
+                                data-theme-choice="dark"
+                                aria-label="深色"
+                                aria-pressed="false"
+                                >深色</fluent-button
+                            >
+                        </div>
+                    </details>
+                    <a
+                        class="button button-primary button-small"
+                        href="downloads.html"
+                        >下载</a
+                    >
+                    <button
+                        class="button button-small menu-toggle"
+                        id="menu-toggle"
+                        type="button"
+                        aria-label="打开导航"
+                        aria-controls="navigation"
+                        aria-expanded="false"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.6"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="reading-progress" aria-hidden="true"></div>
+        </header>
+        <div
+            class="visually-hidden"
+            id="theme-status"
+            role="status"
+            aria-live="polite"
+        ></div>
+        <div class="visually-hidden" id="new-tab-note">在新标签页打开</div>
+        <main id="main" aria-label="入门教程">
+<section class="container history-hero" aria-labelledby="guide-title">
+        <a class="back-link" href="index.html">返回产品介绍</a>
+        <h1 id="guide-title">做出第一幅字符画</h1>
+        <p>准备一张图片，或输入一段文字。生成结果后，保存可继续编辑的项目，再导出需要的作品文件。</p>
+        <nav class="task-links" aria-label="选择创作方式"><a class="button button-primary" href="#image-guide">从图片开始</a><a class="button" href="#text-guide">从文字开始</a><a class="text-link" href="#save-guide">保存与导出</a></nav>
+      </section>
+      <div class="container guide-layout">
+        <aside class="guide-index"><h2>本页教程</h2><nav aria-label="教程目录"><a href="#image-guide">图片转换</a><a href="#text-guide">文字与中文</a><a href="#save-guide">保存与导出</a></nav></aside>
+        <div class="guide-content">
+          <section class="guide-section" id="image-guide" aria-labelledby="image-guide-title">
+            <h2 id="image-guide-title">从一张图片开始</h2><p>先用明暗分明、主体清楚的图片试一次。细节太多时，可以先裁剪到想保留的区域。</p>
+            <figure class="example-figure"><img src="assets/landscape-before-after.png" width="1440" height="540" alt="山景原图与半块双色字符画的真实转换对照。" loading="lazy"><figcaption>同一张山景图，转换为彩色 ANSI 半块作品。</figcaption></figure>
+            <ol class="tutorial-steps">
+              <li><h3>打开图片</h3><p>在图片转换页打开或粘贴图片。PNG、JPEG、BMP、TIFF 可以导入，GIF 只读取第一帧。</p></li>
+              <li><h3>选择风格与尺寸</h3><p>照片可先试密度字符；线稿试结构线条；彩色画面可试半块双色。列数越高，细节越多，结果也越大。</p></li>
+              <li><h3>比较并调整</h3><p>先保持原图比例，再调整亮度、对比度和颜色。抖动可以增加明暗层次；自适应过强时可能改变细节，建议少量调整并比较结果。</p></li>
+              <li><h3>保留满意的结果</h3><p>使用原图与结果对比检查轮廓。转换正在进行时可以取消；手工编辑后，先决定保留修改还是接受新转换结果。</p></li>
+            </ol>
+            <details class="faq-item"><summary>图案变形、细节模糊怎么办？</summary><p>检查字符宽高比和输出列数，避免强行指定不匹配的宽高。半块或 Braille 在终端里的显示还取决于字体；分享外观时可以导出 PNG。</p></details>
+            <a class="text-link" href="https://github.com/msmapwr/ascii-studio/blob/main/docs/IMAGE_QUALITY.md">查看完整图片参数说明</a>
+          </section>
+          <section class="guide-section" id="text-guide" aria-labelledby="text-guide-title">
+            <h2 id="text-guide-title">输入文字，安排字形</h2><p>英文标题可以用 FIGlet；中文或中英文混排使用系统字体模式。</p>
+            <figure class="example-figure"><img src="assets/text-before-after.png" width="1440" height="540" alt="ASCII 系统字形原图与密度字符转换结果的真实对照。" loading="lazy"><figcaption>系统字体文字转换的真实样例。</figcaption></figure>
+            <ol class="tutorial-steps">
+              <li><h3>输入示例文字</h3><p>打开文字转换页，输入下方内容，选择系统字体模式和已安装的中文字体。</p><div class="copy-panel"><pre id="sample-text">你好，ASCII！</pre><button class="button button-small" type="button" data-copy-target="sample-text" hidden>复制示例文字</button><span class="copy-feedback" role="status" aria-live="polite"></span></div></li>
+              <li><h3>调整字体与排版</h3><p>先选择输入字体，再调整字距、行距和对齐。需要控制行宽时设置最大宽度与自动换行；边框可以最后添加。</p></li>
+              <li><h3>检查中文与缺字</h3><p>中文可从“中文清晰”预设开始。出现缺字提示时，先换用包含这些字形的字体。FIGlet 接受 ASCII 输入，不能用来直接生成中文。</p></li>
+            </ol>
+            <details class="faq-item"><summary>中文显示错位，或导出后外观不同？</summary><p>输入字体负责文字形状，结果字体负责字符画的排列。中文和 emoji 使用双列显示；换终端或字体后字形可能不同，固定外观可使用图片导出。</p></details>
+            <a class="text-link" href="https://github.com/msmapwr/ascii-studio/blob/main/docs/TEXT_LAYOUT.md">查看完整文字排版说明</a>
+          </section>
+          <section class="guide-section" id="save-guide" aria-labelledby="save-guide-title">
+            <h2 id="save-guide-title">保存项目，再导出作品</h2><p>项目用于继续创作，导出文件用于分享或在其他工具中使用。两者可以同时保留。</p>
+            <div class="format-grid"><article><h3>.asciiproj 项目</h3><p>保留图片或文字来源和参数，下次打开后继续调整。先保存一份项目，再尝试其他设置。</p></article><article><h3>PNG / JPEG</h3><p>适合分享固定外观。接收方无需安装同样的字体；JPEG 不保留透明通道。</p></article><article><h3>TXT / Markdown</h3><p>适合复制纯文本字符画。使用等宽字体查看，并检查中文与 emoji 的列宽。</p></article><article><h3>ANSI / HTML / SVG</h3><p>ANSI 用于支持颜色控制序列的终端；HTML 用浏览器查看，SVG 用于可缩放图形。</p></article></div>
+            <details class="faq-item"><summary>作品太大，导出失败怎么办？</summary><p>降低输出列数或图像导出尺寸，也可以改用文本格式。位图导出受像素和单边尺寸限制；遇到错误时先保留项目。</p></details>
+            <div class="actions"><a class="button" href="https://github.com/msmapwr/ascii-studio/releases" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">获取软件</a><a class="text-link" href="https://github.com/msmapwr/ascii-studio/issues">反馈问题</a></div>
+          </section>
+        </div>
+      </div>
+            </main>
+        <footer class="site-footer">
+            <div class="container footer-inner">
+                <div>
+                    <a class="brand" href="index.html"
+                        ><img
+                            src="assets/logo.svg"
+                            width="38"
+                            height="38"
+                            alt=""
+                        >AsciiStudio</a
+                    >
+                    <p>Windows 上的 ASCII / ANSI 创作工具。</p>
+                </div>
+                <nav class="footer-links" aria-label="项目与文档">
+                    <a href="downloads.html">下载与运行</a>
+                    <a href="gallery.html">作品展示</a>
+                    <a href="guide.html">入门教程</a>
+                    <a href="changelog.html">更新日志</a>
+                    <a class="" href="https://github.com/msmapwr/ascii-studio"
+                        >GitHub 仓库</a
+                    ><a
+                        class=""
+                        href="https://github.com/msmapwr/ascii-studio/releases"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-describedby="new-tab-note"
+                        >Release 更新说明</a
+                    ><a
+                        class=""
+                        href="https://github.com/msmapwr/ascii-studio/blob/main/docs/ROADMAP.md"
+                        >0.9 路线图</a
+                    ><a
+                        class=""
+                        href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md"
+                        >展示素材说明</a
+                    ><a class="" href="#top">回到顶部</a>
+                </nav>
+            </div>
+        </footer>
+    </body>
+</html>
