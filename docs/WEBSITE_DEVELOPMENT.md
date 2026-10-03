@@ -79,3 +79,5 @@ CSS 使用 Lightning CSS 解析验证，输出到临时目录，不覆盖源文�
 动态日志额外执行 `node scripts/check-website-history.mjs`，验证当前仓库全部版本/条目、CRLF、分类、非法输入和原样保留 HTML 文本。JavaScript 类型与 lint 检查包含 `website/dist/changelog.js`。
 
 资源菜单使用原生 details，Escape 优先关闭资源并恢复焦点，点击外部关闭。格式表格在窄屏区域内滚动，可聚焦使用键盘；已检查 320px 与 1024px，无整页溢出。格式说明依据核心 ExportService、README 与 Unicode/ANSI 文档。
+
+帮助中心由 XML 生成全部问答，help.js 只增强本页搜索。搜索规范化全角字符并忽略大小写，多个关键词需同时命中；有查询时展开匹配答案，清除后恢复初始展开状态并聚焦输入。搜索内容不发送服务器。已验证多词、无结果、清除和 320px 布局。

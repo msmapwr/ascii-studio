@@ -253,6 +253,13 @@ async function loadFluent() {
     }
 }
 void loadFluent();
+if (document.querySelector("#help-search")) {
+    import("./help.js")
+        .then(({ initHelpSearch }) => initHelpSearch())
+        .catch(() => {
+            /* The static questions remain available if enhancement cannot load. */
+        });
+}
 
 // Copy is optional; the original text stays selectable when permission is unavailable.
 document.querySelectorAll("[data-copy-target]").forEach((control) => {
