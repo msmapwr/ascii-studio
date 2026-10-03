@@ -38,7 +38,7 @@ const menuButton = /** @type {HTMLButtonElement} */ (
 const navigation = /** @type {HTMLElement} */ (
     document.querySelector("#navigation")
 );
-const compactScreen = matchMedia("(max-width: 860px)");
+const compactScreen = matchMedia("(max-width: 1000px)");
 function closeMenu() {
     navigation.hidden = compactScreen.matches;
     menuButton.setAttribute("aria-expanded", "false");
@@ -227,3 +227,20 @@ async function loadFluent() {
     }
 }
 void loadFluent();
+
+// Copy is optional; the original text stays selectable when permission is unavailable.
+document.querySelectorAll("[data-copy-target]").forEach((control) => {
+    const button = /** @type {HTMLButtonElement} */ (control);
+    button.hidden = false;
+    button.addEventListener("click", async () => {
+        const target = document.getElementById(button.dataset.copyTarget);
+        const status = document.querySelector("#copy-status");
+        if (!target || !status) return;
+        try {
+            await navigator.clipboard.writeText(target.textContent.trim());
+            status.textContent = "已复制。";
+        } catch {
+            status.textContent = "无法自动复制，请选中上方文字手动复制。";
+        }
+    });
+});
