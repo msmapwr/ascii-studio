@@ -4,7 +4,7 @@
 
 ## CLI 教程
 
-CLI 教程依据 `CLI_TUTORIAL.md`，网站校对副本位于 [WEBSITE_CLI_SOURCE.md](WEBSITE_CLI_SOURCE.md)。副本保留命令原文，安装入口改用 Releases 列表，并提醒读者核对 1.0.0-alpha.2 的版本要求。源教程仍在独立 CLI 开发工作中，本轮只维护网站副本。
+CLI 教程依据 [CLI_TUTORIAL.md](CLI_TUTORIAL.md)，网站校对副本位于 [WEBSITE_CLI_SOURCE.md](WEBSITE_CLI_SOURCE.md)。副本保留命令原文，安装入口改用 Releases 列表，并提醒读者核对 1.0.0-alpha.2 的版本要求。本轮已核对 main 中提交的源教程，只调整网站副本的安装入口。
 
 源教程变化后先同步并校对副本，再按顺序运行：
 
