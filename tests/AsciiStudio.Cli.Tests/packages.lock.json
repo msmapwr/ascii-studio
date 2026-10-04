@@ -116,7 +116,7 @@
       "asciistudio-cli": {
         "type": "Project",
         "dependencies": {
-          "AsciiStudio.Application": "[1.0.0-alpha.1, )"
+          "AsciiStudio.Application": "[1.0.0-alpha.2, )"
         }
       },
       "asciistudio.application": {
