@@ -54,7 +54,7 @@ def render():
                   lambda m: m[1] + html.escape(copy.findtext("description"), quote=True), head)
     chrome = home[home.index('        <header class="site-header"'):home.index('        <main id="main"')]
     chrome = re.sub(r'href="#([^"]+)"', r'href="index.html#\1"', chrome)
-    chrome = chrome.replace('aria-label="AsciiStudio，回到页面顶部"', 'aria-label="AsciiStudio，返回首页"')
+    chrome = chrome.replace('aria-label="Charloom 字织，回到页面顶部"', 'aria-label="Charloom 字织，返回首页"')
     chrome = chrome.replace('href="changelog.html"', 'href="changelog.html" aria-current="page"')
     footer = home[home.index('        <footer class="site-footer"'):]
     footer = footer.replace('class="brand" href="#top"', 'class="brand" href="index.html"')

@@ -158,6 +158,16 @@
         width: 38px;
         height: 38px;
     }
+    .brand-name {
+        display: grid;
+        gap: 3px;
+        line-height: 1.1;
+    }
+    .brand-name small {
+        font-size: 12px;
+        letter-spacing: 2px;
+        font-weight: 500;
+    }
     .navigation {
         display: flex;
         gap: 20px;
