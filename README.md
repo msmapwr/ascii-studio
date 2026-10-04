@@ -11,7 +11,7 @@
 ### [⬇ 下载 0.9.0](https://github.com/msmapwr/ascii-studio/releases/tag/v0.9.0)　[官网 · 教程与作品展示](https://msmapwr.github.io/ascii-studio/)　[更新说明](CHANGELOG.md)
 
 Windows x64 / ARM64：下载对应架构的 ZIP，完整解压后运行 `AsciiStudio.exe`。便携版包含运行时，无需安装开发 SDK。
-当前正式版本为 **0.9.0**。另有 [1.0.0-alpha.1 预发布](https://github.com/msmapwr/ascii-studio/releases/tag/v1.0.0-alpha.1)，包含独立控制台 `asciistudio-cli.exe`、33 个命令及逐级中英文 `--help`，详见 [CLI 使用与覆盖表](docs/CLI.md)。首版尚未覆盖全部桌面功能；双语桌面、扩展动效与个性化设置继续开发。
+当前正式版本为 **0.9.0**。另有 [1.0.0-alpha.2 预发布](https://github.com/msmapwr/ascii-studio/releases/tag/v1.0.0-alpha.2)，包含独立控制台 `asciistudio-cli.exe`、55 个命令及逐级中英文 `--help`，支持持久编辑历史、Unicode 选区和独立工作区，详见 [CLI 使用与覆盖表](docs/CLI.md)。尚未覆盖全部桌面功能；双语桌面、扩展动效与个性化设置继续开发。
 
 官网提供产品介绍。完整静态网站位于 [`website/dist`](website/dist)，包含[入门教程](website/dist/guide.html)、[作品展示](website/dist/gallery.html)、[下载与运行](website/dist/downloads.html)和[版本记录](website/dist/changelog.html)，可用于 GitHub Pages。
 
@@ -42,6 +42,8 @@ Windows x64 / ARM64：下载对应架构的 ZIP，完整解压后运行 `AsciiSt
 已有辅助工具继续可用：生成边框与图案、整理文本、代码注释、本地加密与编码。它们不扩大本阶段的开发范围。
 
 ## 获取与运行
+
+控制台用户可从 [命令行详细教程](docs/CLI_TUTORIAL.md) 开始，包含 PowerShell 示例、图片／中文转换、持久编辑、工作区恢复、批处理与加密。
 
 ### 下载使用
 
