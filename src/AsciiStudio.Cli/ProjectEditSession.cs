@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AsciiStudio.Core;
 using AsciiStudio.Services;
 
@@ -7,10 +8,12 @@ namespace AsciiStudio.Cli;
 
 public sealed class CliConflictException(string message, bool busy = false) : IOException(message)
 { public bool Busy { get; } = busy; }
-public sealed record EditRevision(AsciiDocument Document, bool Edited);
+public sealed record EditRevision(AsciiDocument Document, bool Edited,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AsciiDocument? Generated = null);
 public sealed record EditSelection(int Row, int Column, int EndRow, int EndColumn, bool Rectangle = false);
 public sealed record EditState(int Schema, string BaseDigest, List<EditRevision> Revisions, int Index,
-    string SavedDigest, AsciiDocument Generated, EditSelection? Selection = null);
+    string SavedDigest, AsciiDocument Generated, EditSelection? Selection = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AsciiDocument? Candidate = null);
 
 /// <summary>Each invocation locks its sidecar, verifies the source, and commits atomically.</summary>
 public sealed class ProjectEditSession : IDisposable
@@ -23,7 +26,8 @@ public sealed class ProjectEditSession : IDisposable
     public StudioProject Source { get; private set; }
     public EditState State { get; private set; }
     public StudioProject Current => Source with { Document = State.Revisions[State.Index].Document,
-        Edited = State.Revisions[State.Index].Edited, GeneratedDocument = State.Generated };
+        Edited = State.Revisions[State.Index].Edited, GeneratedDocument = State.Revisions[State.Index].Generated ?? State.Generated };
+    public StudioProject CandidateProject => Source with { Document = State.Candidate ?? throw new CliUsageException("No candidate; use candidate create."), Edited = false, GeneratedDocument = null };
     public bool Dirty => Digest(State.Revisions[State.Index]) != State.SavedDigest;
     public bool CanUndo => State.Index > 0;
     public bool CanRedo => State.Index < State.Revisions.Count - 1;
@@ -48,13 +52,14 @@ public sealed class ProjectEditSession : IDisposable
             var bytes = await BoundedFile.ReadAsync(path, ProjectFileService.MaximumBytes, token);
             var source = ProjectFileService.Parse(bytes); var digest = Digest(bytes);
             var revision = new EditRevision(source.Document, source.Edited);
-            var state = new EditState(1, digest, [revision], 0, Digest(revision), source.GeneratedDocument ?? source.Document);
+            var state = new EditState(2, digest, [revision], 0, Digest(revision), source.GeneratedDocument ?? source.Document);
             if (!reload && File.Exists(StatePath(path)))
             {
                 state = JsonSerializer.Deserialize<EditState>(BoundedFile.JsonBytes(await BoundedFile.ReadAsync(StatePath(path), MaximumStateBytes, token)).Span, CliArguments.Json)
                     ?? throw new InvalidDataException("Edit state is empty.");
                 Validate(state);
                 if (state.BaseDigest != digest) throw new CliConflictException("Project changed outside this edit session. Use project recover --output NEW_PATH or project reload --discard-edits.");
+                state = state with { Schema = 2 };
             }
             return new(path, gate, source, state);
         }
@@ -62,16 +67,24 @@ public sealed class ProjectEditSession : IDisposable
     }
     private static string Digest(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
     private static string Digest(EditRevision value) => Digest(JsonSerializer.SerializeToUtf8Bytes(value));
+    private static long DocumentSize(AsciiDocument value) => value.Text.Length * 2L + (value.Colors?.LongLength ?? 0) * 4L + (value.BackgroundColors?.LongLength ?? 0) * 4L;
     private static long Size(EditRevision value) => Math.Max(JsonSerializer.SerializeToUtf8Bytes(value).LongLength,
-        512L + value.Document.Text.Length * 2L + (value.Document.Colors?.LongLength ?? 0) * 4L + (value.Document.BackgroundColors?.LongLength ?? 0) * 4L);
+        512L + DocumentSize(value.Document) + (value.Generated is null ? 0 : DocumentSize(value.Generated)));
     private static void Validate(EditState state)
     {
-        if (state.Schema != 1 || state.Revisions is null || state.Revisions.Count is < 1 or > MaximumSteps + 1
+        if (state.Schema is not (1 or 2) || state.Revisions is null || state.Revisions.Count is < 1 or > MaximumSteps + 1
             || state.Index < 0 || state.Index >= state.Revisions.Count || state.Generated is null
             || !ValidDigest(state.BaseDigest) || !ValidDigest(state.SavedDigest)) throw new InvalidDataException("Invalid edit state.");
         state.Generated.Validate();
         if (state.Generated.GridVersion != 1) throw new InvalidDataException("Edit state requires Unicode grid version 1.");
-        foreach (var revision in state.Revisions) { if (revision?.Document is null || revision.Document.GridVersion != 1) throw new InvalidDataException("Invalid edit revision."); revision.Document.Validate(); }
+        foreach (var revision in state.Revisions)
+        {
+            if (revision?.Document is null || revision.Document.GridVersion != 1) throw new InvalidDataException("Invalid edit revision.");
+            revision.Document.Validate();
+            if (revision.Generated is { } generated) { generated.Validate(); if (generated.GridVersion != 1) throw new InvalidDataException("Invalid generated revision."); }
+        }
+        if (state.Candidate is { } candidate) { candidate.Validate(); if (candidate.GridVersion != 1) throw new InvalidDataException("Invalid candidate grid."); }
+        if (state.Schema == 1 && (state.Candidate is not null || state.Revisions.Any(r => r.Generated is not null))) throw new InvalidDataException("Candidate state requires schema 2.");
         if (state.Revisions.Count > 1 && state.Revisions.Sum(Size) > MaximumHistoryBytes) throw new InvalidDataException("History exceeds 64MB.");
         if (state.Selection is { } selection) TextEditOperations.ValidateSelection(state.Revisions[state.Index].Document.Text, selection);
     }
@@ -90,7 +103,7 @@ public sealed class ProjectEditSession : IDisposable
         var previous = Current.Document;
         var document = AsciiDocument.FromText(text, previous.Title) with { FontFamily = previous.FontFamily, CellWidth = previous.CellWidth, CellHeight = previous.CellHeight };
         if (document.Text == previous.Text) return;
-        var revisions = TrimHistory(State.Revisions.Take(State.Index + 1).Append(new EditRevision(document, true)).ToArray());
+        var revisions = TrimHistory(State.Revisions.Take(State.Index + 1).Append(new EditRevision(document, true, State.Revisions[State.Index].Generated)).ToArray());
         State = State with { Revisions = revisions, Index = revisions.Count - 1, Selection = null };
         await Persist(token);
     }
@@ -113,6 +126,34 @@ public sealed class ProjectEditSession : IDisposable
     }
     public async Task ClearHistory(CancellationToken token)
     { State = State with { Revisions = [State.Revisions[State.Index]], Index = 0 }; await Persist(token); }
+    public async Task SetCandidate(AsciiDocument document, bool replace, CancellationToken token)
+    {
+        if (State.Candidate is not null && !replace) throw new CliConflictException("Candidate already exists; explicit --replace-candidate required.");
+        State = State with { Schema = 2, Candidate = document }; await Persist(token);
+    }
+    public async Task AcceptCandidate(CancellationToken token)
+    {
+        var document = CandidateProject.Document;
+        var revisions = TrimHistory(State.Revisions.Take(State.Index + 1).Append(new EditRevision(document, false, document)).ToArray());
+        State = State with { Schema = 2, Revisions = revisions, Index = revisions.Count - 1, Selection = null, Candidate = null };
+        await Persist(token);
+    }
+    public async Task DiscardCandidate(CancellationToken token)
+    {
+        _ = CandidateProject;
+        State = State with { Candidate = null }; await Persist(token);
+    }
+    public async Task SaveCandidate(string destination, bool overwrite, CancellationToken token)
+    {
+        destination = System.IO.Path.GetFullPath(destination);
+        if (destination.Equals(Path, StringComparison.OrdinalIgnoreCase) || destination.Equals(StatePath(Path), StringComparison.OrdinalIgnoreCase)
+            || destination.Equals(StatePath(Path) + ".lock", StringComparison.OrdinalIgnoreCase)) throw new CliUsageException("Save candidate to an independent project path.");
+        if (File.Exists(StatePath(destination))) throw new CliConflictException("Destination has an edit session; choose another path.");
+        var project = CandidateProject; ProjectFileService.Validate(project);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(project);
+        if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("Candidate project exceeds 100MB.");
+        await Atomic(destination, bytes, overwrite, token);
+    }
     public async Task Save(string destination, bool overwrite, CancellationToken token)
     {
         destination = System.IO.Path.GetFullPath(destination);
@@ -139,7 +180,8 @@ public sealed class ProjectEditSession : IDisposable
     }
     public object Summary() => new { path = Path, dirty = Dirty, edited = Current.Edited, count = State.Revisions.Count,
         index = State.Index, canUndo = CanUndo, canRedo = CanRedo, retainedBytes = RetainedBytes, maximumSteps = MaximumSteps,
-        maximumBytes = MaximumHistoryBytes, selection = State.Selection, Current.Document.Width, Current.Document.Height };
+        maximumBytes = MaximumHistoryBytes, selection = State.Selection, Current.Document.Width, Current.Document.Height,
+        candidate = State.Candidate is { } document ? new { document.Width, document.Height, document.Title } : null };
     public static async Task<StudioProject> Read(string path, CancellationToken token)
     {
         if (!File.Exists(StatePath(path))) return await ProjectFileService.Read(path, token);
@@ -161,7 +203,7 @@ public sealed class ProjectEditSession : IDisposable
         // history as a snapshot, never attach edits to an unrelated new image/text source.
         var revision = state.Revisions[state.Index];
         var project = new StudioProject(WorkspaceService.CurrentProjectVersion, revision.Document, null, null, null, "snapshot",
-            Edited: revision.Edited, GeneratedDocument: state.Generated);
+            Edited: revision.Edited, GeneratedDocument: revision.Generated ?? state.Generated);
         ProjectFileService.Validate(project);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(project);
         if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("Recovered project exceeds 100MB.");
