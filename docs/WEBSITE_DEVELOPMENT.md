@@ -1,6 +1,22 @@
 # 网站开发与发布
 
-八页 HTML 共用一份 CSS 和 JavaScript，代码位于 `website/dist`，可直接由静态服务器提供。素材来自仓库的 `assets/branding` 和 `assets/showcase`，发布副本位于 `website/dist/assets`。页面正文直接写在 HTML 中，浏览器无需读取 XML。
+九页 HTML 共用一份 CSS 和 JavaScript，代码位于 `website/dist`，可直接由静态服务器提供。素材来自仓库的 `assets/branding` 和 `assets/showcase`，发布副本位于 `website/dist/assets`。页面正文直接写在 HTML 中，浏览器无需读取 XML。
+
+## CLI 教程
+
+CLI 教程依据 [CLI_TUTORIAL.md](CLI_TUTORIAL.md)，网站校对副本位于 [WEBSITE_CLI_SOURCE.md](WEBSITE_CLI_SOURCE.md)。副本保留命令原文，安装入口改用 Releases 列表，并提醒读者核对 1.0.0-alpha.2 的版本要求。本轮已核对 main 中提交的源教程，只调整网站副本的安装入口。
+
+源教程变化后先同步并校对副本，再按顺序运行：
+
+```powershell
+python scripts/build-website-cli.py
+python scripts/build-website-pages.py
+python scripts/build-website-changelog.py
+python scripts/build-website-cli.py --check
+python scripts/check-website-cli.py
+```
+
+生成器只转换支持的 Markdown 结构，转义文字并限制链接协议。检查脚本逐字核对全部 53 个代码示例和 14 章顺序。52 个 PowerShell 示例已通过语法解析，网页不会运行命令。浏览器验收覆盖桌面、320px 手机目录、复制反馈与代码键盘滚动，页面无整页横向溢出。
 
 ## 修改内容
 

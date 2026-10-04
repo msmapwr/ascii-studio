@@ -253,6 +253,11 @@ async function loadFluent() {
     }
 }
 void loadFluent();
+const cliIndex = /** @type {HTMLDetailsElement} */ (
+    document.querySelector(".cli-index details")
+);
+if (cliIndex && matchMedia("(max-width: 1000px)").matches)
+    cliIndex.open = false;
 if (document.querySelector("#help-search")) {
     import("./help.js")
         .then(({ initHelpSearch }) => initHelpSearch())

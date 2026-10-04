@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
-    <meta name="application-version" content="0.12.0">
+    <meta name="application-version" content="0.13.0">
         <meta charset="utf-8" >
         <meta name="viewport" content="width=device-width, initial-scale=1" >
         <meta
@@ -38,7 +38,7 @@
                         alt=""
                     >AsciiStudio</a
                 >
-                <nav class="navigation" id="navigation" aria-label="页面导航"><a href="index.html">产品介绍</a><a href="guide.html">入门教程</a><a href="gallery.html">作品展示</a><a href="downloads.html">下载与运行</a><a href="changelog.html" aria-current="page">更新日志</a><details class="resource-menu" id="resource-menu"><summary>资源</summary><div class="resource-menu-links"><a href="formats.html">导出格式指南</a><a href="help.html">帮助中心</a><a href="roadmap.html">项目路线图</a></div></details></nav>
+                <nav class="navigation" id="navigation" aria-label="页面导航"><a href="index.html">产品介绍</a><a href="guide.html">入门教程</a><a href="gallery.html">作品展示</a><a href="downloads.html">下载与运行</a><a href="changelog.html" aria-current="page">更新日志</a><details class="resource-menu" id="resource-menu"><summary>资源</summary><div class="resource-menu-links"><a href="cli.html">CLI 教程</a><a href="formats.html">导出格式指南</a><a href="help.html">帮助中心</a><a href="roadmap.html">项目路线图</a></div></details></nav>
                 <div class="header-actions">
                     <details class="theme-picker" id="theme-picker" hidden>
                         <summary aria-label="外观">
@@ -129,10 +129,18 @@
             </section>
             <div class="container history-layout">
                 <aside class="version-index" aria-label="版本索引"><h2>版本索引</h2>
-                    <nav aria-label="跳到版本"><a href="#version-0-9-0">0.9.0</a><a href="#version-0-9-0-alpha-9">0.9.0-alpha.9</a><a href="#version-0-9-0-alpha-8">0.9.0-alpha.8</a><a href="#version-0-9-0-alpha-7">0.9.0-alpha.7</a><a href="#version-0-9-0-alpha-6">0.9.0-alpha.6</a><a href="#version-0-9-0-alpha-5">0.9.0-alpha.5</a><a href="#version-0-9-0-alpha-4">0.9.0-alpha.4</a><a href="#version-0-9-0-alpha-3">0.9.0-alpha.3</a><a href="#version-0-9-0-alpha-2">0.9.0-alpha.2</a><a href="#version-0-9-0-alpha-1">0.9.0-alpha.1</a><a href="#version-0-8-0">0.8.0</a><a href="#version-0-7-0">0.7.0</a><a href="#version-0-6-0">0.6.0</a><a href="#version-0-6-0-alpha-5">0.6.0-alpha.5</a><a href="#version-0-6-0-alpha-4">0.6.0-alpha.4</a><a href="#version-0-6-0-alpha-3">0.6.0-alpha.3</a><a href="#version-0-6-0-alpha-2">0.6.0-alpha.2</a><a href="#version-0-6-0-alpha-1">0.6.0-alpha.1</a><a href="#version-0-5-0">0.5.0</a><a href="#version-0-4-0">0.4.0</a><a href="#version-0-3-0">0.3.0</a></nav>
+                    <nav aria-label="跳到版本"><a href="#version-1-0-0-alpha-2">1.0.0-alpha.2</a><a href="#version-1-0-0-alpha-1">1.0.0-alpha.1</a><a href="#version-0-9-0">0.9.0</a><a href="#version-0-9-0-alpha-9">0.9.0-alpha.9</a><a href="#version-0-9-0-alpha-8">0.9.0-alpha.8</a><a href="#version-0-9-0-alpha-7">0.9.0-alpha.7</a><a href="#version-0-9-0-alpha-6">0.9.0-alpha.6</a><a href="#version-0-9-0-alpha-5">0.9.0-alpha.5</a><a href="#version-0-9-0-alpha-4">0.9.0-alpha.4</a><a href="#version-0-9-0-alpha-3">0.9.0-alpha.3</a><a href="#version-0-9-0-alpha-2">0.9.0-alpha.2</a><a href="#version-0-9-0-alpha-1">0.9.0-alpha.1</a><a href="#version-0-8-0">0.8.0</a><a href="#version-0-7-0">0.7.0</a><a href="#version-0-6-0">0.6.0</a><a href="#version-0-6-0-alpha-5">0.6.0-alpha.5</a><a href="#version-0-6-0-alpha-4">0.6.0-alpha.4</a><a href="#version-0-6-0-alpha-3">0.6.0-alpha.3</a><a href="#version-0-6-0-alpha-2">0.6.0-alpha.2</a><a href="#version-0-6-0-alpha-1">0.6.0-alpha.1</a><a href="#version-0-5-0">0.5.0</a><a href="#version-0-4-0">0.4.0</a><a href="#version-0-3-0">0.3.0</a></nav>
                     <a class="history-source" href="https://github.com/msmapwr/ascii-studio/blob/main/CHANGELOG.md">查看仓库原始记录</a>
                 </aside>
-                <div class="release-timeline"><article class="release-entry" id="version-0-9-0" aria-labelledby="version-0-9-0-title">
+                <div class="release-timeline"><article class="release-entry" id="version-1-0-0-alpha-2" aria-labelledby="version-1-0-0-alpha-2-title">
+    <header class="release-heading"><div><h2 id="version-1-0-0-alpha-2-title">1.0.0-alpha.2</h2>
+    <span class="release-badge">预发布</span></div><time datetime="2026-10-04">2026-10-04</time></header>
+    <section class="change-group"><h3>新增</h3><ul><li>CLI 新增 Unicode 行列／矩形选区、全文与选区替换、插入、删除、字面查找、现有文本变换；全部新增入口提供逐级中英文帮助。</li><li>项目旁 <code>.cli-state.json</code> 保存当前编辑、原生成结果和跨进程撤销／重做；最多 100 步、64 MB 历史预算，侧文件最多 100 MB。原项目仅在显式保存时改写。</li><li>独立 CLI 工作区管理新建、打开、切换和关闭项目，重启自动读取项目列表及 active；同一路径只开一次，最多 32 项；支持最近项目、保留恢复、逐项恢复报告。</li><li><code>project save/reload/recover</code> 提供保存副本、显式丢弃和独立快照恢复；原文件被外部改写或删除后，仍可从侧文件恢复作品与历史，不绑定失效的来源。</li><li>文本工具与代码注释支持显式 <code>--apply</code> 写入可撤销编辑状态，默认仍输出副本。</li><li>增加中文命令行详细教程，覆盖终端准备、转换参数、项目与导出、编辑／恢复、批处理、编码加密、设置和常见错误；README 与 CLI 覆盖表提供入口。</li></ul></section><section class="change-group"><h3>修复</h3><ul><li>项目状态通过文件锁和源文件 SHA-256 检查避免静默覆盖；检测到外部修改或并发占用返回固定 conflict 错误码，原文件与历史保留。</li><li>导出不能覆盖正在使用的项目、侧文件或工作区清单；输出校验失败时，工具的 apply 不修改编辑状态。</li></ul></section><section class="change-group"><h3>验证</h3><ul><li>126 项 CLI 测试覆盖逐级帮助、Unicode 字符簇边界、持久历史、保存、旧项目备份、工作区与恢复、错误保护；另保留 175 项核心和 34 项 Windows 服务检查。</li><li>x64／ARM64 构建通过，x64 ZIP 完整解压后验证桌面和 CLI 启动；6 项桌面回归通过。教程的 52 段 PowerShell 示例通过语法检查，转换、排版、注释、编码／压缩还原、批处理与设置示例由真实 CLI 验证；ARM64 实机验证另行记录。</li></ul></section><section class="change-group"><h3>Pending</h3><ul><li>完整桌面 CLI 一致性仍待补齐剪贴板、预览对比、几何历史、候选结果管理和配方等入口；GUI 双语、个性化和扩展动效继续使用后续预发布。</li></ul></section>
+    </article><article class="release-entry" id="version-1-0-0-alpha-1" aria-labelledby="version-1-0-0-alpha-1-title">
+    <header class="release-heading"><div><h2 id="version-1-0-0-alpha-1-title">1.0.0-alpha.1</h2>
+    <span class="release-badge">预发布</span></div><time datetime="2026-10-03">2026-10-03</time></header>
+    <section class="change-group"><h3>新增</h3><ul><li>首个独立控制台版本提供 33 个命令：图片／文字／ANSI 转换、七种生成器、九种导出、项目校验与再生成、文本工具、注释、全部现有加密编码、字体库、设置和有界批处理。</li><li>全局、命令组及每个命令的中英文 <code>--help</code>，包含参数默认值、范围、模型字段、示例、资源限制、退出码和覆盖规则；提供 JSON 输出和能力覆盖查询。</li><li>默认隔离 CLI 数据、显式文件覆盖、手工编辑项目保护、口令文件／stdin 输入与 RSA PEM 文件生成；保留原文本字节表示。</li><li>x64／ARM64 自包含 ZIP 同包交付桌面端与 CLI，增加独立控制台启动检查和 81 项 CLI xUnit 检查。</li></ul></section><section class="change-group"><h3>调整</h3><ul><li>提取 AsciiStudio.Application 共享服务程序集，GUI 和 CLI 共用转换 Controller、字体、项目和位图导出，避免维护两套算法。</li></ul></section><section class="change-group"><h3>Pending</h3><ul><li>首版尚未达到桌面全部功能覆盖：持久编辑历史、工作区恢复、剪贴板、选区与预览对比、配方等入口继续补齐；完整矩阵见 docs/CLI.md。</li><li>中文／英文桌面界面、个性化新增项与扩展动效列入后续 1.0 预发布。正式 1.0.0 仍须用户明确授权。</li></ul></section><section class="change-group"><h3>验证</h3><ul><li>x64／ARM64 Release 构建成功；175 项核心、34 项 Windows 服务、81 项 CLI xUnit 测试通过。</li><li>完整解压的 x64 同包中 GUI 主窗口、CLI 独立进程及 6 项桌面 UI 回归通过；ARM64 尚未实机验收。</li></ul></section>
+    </article><article class="release-entry" id="version-0-9-0" aria-labelledby="version-0-9-0-title">
     <header class="release-heading"><div><h2 id="version-0-9-0-title">0.9.0</h2>
     <span class="release-badge">正式版本</span></div><time datetime="2026-10-03">2026-10-03</time></header>
     <section class="change-group"><h3>调整</h3><ul><li>将已合并的 0.9 预发布成果整理为正式版 0.9.0；本次发布仅调整版本信息、文档和下载入口，没有新增应用功能。</li><li>README 增加 GitHub Pages 官网、教程、作品、下载和网站源文件入口，区分便携版运行要求与开发环境。</li><li>发布提供 x64 / ARM64 自包含 ZIP 和 SHA-256 校验文件；ARM64 实机验收仍独立记录。</li></ul></section><section class="change-group"><h3>验证</h3><ul><li>x64 / ARM64 Release 编译、175 项核心及 34 项 Windows 字体／项目／导出 xUnit 测试通过。</li><li>x64 ZIP 完整解压后的真实主窗口启动验证通过；发布脚本的重跑、失败和校验保护检查通过。</li></ul></section>
@@ -235,7 +243,7 @@
                 <nav class="footer-links" aria-label="项目与文档">
                     <a href="downloads.html">下载与运行</a>
                     <a href="gallery.html">作品展示</a>
-                    <a href="guide.html">入门教程</a>
+                    <a href="guide.html">入门教程</a><a href="cli.html">CLI 教程</a>
                     <a href="formats.html">导出格式指南</a>
                     <a href="help.html">帮助中心</a>
                     <a href="roadmap.html">项目路线图</a>

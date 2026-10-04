@@ -788,6 +788,91 @@
     }
 }
 @layer pages {
+    .cli-layout {
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 40px;
+    }
+    .cli-index summary {
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+    }
+    .cli-index nav {
+        max-height: calc(100svh - 180px);
+        overflow-y: auto;
+        padding-right: 8px;
+        padding-bottom: 8px;
+    }
+    .cli-content h3 {
+        margin-block: 28px 16px;
+        font-size: 21px;
+    }
+    .cli-content p {
+        margin-block: 16px;
+        overflow-wrap: anywhere;
+    }
+    .cli-content ul {
+        padding-left: 24px;
+        margin-block: 16px;
+    }
+    .cli-content li {
+        margin-bottom: 8px;
+    }
+    .cli-version-note {
+        padding: 16px 20px;
+        border-left: 3px solid var(--accent);
+        background: var(--tint);
+        border-radius: 4px;
+        font-size: 15px;
+    }
+    .cli-page .cli-code-panel {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-content: stretch;
+        align-items: stretch;
+        gap: 12px;
+        padding: 0;
+        overflow: hidden;
+        margin-block: 20px;
+    }
+    .cli-code-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--surface-soft);
+        font-size: 13px;
+    }
+    .cli-code-panel pre {
+        white-space: pre;
+        overflow-x: auto;
+        overflow-wrap: normal;
+        padding: 4px 16px 16px;
+        font-size: 14px;
+        line-height: 1.7;
+        min-width: 0;
+    }
+    .cli-code-panel .copy-feedback {
+        padding-inline: 16px;
+        margin-bottom: 12px;
+    }
+    .cli-code-panel pre:focus-visible {
+        outline-offset: -3px;
+    }
+    .cli-code-panel .copy-feedback:empty {
+        display: none;
+    }
+    .cli-content .format-table {
+        min-width: 520px;
+        font-size: 14px;
+    }
+    @media (max-width: 1000px) {
+        .cli-index nav {
+            max-height: none;
+        }
+    }
     .roadmap-list {
         list-style: none;
         margin: 32px 0 0;
