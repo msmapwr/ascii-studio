@@ -57,6 +57,7 @@ public sealed class CliTests(CliFixture fixture)
     }
     [Theory]
     [InlineData("fonts")] [InlineData("project")] [InlineData("settings")] [InlineData("tools")] [InlineData("crypto")] [InlineData("batch")]
+    [InlineData("edit")] [InlineData("history")] [InlineData("workspace")]
     public async Task CommandGroupsShowTheirSubcommands(string group)
     {
         var result = await Run([group, "--help"]); Assert.Equal(0, result.Exit);

@@ -7,7 +7,15 @@ if (!$taskHwnd) { throw 'Test window not found.' }
 $taskResults=[Collections.Generic.List[object]]::new()
 function UI {
     $taskReply=& winapp ui @args -w $taskHwnd 2>&1
-    if ($LASTEXITCODE) { throw ($taskReply -join "`n") }
+    if ($LASTEXITCODE) {
+        # Search uses a nonzero status for an empty match set. This is expected
+        # while awaiting responsive navigation; assertions still use wait-for.
+        if ($args[0] -eq 'search') {
+            try { $taskSearch=($taskReply -join "`n") | ConvertFrom-Json; if ($taskSearch.matchCount -eq 0 -and $null -ne $taskSearch.matches) { return $taskReply } }
+            catch { }
+        }
+        throw ($taskReply -join "`n")
+    }
     $taskReply
 }
 function Check([string]$Name,[scriptblock]$Action) {
@@ -23,8 +31,15 @@ Check 'Shared FIGlet renderer works in desktop' {
 }
 Check 'Desktop generator remains usable' {
     UI invoke NavGenerator | Out-Null
-    $taskInput=(UI search WorkspaceInputButton --json | ConvertFrom-Json).matches | Where-Object { !$_.isOffscreen } | Select-Object -First 1
-    if ($taskInput) { UI invoke WorkspaceInputButton | Out-Null }
+    # Navigation and responsive layout commit asynchronously. Wait for either
+    # the visible action or its input flyout button, rather than racing a search.
+    $taskReady=[Diagnostics.Stopwatch]::StartNew()
+    do {
+        $taskGenerate=(UI search GeneratorGenerate --json | ConvertFrom-Json).matches | Where-Object { !$_.isOffscreen } | Select-Object -First 1
+        if ($taskGenerate) { break }
+        $taskInput=(UI search WorkspaceInputButton --json | ConvertFrom-Json).matches | Where-Object { !$_.isOffscreen } | Select-Object -First 1
+        if ($taskInput) { UI invoke WorkspaceInputButton | Out-Null; break }
+    } while ($taskReady.ElapsedMilliseconds -lt 5000)
     UI wait-for GeneratorGenerate -t 5000 | Out-Null
     UI invoke GeneratorGenerate | Out-Null
     UI wait-for GeneratorStatus --value '已生成' --contains -t 5000 | Out-Null

@@ -42,7 +42,10 @@ try {
         if (!(Test-Path -LiteralPath (Join-Path $taskPublish $taskRequired))) { throw "Missing publish payload: $taskRequired" }
     }
     # Hosted runners are x64; ARM64 is cross-built and requires separate device acceptance.
-    if ($Architecture -eq 'x64') { & (Join-Path $PSScriptRoot 'test-cli-startup.ps1') -PublishDirectory $taskPublish }
+    if ($Architecture -eq 'x64') {
+        & (Join-Path $PSScriptRoot 'test-cli-startup.ps1') -PublishDirectory $taskPublish
+        & (Join-Path $PSScriptRoot 'test-cli-tutorial.ps1') -PublishDirectory $taskPublish
+    }
     $taskOutput = Join-Path $taskRoot 'artifacts/release'
     New-Item -ItemType Directory -Force $taskOutput | Out-Null
     $taskArchive = Join-Path $taskOutput "AsciiStudio-$taskVersion-win-$Architecture.zip"

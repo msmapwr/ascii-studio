@@ -30,3 +30,20 @@ if ($taskText -notlike '*_*') { throw 'FIGlet CLI produced no expected output.' 
 $taskCapabilities=Invoke-StudioCli @('capabilities','--json') | ConvertFrom-Json
 if ($taskCapabilities.result.desktopParityComplete -ne $false -or !$taskCapabilities.result.pending.Count) { throw 'Prerelease parity status is inaccurate.' }
 Write-Output "PASS standalone CLI help, UTF-8 stdin, FIGlet and honest capability reporting: $taskExecutable"
+if ($taskCapabilities.result.complete -contains 'persistent-edit-history') {
+    $taskProject=Join-Path $taskData 'edit-smoke.asciiproj'
+    Invoke-StudioCli @('workspace','new','--project',$taskProject,'--text','a中b') | Out-Null
+    Invoke-StudioCli @('edit','select','--column','1','--end-column','3') | Out-Null
+    Invoke-StudioCli @('edit','replace','--selection','--text','X') | Out-Null
+    if ((Invoke-StudioCli @('edit','show')) -cne 'aXb') { throw 'Cross-process edit was not persisted.' }
+    Invoke-StudioCli @('history','undo') | Out-Null
+    if ((Invoke-StudioCli @('edit','show')) -cne 'a中b') { throw 'Cross-process undo failed.' }
+    Invoke-StudioCli @('history','redo') | Out-Null
+    if ((Get-Content -LiteralPath $taskProject -Raw | ConvertFrom-Json).Document.Text -cne 'a中b') { throw 'Editing unexpectedly changed source project.' }
+    Invoke-StudioCli @('workspace','close','--action','keep') | Out-Null
+    Invoke-StudioCli @('workspace','restore') | Out-Null
+    if ((Invoke-StudioCli @('edit','show')) -cne 'aXb') { throw 'Cross-process workspace recovery failed.' }
+    Invoke-StudioCli @('project','save','--overwrite') | Out-Null
+    if ((Get-Content -LiteralPath $taskProject -Raw | ConvertFrom-Json).Document.Text -cne 'aXb') { throw 'Explicit project save failed.' }
+    Write-Output 'PASS cross-process Unicode editing, undo/redo, source protection, workspace recovery and explicit save'
+}
