@@ -4,7 +4,7 @@
 
 ## 版本与范围
 
-当前控制台预发布为 `1.0.0-alpha.2`，共有 55 个命令。Windows x64 / ARM64 ZIP 同时包含 `AsciiStudio.exe` 和 `asciistudio-cli.exe`。全部解压后在终端运行；无需开发 SDK。
+当前控制台预发布为 `1.0.0-alpha.3`，共有 61 个命令。Windows x64 / ARM64 ZIP 同时包含 `AsciiStudio.exe` 和 `asciistudio-cli.exe`。全部解压后在终端运行；无需开发 SDK。
 
 **1.0 的最终验收要求是桌面功能全部有命令入口，而非仅支持转换。当前尚未达到全部覆盖。** 中文／英文桌面界面、新个性化设置和扩展动效也在后续预发布实现。正式 1.0.0 仍需用户明确授权。
 
@@ -39,7 +39,7 @@
 | 目录图片批量转换、递归开关、逐项报告 | `batch image` | 已实现；当前串行，最多 1000 项 |
 | 替换／插入／删除／查找／选区变换、持久撤销重做 | `edit show/select/replace/insert/delete/find/transform`，`history list/undo/redo/clear` | 已实现，100 步／64 MB |
 | 多项目工作区、active 项目、最近文件、会话恢复 | `workspace new/open/switch/close/list/recent/clear-recent/recovery/restore` | 已实现，CLI 独立清单与状态 |
-| 候选生成结果接受／保留／独立保存 | 后续项目结果管理 | 待实现 |
+| 候选生成结果接受／保留／独立保存 | `candidate create/status/show/accept/save/discard` | 已实现，保留手工结果和来源 |
 | 剪贴板图片／文字读写 | 后续 `clipboard` | 待实现，显式调用 |
 | 缩放、适应、分页、行跳转、选区定位、原图对比 | 后续 `preview/selection` | 待实现，TXT／ANSI／PNG／HTML 预览 |
 | 设置搜索／工具栏收藏、个人配方、平台建议 | 后续设置与配方命令 | 待实现，保留输入和编辑结果 |

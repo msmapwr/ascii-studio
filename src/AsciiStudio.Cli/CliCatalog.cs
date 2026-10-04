@@ -67,6 +67,13 @@ public static class CliCatalog
             "generate --set Kind=2 --set Width=40 --set Height=20 --output maze.txt", [typeof(GeneratorRecipe)]),
         new("export", "导出项目或文本；支持全部9种桌面格式", "Export projects/text in all 9 desktop formats", [.. TextInput, Font, .. ExportOptions],
             "export --project work.asciiproj --format PNG --output work.png", []),
+        new("candidate status", "查询候选与当前编辑状态；不会创建或改变结果", "Inspect candidate/current edit status without changing results", [Project], "candidate status --project work.asciiproj", []),
+        new("candidate create", "按项目保存的来源与参数重新生成候选，保留手工结果；每项目一个", "Regenerate a candidate from saved source/parameters while preserving edits; one per project", [Project,
+            O("replace-candidate", "", "明确替换已有候选，默认报冲突；不改变编辑历史", "Explicitly replace existing candidate; default conflicts; edit history stays intact", true)], "candidate create --project work.asciiproj", []),
+        new("candidate show", "预览／导出候选，支持9种格式；不替换当前编辑", "Preview/export candidate in 9 formats without replacing edits", [Project, .. ExportOptions], "candidate show --project work.asciiproj --format PNG --output candidate.png", []),
+        new("candidate accept", "明确接受候选并加入撤销历史，清空选区；原文件仍需project save", "Accept candidate into undo history, clear selection; project save still required", [Project], "candidate accept --project work.asciiproj", []),
+        new("candidate save", "候选另存项目，保留来源与参数；不改变active、手工结果或候选", "Save independent candidate project with source/parameters; active, edits and candidate unchanged", [Project, Output, Overwrite], "candidate save --project work.asciiproj --output candidate.asciiproj", []),
+        new("candidate discard", "只丢弃候选，保留手工结果与撤销历史", "Discard only candidate, retaining current edits and undo history", [Project], "candidate discard --project work.asciiproj", []),
         new("edit show", "显示当前编辑结果或选区；可导出9种格式", "Show current edited result/selection in any of 9 export formats", [Project, Selection, .. ExportOptions], "edit show --project work.asciiproj", []),
         new("edit select", "持久Unicode选区；行从0开始，末行包含、末列不包含；矩形按每行显示列", "Persist Unicode selection; zero-based, end row included/end column excluded; rectangle uses each row's display columns", [Project, Row, Column,
             O("end-row", "INTEGER", "默认起点行，跨行包含末行", "Default start row, includes end row"), O("end-column", "INTEGER", "默认起点列，不包含终点列", "Default start column, exclusive end column"), O("rectangle", "", "矩形选区，默认跨行连续范围", "Rectangle, default continuous multi-line range", true)], "edit select --project work.asciiproj --row 0 --column 0 --end-row 1 --end-column 3 --rectangle", []),
@@ -125,7 +132,7 @@ public static class CliCatalog
     public static bool Chinese(CliArguments args) => args.Get("language", "system") switch { "zh-CN" => true, "en-US" => false, _ => CultureInfo.CurrentUICulture.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase) };
     public static string Help(CliArguments args)
     {
-        var zh = Chinese(args); var b = new StringBuilder("AsciiStudio CLI 1.0.0-alpha.2\n\n");
+        var zh = Chinese(args); var b = new StringBuilder("AsciiStudio CLI 1.0.0-alpha.3\n\n");
         var exact = Commands.FirstOrDefault(c => c.Name == args.Command);
         b.AppendLine(zh ? "用法：asciistudio-cli <命令> [选项]" : "Usage: asciistudio-cli <command> [options]");
         if (exact is null)

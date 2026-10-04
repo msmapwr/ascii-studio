@@ -1,6 +1,6 @@
 # AsciiStudio 命令行详细教程
 
-适用版本：**1.0.0-alpha.2**，Windows x64／ARM64。教程使用 PowerShell。命令功能与参数以当前程序的 `--help` 为准；[覆盖表](CLI.md)列出尚未实现的桌面功能。
+适用版本：**1.0.0-alpha.3**，Windows x64／ARM64。教程使用 PowerShell。命令功能与参数以当前程序的 `--help` 为准；[覆盖表](CLI.md)列出尚未实现的桌面功能。
 
 ## 目录
 
@@ -21,7 +21,7 @@
 
 ## 1. 安装与终端准备
 
-从 [alpha.2 Release](https://github.com/msmapwr/ascii-studio/releases/tag/v1.0.0-alpha.2) 下载对应电脑架构的 ZIP，**完整解压**。同目录应有 `AsciiStudio.exe`、`asciistudio-cli.exe`、DLL 和资源文件；不要只复制 EXE。程序已包含运行时，不需要安装 .NET SDK。
+从 [alpha.2 Release](https://github.com/msmapwr/ascii-studio/releases/tag/v1.0.0-alpha.3) 下载对应电脑架构的 ZIP，**完整解压**。同目录应有 `AsciiStudio.exe`、`asciistudio-cli.exe`、DLL 和资源文件；不要只复制 EXE。程序已包含运行时，不需要安装 .NET SDK。
 
 在解压目录打开 PowerShell，或用下面的命令进入目录。示例安装路径请改成你的实际路径：
 
@@ -424,6 +424,27 @@ FIGlet 字体名或 ID 来自 `fonts list`，不要把系统字体名当作 FIGl
 
 ## 9. 多项目工作区与恢复
 
+### 候选结果：重新生成时保留手工编辑
+
+alpha.3 提供一个独立候选槽，使用项目已保存的来源与参数生成，不修改参数、手工结果或历史。
+
+```powershell
+& $cli candidate create --project hello.asciiproj
+& $cli candidate status --project hello.asciiproj
+& $cli candidate show --project hello.asciiproj --format PNG --output hello-candidate.png
+& $cli candidate save --project hello.asciiproj --output hello-candidate.asciiproj
+& $cli candidate accept --project hello.asciiproj
+& $cli history undo --project hello.asciiproj
+& $cli history redo --project hello.asciiproj
+& $cli project save --project hello.asciiproj --overwrite
+```
+
+候选另存保留来源与参数，不切换 active；接受后清除候选及选区，可撤销，原文件仍等到 `project save` 才更新。已有候选再次生成默认冲突，需要明确 `--replace-candidate`。不想使用时运行 `candidate discard`，手工结果和历史保持不变。
+
+未接受的候选也需要保留：默认关闭项目会取消；`--action keep` 留下恢复记录。`--action save --overwrite` 保存当前编辑，不自动接受候选，并保留候选恢复记录。
+
+候选也受侧文件 100 MB 总预算约束。新的 schema 2 能读取 alpha.2 的 schema 1；修改后使用 alpha.3 或更新 CLI，旧 CLI 不支持新侧文件。`.asciiproj` 格式仍兼容桌面端；桌面不会自动读取 CLI 侧文件。
+
 ### 打开、切换与隔离
 
 ```powershell
@@ -660,4 +681,4 @@ CLI 工作区清单仍独立保存，不会变成桌面标签。`--desktop-data`
 
 资源边界：图片输入 40 MB／8000 万像素，文本输入 8 MB，ANSI 4 MB；算法自身的更低限制仍生效，例如加密编码通常输入 1 MB、还原输入 4 MB。作品网格最多 400 万列位；图像导出最多 4000 万像素且每边不超过 32767，HTML／SVG 标记最多 1600 万字符。侧文件 100 MB、历史 100 步／64 MB、工作区 32 项。
 
-当前没有独立 CLI 剪贴板、原图对比／视图控制、几何历史、候选结果管理、代码变量包装等入口，也没有终端交互编辑器。动画／摄像头／3D 继续冻结。用 `capabilities --json` 查询实际支持能力，不把计划中的命令当成已实现功能。
+当前没有独立 CLI 剪贴板、原图对比／视图控制、几何历史、代码变量包装等入口，也没有终端交互编辑器。动画／摄像头／3D 继续冻结。用 `capabilities --json` 查询实际支持能力，不把计划中的命令当成已实现功能。

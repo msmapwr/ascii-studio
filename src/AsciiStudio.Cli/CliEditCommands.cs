@@ -24,7 +24,7 @@ public static partial class CliHost
         }
         private async Task EditCommand()
         {
-            var path = await TargetPath();
+            var path = await TargetPath(); Args.Values["project"] = [path];
             if (Args.Command == "project recover")
             {
                 var destination = Args.Require("output"); EnsureWritable(destination);
