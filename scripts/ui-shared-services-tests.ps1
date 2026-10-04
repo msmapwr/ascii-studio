@@ -38,7 +38,13 @@ Check 'Desktop generator remains usable' {
         $taskGenerate=(UI search GeneratorGenerate --json | ConvertFrom-Json).matches | Where-Object { !$_.isOffscreen } | Select-Object -First 1
         if ($taskGenerate) { break }
         $taskInput=(UI search WorkspaceInputButton --json | ConvertFrom-Json).matches | Where-Object { !$_.isOffscreen } | Select-Object -First 1
-        if ($taskInput) { UI invoke WorkspaceInputButton | Out-Null; break }
+        if ($taskInput) {
+            UI invoke WorkspaceInputButton | Out-Null
+            # The button can still belong to the previous page during navigation.
+            # Retry only the readiness wait; the final assertion remains required.
+            try { UI wait-for GeneratorGenerate -t 1000 | Out-Null; break }
+            catch { if ($taskReady.ElapsedMilliseconds -ge 5000) { throw } }
+        }
     } while ($taskReady.ElapsedMilliseconds -lt 5000)
     UI wait-for GeneratorGenerate -t 5000 | Out-Null
     UI invoke GeneratorGenerate | Out-Null

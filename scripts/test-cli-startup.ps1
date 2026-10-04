@@ -47,3 +47,18 @@ if ($taskCapabilities.result.complete -contains 'persistent-edit-history') {
     if ((Get-Content -LiteralPath $taskProject -Raw | ConvertFrom-Json).Document.Text -cne 'aXb') { throw 'Explicit project save failed.' }
     Write-Output 'PASS cross-process Unicode editing, undo/redo, source protection, workspace recovery and explicit save'
 }
+if ($taskCapabilities.result.complete -contains 'candidate-result-management') {
+    $taskProject=Join-Path $taskData 'candidate-smoke.asciiproj'
+    Invoke-StudioCli @('text','--text','abc','--save-project',$taskProject) | Out-Null
+    $taskOriginal=(Get-Content -LiteralPath $taskProject -Raw | ConvertFrom-Json).Document.Text
+    Invoke-StudioCli @('edit','replace','--project',$taskProject,'--text','manual') | Out-Null
+    Invoke-StudioCli @('candidate','create','--project',$taskProject) | Out-Null
+    if ((Invoke-StudioCli @('edit','show','--project',$taskProject)) -cne 'manual') { throw 'Candidate replaced manual result.' }
+    Invoke-StudioCli @('candidate','save','--project',$taskProject,'--output',(Join-Path $taskData 'candidate-copy.asciiproj')) | Out-Null
+    Invoke-StudioCli @('candidate','accept','--project',$taskProject) | Out-Null
+    Invoke-StudioCli @('history','undo','--project',$taskProject) | Out-Null
+    if ((Invoke-StudioCli @('edit','show','--project',$taskProject)) -cne 'manual') { throw 'Candidate acceptance was not undoable.' }
+    Invoke-StudioCli @('history','redo','--project',$taskProject) | Out-Null
+    if ((Invoke-StudioCli @('edit','show','--project',$taskProject)) -cne $taskOriginal) { throw 'Candidate redo changed original generation.' }
+    Write-Output 'PASS cross-process candidate generation, independent save, acceptance and undo/redo'
+}
