@@ -19,7 +19,8 @@ public static class CliCatalog
         O("quiet", "", "关闭普通诊断；错误与结果保留", "Suppress normal diagnostics, keep errors/results", true),
         O("data-directory", "PATH", "隔离数据目录，默认 %LOCALAPPDATA%/AsciiStudio/Cli", "Isolated data directory; default %LOCALAPPDATA%/AsciiStudio/Cli"),
         O("font-directory", "PATH", "字体目录，默认与桌面共享 %LOCALAPPDATA%/AsciiStudio/fonts", "Font directory; default shared %LOCALAPPDATA%/AsciiStudio/fonts"),
-        O("desktop-data", "", "显式使用桌面设置／最近项目目录；不可与 data-directory 同用", "Explicitly use desktop settings/recent files; conflicts with data-directory", true)
+        O("desktop-data", "", "显式使用桌面设置目录；CLI工作区仍单独保存；不可与 data-directory 同用", "Explicitly use desktop settings directory; CLI workspace remains separate; conflicts with data-directory", true),
+        O("workspace", "PATH", "CLI工作区清单，默认隔离数据目录下cli-workspace.json；目标项目省略时使用active", "CLI workspace manifest; default cli-workspace.json in isolated data directory; omitted project uses active")
     ];
     private static readonly CliOption Input = O("input", "PATH", "输入文件，严格 UTF-8 文本；图片/ANSI使用原始字节", "Input file; strict UTF-8 for text, raw bytes for image/ANSI");
     private static readonly CliOption Text = O("text", "TEXT", "直接输入文本；与 input/stdin/project 互斥", "Literal text; exclusive with input/stdin/project");
@@ -43,6 +44,13 @@ public static class CliCatalog
         O("rows", "INTEGER", "0（默认）等比例，1–2000固定网格会拉伸", "0 (default) keeps aspect; 1–2000 fixed rows may stretch"),
         O("manual-aspect", "", "采用 CellAspect 参数；默认实测所选字体宽高比", "Use CellAspect; default measures selected font aspect", true),
         O("native-size", "", "按原图像素与字符实测尺寸推导网格，仍遵循资源上限", "Derive grid from source pixels and measured cells, within budgets", true), .. ExportOptions];
+    private static readonly CliOption Selection = O("selection", "", "操作已保存选区，默认全文；选区按Unicode显示列", "Use saved selection, default whole document; Unicode display columns", true);
+    private static readonly CliOption Apply = O("apply", "", "显式写入项目旁编辑状态，保留原文件与可撤销历史；必须使用project输入", "Explicitly apply to sidecar with undo; original file kept; requires project input", true);
+    private static readonly CliOption Find = O("find", "TEXT", "按字面文本查找，不使用正则；最多1000个字符簇完整匹配", "Literal search, no regex; at most 1000 whole-grapheme matches");
+    private static readonly CliOption IgnoreCase = O("ignore-case", "", "Ordinal忽略大小写，默认区分", "Ordinal ignore-case, default case-sensitive", true);
+    private static readonly CliOption Row = O("row", "INTEGER", "起点行，0开始，默认0", "Zero-based start row, default 0");
+    private static readonly CliOption Column = O("column", "INTEGER", "起点显示列，0开始，默认0；不能截断宽字符", "Zero-based display column, default 0; cannot split wide glyphs");
+    private static readonly CliOption[] ReplacementInput = [Text, Input, Stdin];
     public static readonly CliCommand[] Commands = [
         new("image", "图片转换：桌面全部质量与几何参数", "Image conversion: all desktop quality/geometry parameters", ImageOptions,
             "image --input photo.png --columns 120 --set Style=Braille --output art.txt", [typeof(ConversionOptions), typeof(ImageGeometry)]),
@@ -59,14 +67,38 @@ public static class CliCatalog
             "generate --set Kind=2 --set Width=40 --set Height=20 --output maze.txt", [typeof(GeneratorRecipe)]),
         new("export", "导出项目或文本；支持全部9种桌面格式", "Export projects/text in all 9 desktop formats", [.. TextInput, Font, .. ExportOptions],
             "export --project work.asciiproj --format PNG --output work.png", []),
+        new("edit show", "显示当前编辑结果或选区；可导出9种格式", "Show current edited result/selection in any of 9 export formats", [Project, Selection, .. ExportOptions], "edit show --project work.asciiproj", []),
+        new("edit select", "持久Unicode选区；行从0开始，末行包含、末列不包含；矩形按每行显示列", "Persist Unicode selection; zero-based, end row included/end column excluded; rectangle uses each row's display columns", [Project, Row, Column,
+            O("end-row", "INTEGER", "默认起点行，跨行包含末行", "Default start row, includes end row"), O("end-column", "INTEGER", "默认起点列，不包含终点列", "Default start column, exclusive end column"), O("rectangle", "", "矩形选区，默认跨行连续范围", "Rectangle, default continuous multi-line range", true)], "edit select --project work.asciiproj --row 0 --column 0 --end-row 1 --end-column 3 --rectangle", []),
+        new("edit find", "返回完整字符簇匹配的行列；不改结果", "Return whole-grapheme match positions without editing", [Project, Find, IgnoreCase], "edit find --project work.asciiproj --find abc", []),
+        new("edit replace", "替换全文／选区，或查找后替换；持久撤销，原项目暂不改写", "Replace document/selection or literal matches; persistent undo, source project unchanged", [Project, .. ReplacementInput, Selection, Find, IgnoreCase,
+            O("all", "", "替换所有匹配；默认首个；与find配合", "Replace all matches, default first; use with find", true)], "edit replace --project work.asciiproj --find abc --text xyz --all", []),
+        new("edit insert", "在指定显示列插入；允许换行，不截断字符簇", "Insert at a display column; allows newlines, preserves graphemes", [Project, .. ReplacementInput, Row, Column], "edit insert --project work.asciiproj --row 0 --column 0 --text Hello", []),
+        new("edit delete", "删除全文或已保存选区，支持撤销", "Delete whole document or saved selection with undo", [Project, Selection], "edit delete --project work.asciiproj --selection", []),
+        new("edit transform", "对全文／选区应用现有文本变换", "Transform whole document or selection", [Project, Selection,
+            O("operation", "NAME", "upper/lower/mirror/flip/trim/clean/ascii/expand-tabs（必须）", "Required: upper/lower/mirror/flip/trim/clean/ascii/expand-tabs")], "edit transform --project work.asciiproj --operation mirror", []),
+        .. new[] { ("list", "查询历史、脏状态与预算", "Inspect history, dirty state and budget"), ("undo", "持久撤销一步", "Persistently undo one step"), ("redo", "持久重做一步", "Persistently redo one step"), ("clear", "只保留当前状态，清除历史；不丢弃当前编辑", "Retain current state only; clear history without discarding current edits") }
+            .Select(t => new CliCommand("history " + t.Item1, t.Item2, t.Item3, [Project], "history " + t.Item1 + " --project work.asciiproj", [])),
+        new("project save", "保存当前编辑；默认原路径，需overwrite；另存不改变活动工作区路径", "Save edits; default original path requires overwrite; save-copy leaves active workspace path unchanged", [Project, Output, Overwrite], "project save --project work.asciiproj --overwrite", []),
+        new("project reload", "重新读取磁盘项目，显式丢弃侧文件编辑与撤销；保留原项目", "Reload disk project, explicitly discard sidecar edits/history; source project kept", [Project,
+            O("discard-edits", "", "侧文件存在时必须明确指定，即使存在外部修改冲突", "Required when a sidecar exists, including external modification conflicts", true)], "project reload --project work.asciiproj --discard-edits", []),
+        new("project recover", "外部改写／删除后，从侧文件恢复作品与撤销到新快照项目；不绑定旧来源，不覆盖", "Recover artwork/history from sidecar after source replacement/deletion into a new snapshot; no old source linkage, no overwrite", [Project, Output], "project recover --project missing.asciiproj --output recovered.asciiproj", []),
+        new("workspace open", "验证并打开项目；同一路径只开一次，切为active；最多32项", "Validate/open project once per path, set active; max32", [Project], "workspace open --project work.asciiproj", []),
+        new("workspace new", "新建独立快照项目并打开；必须指定新路径，不覆盖", "Create/open an independent snapshot project at an explicit new path; no overwrite", [Project, Text], "workspace new --project draft.asciiproj --text abc", []),
+        new("workspace switch", "切换已打开的active项目", "Switch active open project", [Project], "workspace switch --project work.asciiproj", []),
+        new("workspace close", "关闭项目；未保存默认取消，可保存或保留恢复", "Close project; unsaved default cancels, choose save or retain recovery", [Project, Overwrite,
+            O("action", "NAME", "cancel（默认）/keep/save；save改写原路径需overwrite", "cancel (default)/keep/save; save to original requires overwrite")], "workspace close --project work.asciiproj --action keep", []),
+        .. new[] { ("list", "列出项目、active及未保存状态；启动时自动读取全部标签", "List projects, active and dirty state; all tabs read on each invocation"), ("recent", "查询最近15个项目", "List 15 recent projects"),
+            ("clear-recent", "清空CLI最近项目列表，保留作品", "Clear CLI recent list, keep project files"), ("recovery", "查询保留恢复的项目", "List retained recoveries"), ("restore", "恢复已关闭的未保存项目，逐项报告，失败返回5", "Restore retained dirty projects, report each item, failures return5") }
+            .Select(t => new CliCommand("workspace " + t.Item1, t.Item2, t.Item3, [], "workspace " + t.Item1, [])),
         new("project info", "项目与来源摘要，保留原文件", "Project/source summary without changes", [Project], "project info --project work.asciiproj --json", []),
         new("project validate", "验证旧格式、网格、来源和参数", "Validate versions, grid, source and options", [Project], "project validate --project work.asciiproj", []),
         new("project migrate", "保存当前项目格式；旧格式原路径保存会备份", "Save current project format; in-place old-format migration creates backup", [Project, Output, Overwrite], "project migrate --project old.asciiproj --output new.asciiproj", []),
         new("project regenerate", "按保存来源重新生成，默认保护手工结果", "Regenerate saved source, protecting manual edits by default", [Project, SaveProject, Overwrite,
             O("replace-edited", "", "明确允许替换已手工编辑的结果", "Explicitly replace a manually edited result", true), .. ExportOptions.Where(o => o.Name != "overwrite")], "project regenerate --project work.asciiproj --output regenerated.txt", []),
         .. new[] { ("analyze","分析与ASCII校验","Analyze and validate ASCII"), ("trim","裁剪外围空白","Trim canvas whitespace"), ("clean","去除控制字符","Remove control characters"), ("ascii","仅保留ASCII","Keep ASCII only"), ("upper","大写","Uppercase"), ("lower","小写","Lowercase"), ("mirror","逐行字符簇反转","Reverse graphemes per line"), ("flip","上下反转","Reverse line order"), ("expand-tabs","Tab转4个空格","Replace tabs with 4 spaces") }
-            .Select(t => new CliCommand("tools " + t.Item1, t.Item2, t.Item3, [.. TextInput, .. ExportOptions], "tools " + t.Item1 + " --text \"Hello\"", [])),
-        new("comment", "所有桌面注释语言；保留结束符冲突检查", "All desktop comment languages with delimiter collision checks", [.. TextInput, Output, Overwrite,
+            .Select(t => new CliCommand("tools " + t.Item1, t.Item2, t.Item3, [.. TextInput, Apply, .. ExportOptions], "tools " + t.Item1 + " --text \"Hello\"", [])),
+        new("comment", "所有桌面注释语言；保留结束符冲突检查", "All desktop comment languages with delimiter collision checks", [.. TextInput, Apply, Output, Overwrite,
             O("syntax", "NAME", "C/C++/C#/Python/HTML等；用 --list 查询完整列表", "C/C++/C#/Python/HTML etc.; --list shows all"), O("block", "", "块注释，默认行注释", "Block comments; default line comments", true), O("list", "", "列出所有语言及注释符", "List all languages and comment delimiters", true)],
             "comment --text \"ASCII\" --syntax Python", []),
         new("crypto algorithms", "列出全部处理方法、可逆性与平台支持", "List all processing methods, reversibility and platform support", [], "crypto algorithms --json", []),
@@ -93,7 +125,7 @@ public static class CliCatalog
     public static bool Chinese(CliArguments args) => args.Get("language", "system") switch { "zh-CN" => true, "en-US" => false, _ => CultureInfo.CurrentUICulture.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase) };
     public static string Help(CliArguments args)
     {
-        var zh = Chinese(args); var b = new StringBuilder("AsciiStudio CLI 1.0.0-alpha.1\n\n");
+        var zh = Chinese(args); var b = new StringBuilder("AsciiStudio CLI 1.0.0-alpha.2\n\n");
         var exact = Commands.FirstOrDefault(c => c.Name == args.Command);
         b.AppendLine(zh ? "用法：asciistudio-cli <命令> [选项]" : "Usage: asciistudio-cli <command> [options]");
         if (exact is null)
@@ -124,8 +156,8 @@ public static class CliCatalog
         }
         b.AppendLine(zh ? "\n全局选项：" : "\nGlobal options:");
         foreach (var o in GlobalOptions) b.AppendLine($"  --{o.Name} {o.Value}\n      {(zh ? o.Chinese : o.English)}");
-        b.AppendLine(zh ? "\n退出码：0成功，2参数错误，3输入/转换失败，4文件IO失败，5批量部分失败，130已取消。\n文本stdout不附加换行；错误写stderr。默认拒绝覆盖；Ctrl+C取消任务。\n输入上限：图片40MB/8000万像素、ANSI4MB、文本8MB；算法自身更小的限制仍生效。\n位图上限4000万像素/单边32767，HTML/SVG标记1600万字符。\n第一份预发布：完整桌面功能映射、未实现项请查 capabilities 和 docs/CLI.md。"
-            : "\nExit codes: 0 success, 2 usage, 3 input/conversion, 4 file IO, 5 partial batch failure, 130 canceled.\nText stdout adds no newline; errors go to stderr. No overwrite by default. Ctrl+C cancels.\nInput budgets: image40MB/80M pixels, ANSI4MB, text8MB; smaller algorithm limits still apply.\nBitmap40M pixels/max32767 per side; HTML/SVG16M markup chars.\nFirst prerelease: see capabilities and docs/CLI.md for full desktop parity tracking and gaps.");
+        b.AppendLine(zh ? "\n退出码：0成功，2参数错误，3输入/转换失败，4文件IO或状态冲突，5批处理/恢复部分失败，130已取消。\n文本stdout不附加换行；错误写stderr。默认拒绝覆盖；Ctrl+C取消任务。\n输入上限：图片40MB/8000万像素、ANSI4MB、文本8MB；算法自身更小的限制仍生效。\n位图上限4000万像素/单边32767，HTML/SVG标记1600万字符。\n编辑历史最多100步/64MB，侧文件100MB；工作区32项目、恢复32项、最近15项。\n预发布：完整桌面功能映射、未实现项请查 capabilities 和 docs/CLI.md。"
+            : "\nExit codes: 0 success, 2 usage, 3 input/conversion, 4 file IO/state conflict, 5 partial batch/recovery failure, 130 canceled.\nText stdout adds no newline; errors go to stderr. No overwrite by default. Ctrl+C cancels.\nInput budgets: image40MB/80M pixels, ANSI4MB, text8MB; smaller algorithm limits still apply.\nBitmap40M pixels/max32767 per side; HTML/SVG16M markup chars.\nEdit history100 steps/64MB, sidecar100MB; workspace32 projects, recovery32, recent15.\nPrerelease: see capabilities and docs/CLI.md for full desktop parity tracking and gaps.");
         return b.ToString();
     }
     public static string PropertyHelp(Type type, string name, bool zh)

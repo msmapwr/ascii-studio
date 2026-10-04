@@ -8,7 +8,7 @@ using AsciiStudio.Services;
 
 namespace AsciiStudio.Cli;
 
-public static class CliHost
+public static partial class CliHost
 {
     private static readonly UTF8Encoding Utf8 = new(false, true);
     public static async Task<int> Run(string[] raw, TextWriter output, TextWriter error, TextReader input, CancellationToken token = default)
@@ -18,15 +18,15 @@ public static class CliHost
         {
             args = CliArguments.Parse(raw);
             if (args.Flag("help") || args.Command.Length == 0 && !args.Flag("version")) { await output.WriteAsync(CliCatalog.Help(args)); return 0; }
-            if (args.Flag("version")) { await output.WriteLineAsync("1.0.0-alpha.1"); return 0; }
+            if (args.Flag("version")) { await output.WriteLineAsync("1.0.0-alpha.2"); return 0; }
             token.ThrowIfCancellationRequested();
             return await new Invocation(args, output, error, input, token).Execute();
         }
         catch (Exception failure) when (failure is not OutOfMemoryException and not StackOverflowException)
         {
-            var code = failure is OperationCanceledException ? "canceled" : failure is CliUsageException ? "usage"
+            var code = failure is OperationCanceledException ? "canceled" : failure is CliConflictException ? "conflict" : failure is CliUsageException ? "usage"
                 : failure is IOException or UnauthorizedAccessException ? "io" : "conversion";
-            var exit = code switch { "canceled" => 130, "usage" => 2, "io" => 4, _ => 3 };
+            var exit = code switch { "canceled" => 130, "usage" => 2, "io" or "conflict" => 4, _ => 3 };
             var json = args?.Flag("json") ?? raw.Any(value => value is "--json" or "--json=true");
             var message = code == "canceled" ? (args is not null && CliCatalog.Chinese(args) ? "任务已取消。" : "Operation canceled.") : failure.Message;
             // No command arguments, text, passwords or private keys in diagnostics.
@@ -35,9 +35,12 @@ public static class CliHost
         }
     }
 
-    private sealed class Invocation(CliArguments args, TextWriter output, TextWriter error, TextReader input, CancellationToken token)
+    private sealed partial class Invocation(CliArguments args, TextWriter output, TextWriter error, TextReader input, CancellationToken token)
     {
+        private CliArguments Args => args;
+        private CancellationToken Token => token;
         private bool Json => args.Flag("json");
+        private string? applySourceText;
         private static string Normalize(string text) => TextUtilities.Normalize(text);
         private string Family => args.Get("font", "Consolas")!;
         private string FontId(string name)
@@ -56,6 +59,13 @@ public static class CliHost
             if (args.Get("format") is { } selectedFormat && selectedFormat is not ("TXT" or "PNG" or "JPEG" or "GIF" or "HTML" or "SVG" or "ANSI" or "JSON" or "Markdown"))
                 throw new CliUsageException("Unsupported --format. Use TXT/PNG/JPEG/GIF/HTML/SVG/ANSI/JSON/Markdown.");
             if (args.Flag("transparent") && args.Get("format") == "JPEG") throw new CliUsageException("JPEG does not support transparency.");
+            if (args.Flag("apply") && (!args.Has("project") || args.Command == "comment" && args.Flag("list") || args.Command == "tools analyze"))
+                throw new CliUsageException("--apply requires a project input and a text-changing operation.");
+            if (args.Command.StartsWith("edit ", StringComparison.Ordinal) || args.Command.StartsWith("history ", StringComparison.Ordinal)
+                || args.Command is "project save" or "project reload" or "project recover") { await EditCommand(); return 0; }
+            if (args.Command.StartsWith("workspace ", StringComparison.Ordinal)) return await WorkspaceCommand();
+            if (!args.Has("project") && (args.Command.StartsWith("project ", StringComparison.Ordinal) || args.Command == "export" && !args.Has("text") && !args.Has("input") && !args.Flag("stdin")))
+                args.Values["project"] = [await TargetPath()];
             switch (args.Command)
             {
                 case "image": await EmitProject(await Image()); break;
@@ -136,9 +146,9 @@ public static class CliHost
                 case "batch image": return await Batch();
                 case "capabilities": await Report(new
                 {
-                    schema = 1, version = "1.0.0-alpha.1", status = "prerelease", commands = CliCatalog.Commands.Select(c => c.Name).ToArray(),
-                    complete = new[] { "image-quality-options", "image-geometry", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "bounded-image-batch", "command-help" },
-                    pending = new[] { "persistent-edit-history", "workspace-tabs-and-recovery", "clipboard", "viewport-selection-and-comparison", "geometry-history", "candidate-result-management", "settings-search-and-favorites", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
+                    schema = 1, version = "1.0.0-alpha.2", status = "prerelease", commands = CliCatalog.Commands.Select(c => c.Name).ToArray(),
+                    complete = new[] { "image-quality-options", "image-geometry", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery" },
+                    pending = new[] { "clipboard", "viewport-selection-and-comparison", "geometry-history", "candidate-result-management", "settings-search-and-favorites", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
                     desktopParityComplete = false, formal100Authorized = false
                 }); break;
                 default:
@@ -168,10 +178,11 @@ public static class CliHost
                 : args.Has("input") ? Utf8.GetString(StripBom(await BoundedFile.ReadAsync(args.Require("input"), 8_000_000, token)))
                 : args.Flag("stdin") ? await ReadStdin() : "");
             if (Utf8.GetByteCount(text) > 8_000_000) throw new ArgumentException("Text exceeds 8MB budget.");
+            if (args.Flag("apply")) applySourceText = text;
             return text;
         }
         private static byte[] StripBom(byte[] bytes) => bytes.AsSpan().StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }) ? bytes[3..] : bytes;
-        private Task<StudioProject> LoadProject() => ProjectFileService.Read(args.Require("project"), token);
+        private Task<StudioProject> LoadProject() => ProjectEditSession.Read(args.Require("project"), token);
         private AsciiDocument Font(AsciiDocument document, string? family = null)
         {
             var name = family ?? Family;
@@ -331,14 +342,20 @@ public static class CliHost
             .Concat(TextProcessing.CharacterEncodings).Concat(TextProcessing.Representations).Concat(TextProcessing.BinaryEncodings).Concat(TextProcessing.Compression).Concat(TextProcessing.Checksums)
             .Distinct().Select(name => (object)new { name, supported = CryptoTools.IsSupported(name), reversible = !CryptoTools.Digests.Contains(name) && (!TextProcessing.Contains(name) || TextProcessing.CanReverse(name)) }).ToArray();
 
-        private void EnsureWritable(string path)
+        private void EnsureWritable(string path, bool projectSave = false)
         {
+            var full = Path.GetFullPath(path);
+            var manifest = Path.GetFullPath(args.Get("workspace", CliWorkspace.DefaultPath)!);
+            if (full.Equals(manifest, StringComparison.OrdinalIgnoreCase) || full.Equals(manifest + ".lock", StringComparison.OrdinalIgnoreCase)
+                || args.Get("project") is { } source && (full.Equals(ProjectEditSession.StatePath(source), StringComparison.OrdinalIgnoreCase) || full.Equals(ProjectEditSession.StatePath(source) + ".lock", StringComparison.OrdinalIgnoreCase)
+                    || !projectSave && full.Equals(Path.GetFullPath(source), StringComparison.OrdinalIgnoreCase)))
+                throw new CliUsageException("Output must not replace workspace or edit state files.");
             if (Directory.Exists(path)) throw new IOException("Output path is a directory.");
             if (File.Exists(path) && !args.Flag("overwrite")) throw new IOException("Output exists; explicit --overwrite required.");
         }
-        private async Task Write(string path, byte[] bytes)
+        private async Task Write(string path, byte[] bytes, bool projectSave = false)
         {
-            token.ThrowIfCancellationRequested(); EnsureWritable(path);
+            token.ThrowIfCancellationRequested(); EnsureWritable(path, projectSave);
             var fullPath = Path.GetFullPath(path); var directory = Path.GetDirectoryName(fullPath)!; Directory.CreateDirectory(directory);
             var temporary = Path.Combine(directory, "." + Path.GetFileName(fullPath) + "." + Guid.NewGuid().ToString("N") + ".tmp");
             try { await File.WriteAllBytesAsync(temporary, bytes, token); token.ThrowIfCancellationRequested(); File.Move(temporary, fullPath, args.Flag("overwrite")); }
@@ -346,7 +363,8 @@ public static class CliHost
         }
         private async Task Save(string path, StudioProject project)
         {
-            EnsureWritable(path); token.ThrowIfCancellationRequested();
+            if (File.Exists(ProjectEditSession.StatePath(path))) throw new CliConflictException("Destination has persistent edits; use project save or a different output path.");
+            EnsureWritable(path, true); token.ThrowIfCancellationRequested();
             if (args.Get("project") is { } source && Path.GetFullPath(source).Equals(Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase)
                 && (await ProjectFileService.Read(source, token)).Edited && args.Command is not "project migrate" && !args.Flag("replace-edited"))
                 throw new CliUsageException("Edited project protected. Save to a new path or use project regenerate --replace-edited.");
@@ -359,7 +377,7 @@ public static class CliHost
                 var upgraded = project with { Version = WorkspaceService.CurrentProjectVersion, Document = UnicodeGrid.Upgrade(project.Document), GeneratedDocument = project.GeneratedDocument is null ? null : UnicodeGrid.Upgrade(project.GeneratedDocument) };
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(upgraded);
                 if (bytes.Length > ProjectFileService.MaximumBytes) throw new ArgumentException("Project exceeds 100MB.");
-                await Write(path, bytes);
+                await Write(path, bytes, true);
             }
         }
         private async Task EmitProject(StudioProject project)
@@ -376,20 +394,32 @@ public static class CliHost
         }
         private async Task EmitText(string text)
         {
+            if (args.Get("output") is { } destination) EnsureWritable(destination);
+            await ApplyEdit(text);
             if (args.Get("output") is { } path) { await Write(path, Utf8.GetBytes(text)); if (Json) await Report(new { path = Path.GetFullPath(path) }); }
             else if (Json) await Report(new { text }); else await output.WriteAsync(text);
         }
         private async Task Emit(AsciiDocument document)
         {
             document.Validate(); var format = args.Get("format", "TXT")!;
+            if (format is "PNG" or "JPEG" or "GIF" && !args.Has("output")) throw new CliUsageException("Bitmap export requires --output.");
             var bytes = await Task.Run(() => ExportBytes(document, format), token);
             token.ThrowIfCancellationRequested();
+            if (args.Get("output") is { } destination) EnsureWritable(destination);
+            await ApplyEdit(document.Text);
             if (args.Get("output") is { } path) { await Write(path, bytes); if (Json) await Report(new { path = Path.GetFullPath(path), format, document.Width, document.Height }); }
             else
             {
                 if (format is "PNG" or "JPEG" or "GIF") throw new CliUsageException("Bitmap export requires --output.");
                 if (Json) await Report(new { format, document, text = Utf8.GetString(bytes) }); else await output.WriteAsync(Utf8.GetString(bytes));
             }
+        }
+        private async Task ApplyEdit(string text)
+        {
+            if (!args.Flag("apply")) return;
+            using var session = await ProjectEditSession.Open(args.Require("project"), token);
+            if (session.Current.Document.Text != applySourceText) throw new CliConflictException("Edited result changed while preparing the tool output; retry.");
+            await session.Edit(text, token);
         }
         private byte[] ExportBytes(AsciiDocument document, string format) => format switch
         {

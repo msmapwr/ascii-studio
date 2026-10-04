@@ -4,6 +4,8 @@
 
 `AsciiStudio.Application` 提供 Windows 原生但不依赖 WinUI 的共享服务，包含字体栅格化、转换 Controller、项目读写、偏好和位图导出。桌面项目仅保留 MotionService、WindowPlacementService 和页面会话接口等 UI 服务；`AsciiStudio.Cli` 引用同一应用服务层，负责参数解析、输入输出与显式覆盖策略。算法继续位于 Core。共享服务不访问页面控件，CLI 不加载 WindowsAppSDK。
 
+CLI 的 `ProjectEditSession` 管理项目旁侧文件与有界历史，`TextEditOperations` 统一 Unicode 选区边界，`CliWorkspace` 管理独立的路径清单与恢复列表；命令分发位于 `CliEditCommands`，避免继续扩充单一主调度文件。源项目保留转换来源，侧文件只保存作品修订与生成基准；SHA-256 检查外部修改，文件锁串行化 CLI 写入。检测到来源失效时，只允许显式恢复到独立快照或丢弃侧文件，不绑定到新来源。单文件原子替换，多文件提交不保证事务。
+
 | 层 | 责任 | 不应承担 |
 |---|---|---|
 | ImagePage / TextPage | 控件、读取当前输入、呈现状态、文件选择器和对话框 | CPU 转换、缓存、生成项目状态 |
