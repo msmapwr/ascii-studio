@@ -126,13 +126,16 @@ public static class CliCatalog
         new("settings export", "导出偏好，排除最近项目路径", "Export preferences without recent paths", [Output, Overwrite], "settings export --output preferences.json", []),
         new("settings import", "导入偏好，保留已有最近项目路径", "Import preferences, keep existing recent paths", [Input], "settings import --input preferences.json", []),
         new("batch image", "逐项有界图片批处理，失败继续且报告非零退出码", "Bounded sequential image batch; continue failures and return nonzero", [.. ImageOptions.Where(o => o.Name is not ("project" or "save-project")), O("recursive", "", "递归输入目录，默认仅当前层", "Recurse input directory, default current level only", true)], "batch image --input ./photos --output ./results --format PNG", [typeof(ConversionOptions), typeof(ImageGeometry)]),
+        new("clipboard read", "显式读取剪贴板，文本原样输出；图片保存PNG，不改项目", "Explicit clipboard read: exact text or PNG file; project unchanged", [Output, Overwrite, O("format", "NAME", "TXT（默认）或PNG；PNG必须指定output；文本8MB、PNG40MB/8000万像素", "TXT (default) or PNG; PNG requires output; text8MB, PNG40MB/80 million pixels")], "clipboard read --format PNG --output pasted.png", []),
+        new("clipboard write", "将文本或项目当前编辑结果复制到系统剪贴板", "Copy text or the current project edit to the Windows clipboard", [.. TextInput], "clipboard write --project work.asciiproj", []),
+        new("clipboard paste", "显式apply才粘贴到项目编辑状态；可撤销，原文件不自动保存", "Paste only with explicit apply; undoable sidecar edit, no automatic project save", [Project, Apply, Selection], "clipboard paste --project work.asciiproj --apply", []),
         new("capabilities", "查询功能覆盖与本次预发布待办，不将待办伪装为支持", "Capability coverage and prerelease gaps; pending items are not advertised as supported", [], "capabilities --json", [])
     ];
     public static IEnumerable<CliOption> AllOptions => GlobalOptions.Concat(Commands.SelectMany(c => c.Options)).DistinctBy(o => o.Name);
     public static bool Chinese(CliArguments args) => args.Get("language", "system") switch { "zh-CN" => true, "en-US" => false, _ => CultureInfo.CurrentUICulture.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase) };
     public static string Help(CliArguments args)
     {
-        var zh = Chinese(args); var b = new StringBuilder("Charloom CLI 1.0.0-alpha.5\n\n");
+        var zh = Chinese(args); var b = new StringBuilder("Charloom CLI 1.0.0-alpha.6\n\n");
         b.AppendLine(zh ? "字织 · 离线 ASCII / ANSI 字符艺术创作工具\n把字符织成画面\n" : "Offline ASCII / ANSI art studio\nWeave characters into art\n");
         var exact = Commands.FirstOrDefault(c => c.Name == args.Command);
         b.AppendLine(zh ? "用法：charloom-cli <命令> [选项]" : "Usage: charloom-cli <command> [options]");

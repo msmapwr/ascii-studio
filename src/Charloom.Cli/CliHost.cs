@@ -11,22 +11,22 @@ namespace Charloom.Cli;
 public static partial class CliHost
 {
     private static readonly UTF8Encoding Utf8 = new(false, true);
-    public static async Task<int> Run(string[] raw, TextWriter output, TextWriter error, TextReader input, CancellationToken token = default)
+    public static async Task<int> Run(string[] raw, TextWriter output, TextWriter error, TextReader input, CancellationToken token = default, IClipboardService? clipboard = null)
     {
         CliArguments? args = null;
         try
         {
             args = CliArguments.Parse(raw);
             if (args.Flag("help") || args.Command.Length == 0 && !args.Flag("version")) { await output.WriteAsync(CliCatalog.Help(args)); return 0; }
-            if (args.Flag("version")) { await output.WriteLineAsync("1.0.0-alpha.5"); return 0; }
+            if (args.Flag("version")) { await output.WriteLineAsync("1.0.0-alpha.6"); return 0; }
             token.ThrowIfCancellationRequested();
-            return await new Invocation(args, output, error, input, token).Execute();
+            return await new Invocation(args, output, error, input, token, clipboard ?? new WindowsClipboardService()).Execute();
         }
         catch (Exception failure) when (failure is not OutOfMemoryException and not StackOverflowException)
         {
-            var code = failure is OperationCanceledException ? "canceled" : failure is CliConflictException ? "conflict" : failure is CliUsageException ? "usage"
+            var code = failure is OperationCanceledException ? "canceled" : failure is ClipboardBusyException ? "clipboard_busy" : failure is ClipboardContentException ? "clipboard_format" : failure is CliConflictException ? "conflict" : failure is CliUsageException ? "usage"
                 : failure is IOException or UnauthorizedAccessException ? "io" : "conversion";
-            var exit = code switch { "canceled" => 130, "usage" => 2, "io" or "conflict" => 4, _ => 3 };
+            var exit = code switch { "canceled" => 130, "usage" => 2, "io" or "conflict" or "clipboard_busy" => 4, _ => 3 };
             var json = args?.Flag("json") ?? raw.Any(value => value is "--json" or "--json=true");
             var message = code == "canceled" ? (args is not null && CliCatalog.Chinese(args) ? "任务已取消。" : "Operation canceled.") : failure.Message;
             // No command arguments, text, passwords or private keys in diagnostics.
@@ -35,7 +35,7 @@ public static partial class CliHost
         }
     }
 
-    private sealed partial class Invocation(CliArguments args, TextWriter output, TextWriter error, TextReader input, CancellationToken token)
+    private sealed partial class Invocation(CliArguments args, TextWriter output, TextWriter error, TextReader input, CancellationToken token, IClipboardService clipboard)
     {
         private CliArguments Args => args;
         private CancellationToken Token => token;
@@ -56,6 +56,7 @@ public static partial class CliHost
         }
         public async Task<int> Execute()
         {
+            if (args.Command.StartsWith("clipboard ", StringComparison.Ordinal)) { await ClipboardCommand(); return 0; }
             if (args.Get("format") is { } selectedFormat && selectedFormat is not ("TXT" or "PNG" or "JPEG" or "GIF" or "HTML" or "SVG" or "ANSI" or "JSON" or "Markdown"))
                 throw new CliUsageException("Unsupported --format. Use TXT/PNG/JPEG/GIF/HTML/SVG/ANSI/JSON/Markdown.");
             if (args.Flag("transparent") && args.Get("format") == "JPEG") throw new CliUsageException("JPEG does not support transparency.");
@@ -147,9 +148,9 @@ public static partial class CliHost
                 case "batch image": return await Batch();
                 case "capabilities": await Report(new
                 {
-                    schema = 1, version = "1.0.0-alpha.5", status = "prerelease", commands = CliCatalog.Commands.Select(c => c.Name).ToArray(),
-                    complete = new[] { "image-quality-options", "image-geometry", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery", "candidate-result-management" },
-                    pending = new[] { "clipboard", "viewport-selection-and-comparison", "geometry-history", "settings-search-and-favorites", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
+                    schema = 1, version = "1.0.0-alpha.6", status = "prerelease", commands = CliCatalog.Commands.Select(c => c.Name).ToArray(),
+                    complete = new[] { "image-quality-options", "image-geometry", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery", "candidate-result-management", "clipboard" },
+                    pending = new[] { "viewport-selection-and-comparison", "geometry-history", "settings-search-and-favorites", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
                     desktopParityComplete = false, formal100Authorized = false
                 }); break;
                 default:

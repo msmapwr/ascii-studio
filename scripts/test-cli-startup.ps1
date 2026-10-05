@@ -29,6 +29,12 @@ $taskText=Invoke-StudioCli @('text','--text','abc')
 if ($taskText -notlike '*_*') { throw 'FIGlet CLI produced no expected output.' }
 $taskCapabilities=Invoke-StudioCli @('capabilities','--json') | ConvertFrom-Json
 if ($taskCapabilities.result.desktopParityComplete -ne $false -or !$taskCapabilities.result.pending.Count) { throw 'Prerelease parity status is inaccurate.' }
+if ($taskCapabilities.result.complete -contains 'clipboard') {
+    $taskClipboardHelp=Invoke-StudioCli @('clipboard','read','--help','--language','en-US')
+    $taskPasteHelp=Invoke-StudioCli @('clipboard','paste','--help','--language','zh-CN')
+    if ($taskClipboardHelp -notlike '*PNG*' -or $taskPasteHelp -notlike '*--apply*') { throw 'Clipboard help missing.' }
+    Write-Output 'PASS clipboard command help without reading or modifying the system clipboard'
+}
 $taskCurrentExecutable=$taskExecutable
 $taskExecutable=Join-Path $taskDirectory 'asciistudio-cli.exe'
 if (!(Test-Path -LiteralPath $taskExecutable)) { throw 'Legacy CLI entry missing.' }
