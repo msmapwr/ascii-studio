@@ -4,6 +4,24 @@
 
 ## [Unreleased]
 
+## [1.0.0-alpha.4] - 2026-10-05
+
+### Changed
+
+- 程序品牌更名为 **Charloom｜字织**，标语“把字符织成画面”，副标题“离线 ASCII / ANSI 字符艺术创作工具”；更新窗口、主页、CLI 帮助、程序集、工程和测试命名。
+- 桌面入口改为 `Charloom.exe`，控制台入口为 `charloom-cli.exe`，发布包使用 `Charloom-版本-win-架构.zip`。旧 CLI apphost 保留一个公开预发布周期，加载相同实现。
+- README 使用新仓库 `msmapwr/charloom` 和新 Pages 地址；旧版本档案保留真实文件名和版本号。
+
+### Fixed
+
+- 为保护旧偏好、字体、窗口与恢复记录，继续读取原 `%LOCALAPPDATA%/AsciiStudio` 目录；新 `CHARLOOM_*` 环境变量优先，同时兼容旧 `ASCIISTUDIO_*`。
+- `.asciiproj` 格式、MSIX Identity/Publisher 和已有密文认证上下文保持兼容，品牌改名不改变它们的语义。
+
+### Tested
+
+- 176 项核心、34 项 Windows 服务、152 项 CLI 测试和 6 项桌面回归通过；新旧 CLI 入口一致，完整解压 ZIP 中的桌面和 CLI 均通过启动检查。
+- 本地 x64 / ARM64 自包含构建；ARM64 实机运行仍需独立验收。
+
 ## [1.0.0-alpha.3] - 2026-10-04
 
 ### Added

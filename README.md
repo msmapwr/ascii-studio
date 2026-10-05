@@ -1,17 +1,19 @@
-# AsciiStudio
+# Charloom｜字织
 
 <p align="center">
-  <img src="assets/branding/asciistudio-horizontal.svg" alt="AsciiStudio" width="420" />
+  <img src="assets/branding/charloom-horizontal.svg" alt="Charloom｜字织" width="420" />
 </p>
 
-**Windows 原生、离线、高质量 ASCII / ANSI 创作工具。**
+**把字符织成画面。**
+
+Windows 原生、离线、高质量 ASCII / ANSI 字符艺术创作工具。
 
 图片或文字 → 调整转换质量 → 编辑与比较 → 保存项目 → 导出作品。转换与导出在本机完成。
 
-### [⬇ 下载 0.9.0](https://github.com/msmapwr/ascii-studio/releases/tag/v0.9.0)　[官网 · 教程与作品展示](https://msmapwr.github.io/ascii-studio/)　[更新说明](CHANGELOG.md)
+### [⬇ 下载 0.9.0](https://github.com/msmapwr/charloom/releases/tag/v0.9.0)　[官网 · 教程与作品展示](https://msmapwr.github.io/charloom/)　[更新说明](CHANGELOG.md)
 
-Windows x64 / ARM64：下载对应架构的 ZIP，完整解压后运行 `AsciiStudio.exe`。便携版包含运行时，无需安装开发 SDK。
-当前正式版本为 **0.9.0**。另有 [1.0.0-alpha.3 预发布](https://github.com/msmapwr/ascii-studio/releases/tag/v1.0.0-alpha.3)，包含独立控制台 `asciistudio-cli.exe`、61 个命令及逐级中英文 `--help`，支持持久编辑历史、Unicode 选区、独立工作区和候选结果管理，详见 [CLI 使用与覆盖表](docs/CLI.md)。尚未覆盖全部桌面功能；双语桌面、扩展动效与个性化设置继续开发。
+Windows x64 / ARM64：完整解压对应架构的 ZIP，运行桌面端或 CLI。便携版包含运行时，无需开发 SDK。新品牌的入口为 `Charloom.exe` 和 `charloom-cli.exe`；旧版本仍使用原文件名。
+Charloom 原名 AsciiStudio。当前正式版本仍为 **0.9.0**（旧名发行）。当前源码进入 **1.0.0-alpha.4** 品牌迁移；正式 1.0.0 尚未发布。另有 [1.0.0-alpha.3 预发布](https://github.com/msmapwr/charloom/releases/tag/v1.0.0-alpha.3)，包含独立控制台 `asciistudio-cli.exe`、61 个命令及逐级中英文 `--help`，支持持久编辑历史、Unicode 选区、独立工作区和候选结果管理，详见 [CLI 使用与覆盖表](docs/CLI.md)。尚未覆盖全部桌面功能；双语桌面、扩展动效与个性化设置继续开发。
 
 官网提供产品介绍。完整静态网站位于 [`website/dist`](website/dist)，包含[入门教程](website/dist/guide.html)、[作品展示](website/dist/gallery.html)、[下载与运行](website/dist/downloads.html)和[版本记录](website/dist/changelog.html)，可用于 GitHub Pages。
 
@@ -21,7 +23,7 @@ Windows x64 / ARM64：下载对应架构的 ZIP，完整解压后运行 `AsciiSt
 以上为应用同一转换／导出代码生成的样例，原图由仓库工具绘制；可[离线复现](assets/showcase/README.md)。
 
 <p>
-  <img src="assets/showcase/app.png" width="49%" alt="AsciiStudio 原生 Windows 创作界面" />
+  <img src="assets/showcase/app.png" width="49%" alt="Charloom 原生 Windows 创作界面" />
   <img src="assets/showcase/text-workflow.gif" width="49%" alt="文字转换操作：输入、生成与切换内容" />
 </p>
 
@@ -47,7 +49,7 @@ Windows x64 / ARM64：下载对应架构的 ZIP，完整解压后运行 `AsciiSt
 
 ### 下载使用
 
-在 [0.9.0 Release](https://github.com/msmapwr/ascii-studio/releases/tag/v0.9.0) 下载 `AsciiStudio-0.9.0-win-x64.zip` 或 `AsciiStudio-0.9.0-win-arm64.zip`，完整解压后双击 `AsciiStudio.exe`。不要只复制 EXE，程序需要同目录下的 DLL、PRI、XBF 和资源文件。
+在 [0.9.0 Release](https://github.com/msmapwr/charloom/releases/tag/v0.9.0) 下载 `AsciiStudio-0.9.0-win-x64.zip` 或 `AsciiStudio-0.9.0-win-arm64.zip`，完整解压后双击 `AsciiStudio.exe`。不要只复制 EXE，程序需要同目录下的 DLL、PRI、XBF 和资源文件。
 
 ZIP 未做代码签名；`SHA256SUMS.txt` 用于检查下载完整性。ARM64 构建验证与实机运行验收分开记录。
 
@@ -59,13 +61,14 @@ ZIP 未做代码签名；`SHA256SUMS.txt` 用于检查下载完整性。ARM64 �
 - Windows App SDK `2.5.1`
 - WinApp CLI `0.7.0` 和项目要求的 `microsoft/win-dev-skills`
 
-克隆仓库后，在项目目录启动：
+克隆新仓库后，在项目目录使用已安装的 WinUI 工作流技能启动：
 
 ```powershell
-.\BuildAndRun.ps1 .\src\AsciiStudio\AsciiStudio.csproj --detach
+$workflow = Join-Path $env:USERPROFILE '.codex\skills\winui-dev-workflow\BuildAndRun.ps1'
+& $workflow .\src\Charloom\Charloom.csproj --detach
 ```
 
-也可以打开 `AsciiStudio.slnx`，将 `AsciiStudio` 设为启动项目。生成 Release 构建：
+也可以打开 `Charloom.slnx`，将 `Charloom` 设为启动项目。生成 Release 构建：
 
 ```powershell
 .\scripts\build.ps1 -Configuration Release
@@ -75,7 +78,7 @@ ZIP 未做代码签名；`SHA256SUMS.txt` 用于检查下载完整性。ARM64 �
 
 ## 文件与限制
 
-设置、最近项目、窗口位置、结果恢复和日志位于 `%LOCALAPPDATA%\AsciiStudio`。恢复数据保存在本机；最近项目列表记录的是文件路径。
+为兼容旧版，设置、最近项目、窗口位置、结果恢复和日志继续使用 `%LOCALAPPDATA%\AsciiStudio`；改名不会清空这些数据。恢复数据保存在本机；最近项目列表记录的是文件路径。
 
 图片文件上限为 40 MB，源图上限为 8000 万像素，处理时最长边缩至 2400 像素。图片结果最多 2000 列、2000 行和 400 万采样点；Braille每字符8点，半块每字符2点。位图导出上限为 4000 万像素，单边不超过 32767 像素；HTML / SVG 标记上限为 1600 万字符。较大的作品可改用文本格式导出。
 
