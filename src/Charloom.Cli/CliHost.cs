@@ -18,7 +18,7 @@ public static partial class CliHost
         {
             args = CliArguments.Parse(raw);
             if (args.Flag("help") || args.Command.Length == 0 && !args.Flag("version")) { await output.WriteAsync(CliCatalog.Help(args)); return 0; }
-            if (args.Flag("version")) { await output.WriteLineAsync("1.0.0-alpha.4"); return 0; }
+            if (args.Flag("version")) { await output.WriteLineAsync("1.0.0-alpha.5"); return 0; }
             token.ThrowIfCancellationRequested();
             return await new Invocation(args, output, error, input, token).Execute();
         }
@@ -147,7 +147,7 @@ public static partial class CliHost
                 case "batch image": return await Batch();
                 case "capabilities": await Report(new
                 {
-                    schema = 1, version = "1.0.0-alpha.4", status = "prerelease", commands = CliCatalog.Commands.Select(c => c.Name).ToArray(),
+                    schema = 1, version = "1.0.0-alpha.5", status = "prerelease", commands = CliCatalog.Commands.Select(c => c.Name).ToArray(),
                     complete = new[] { "image-quality-options", "image-geometry", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery", "candidate-result-management" },
                     pending = new[] { "clipboard", "viewport-selection-and-comparison", "geometry-history", "settings-search-and-favorites", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
                     desktopParityComplete = false, formal100Authorized = false

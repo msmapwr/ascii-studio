@@ -132,7 +132,7 @@ public static class CliCatalog
     public static bool Chinese(CliArguments args) => args.Get("language", "system") switch { "zh-CN" => true, "en-US" => false, _ => CultureInfo.CurrentUICulture.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase) };
     public static string Help(CliArguments args)
     {
-        var zh = Chinese(args); var b = new StringBuilder("Charloom CLI 1.0.0-alpha.4\n\n");
+        var zh = Chinese(args); var b = new StringBuilder("Charloom CLI 1.0.0-alpha.5\n\n");
         b.AppendLine(zh ? "字织 · 离线 ASCII / ANSI 字符艺术创作工具\n把字符织成画面\n" : "Offline ASCII / ANSI art studio\nWeave characters into art\n");
         var exact = Commands.FirstOrDefault(c => c.Name == args.Command);
         b.AppendLine(zh ? "用法：charloom-cli <命令> [选项]" : "Usage: charloom-cli <command> [options]");

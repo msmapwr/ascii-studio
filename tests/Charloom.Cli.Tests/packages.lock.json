@@ -116,7 +116,7 @@
       "charloom-cli": {
         "type": "Project",
         "dependencies": {
-          "Charloom.Application": "[1.0.0-alpha.4, )"
+          "Charloom.Application": "[1.0.0-alpha.5, )"
         }
       },
       "charloom.application": {
