@@ -5,9 +5,9 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/AsciiStudio.Core/AsciiStudio.Core.csproj" />
+    <ProjectReference Include="../../src/Charloom.Core/Charloom.Core.csproj" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
-    <Compile Include="../../src/AsciiStudio/Services/ImagingService.cs" Link="ImagingService.cs" />
-    <Compile Include="../../src/AsciiStudio/Services/GlyphPainter.cs" Link="GlyphPainter.cs" />
+    <Compile Include="../../src/Charloom/Services/ImagingService.cs" Link="ImagingService.cs" />
+    <Compile Include="../../src/Charloom/Services/GlyphPainter.cs" Link="GlyphPainter.cs" />
   </ItemGroup>
 </Project>

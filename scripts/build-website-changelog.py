@@ -67,13 +67,13 @@ def render():
                 <p id="history-status" role="status" aria-live="polite">当前显示随网站发布的记录；启用脚本后尝试读取仓库最新内容。</p>
                 <p>{html.escape(copy.findtext('intro'))}</p>
                 <p class="history-note">{html.escape(copy.findtext('downloadNote'))}
-                    <a href="https://github.com/msmapwr/ascii-studio/releases" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">{html.escape(copy.findtext('downloads'))}</a>
+                    <a href="https://github.com/msmapwr/charloom/releases" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">{html.escape(copy.findtext('downloads'))}</a>
                 </p>
             </section>
             <div class="container history-layout">
                 <aside class="version-index" aria-label="版本索引"><h2>{html.escape(copy.findtext('index'))}</h2>
                     <nav aria-label="跳到版本">{''.join(links)}</nav>
-                    <a class="history-source" href="https://github.com/msmapwr/ascii-studio/blob/main/CHANGELOG.md">{html.escape(copy.findtext('source'))}</a>
+                    <a class="history-source" href="https://github.com/msmapwr/charloom/blob/main/CHANGELOG.md">{html.escape(copy.findtext('source'))}</a>
                 </aside>
                 <div class="release-timeline">{''.join(articles)}</div>
             </div>

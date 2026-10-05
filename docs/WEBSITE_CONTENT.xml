@@ -63,16 +63,16 @@
     <section id="hero" order="1">
       <layout render="false">左侧标题与下载入口，右侧真实应用截图；窄屏先文字后截图。</layout>
       <heading level="1">把字符织成画面</heading>
-      <body>图片与文字的字符画创作工具。导入图片或输入文字，调整转换效果，再编辑、保存和导出作品。Windows 程序目前仍以 AsciiStudio 名称提供。</body>
+      <body>图片与文字的字符画创作工具。导入图片或输入文字，调整转换效果，再编辑、保存和导出作品。Windows 原生、离线使用。</body>
       <localProcessing>转换与导出在本机完成，可离线使用。</localProcessing>
       <actions>
-        <link role="primary" href="https://github.com/msmapwr/ascii-studio/releases">下载预发布版</link>
-        <link role="secondary" href="https://github.com/msmapwr/ascii-studio">查看 GitHub</link>
+        <link role="primary" href="https://github.com/msmapwr/charloom/releases">下载预发布版</link>
+        <link role="secondary" href="https://github.com/msmapwr/charloom">查看 GitHub</link>
       </actions>
       <availability>适用于 Windows；提供 x64 / ARM64 便携包。</availability>
       <figure source="assets/showcase/app.png">
-        <alt>AsciiStudio 的 Windows 创作界面，包含参数设置与字符画预览。</alt>
-        <caption>AsciiStudio 实际运行界面。</caption>
+        <alt>Charloom 的 Windows 创作界面，包含参数设置与字符画预览。</alt>
+        <caption>改名前的 AsciiStudio 实际运行界面。</caption>
       </figure>
     </section>
 
@@ -101,7 +101,7 @@
         </figure>
       </example>
       <sourceNote>这些样例由应用使用的转换与导出代码生成。</sourceNote>
-      <sourceLink href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md">查看样例生成说明</sourceLink>
+      <sourceLink href="https://github.com/msmapwr/charloom/blob/main/assets/showcase/README.md">查看样例生成说明</sourceLink>
     </section>
 
     <section id="features" order="3">
@@ -160,8 +160,8 @@
         <body>根据用途选择文本、图片、ANSI 或网页格式。</body>
       </step>
       <figure source="assets/showcase/text-workflow.gif" reducedMotionSource="assets/showcase/text-result.png">
-        <alt>AsciiStudio 中输入文字、生成字符画并切换内容的操作过程。</alt>
-        <reducedMotionAlt>AsciiStudio 生成的文字字符画静态结果。</reducedMotionAlt>
+        <alt>Charloom 中输入文字、生成字符画并切换内容的操作过程。</alt>
+        <reducedMotionAlt>Charloom 生成的文字字符画静态结果。</reducedMotionAlt>
         <caption>文字转换的实际操作过程。</caption>
         <reducedMotionCaption>文字转换结果。</reducedMotionCaption>
       </figure>
@@ -170,17 +170,17 @@
     <section id="download" order="5">
       <layout render="false">下载入口与安装步骤同一区域呈现；预发布说明贴近按钮。</layout>
       <heading level="2">在 Windows 上开始使用</heading>
-      <body>下载便携版 ZIP，完整解压后运行 AsciiStudio.exe。</body>
+      <body>下载便携版 ZIP，完整解压后运行 Charloom.exe。</body>
       <requirements>Windows x64 / ARM64，最低目标为 Windows 10 1809。使用便携版无需安装开发 SDK。</requirements>
       <releaseNote>正式版和预发布版以 Releases 为准。各版本的变化见 Release 更新说明。</releaseNote>
       <actions>
-        <link role="primary" href="https://github.com/msmapwr/ascii-studio/releases">前往 GitHub 下载</link>
-        <link role="secondary" href="https://github.com/msmapwr/ascii-studio/blob/main/CHANGELOG.md">查看更新记录</link>
+        <link role="primary" href="https://github.com/msmapwr/charloom/releases">前往 GitHub 下载</link>
+        <link role="secondary" href="https://github.com/msmapwr/charloom/blob/main/CHANGELOG.md">查看更新记录</link>
       </actions>
       <instructions label="便携版使用步骤">
         <item>在 GitHub Releases 中选择需要的版本，下载对应架构的 Windows ZIP。</item>
         <item>将 ZIP 完整解压到一个文件夹。</item>
-        <item>打开文件夹，运行 AsciiStudio.exe。</item>
+        <item>打开文件夹，运行 Charloom.exe。</item>
       </instructions>
       <linkBehavior>下载按钮将在新标签页打开 GitHub Releases，请在该页面选择下载文件。</linkBehavior>
     </section>
@@ -211,16 +211,16 @@
       <item id="faq-large-images">
         <question>大图片有大小限制吗？</question>
         <answer>图片文件上限为 40 MB，源图上限为 8000 万像素；处理时最长边会缩至 2400 像素。较大的作品可以使用文本格式导出。</answer>
-        <link href="https://github.com/msmapwr/ascii-studio#文件与限制">查看完整资源限制</link>
+        <link href="https://github.com/msmapwr/charloom#文件与限制">查看完整资源限制</link>
       </item>
       <item id="faq-sdk">
         <question>运行便携版需要安装开发工具吗？</question>
-        <answer>无需安装开发 SDK。下载对应架构的 Windows ZIP 并完整解压后，运行 AsciiStudio.exe 即可。</answer>
+        <answer>无需安装开发 SDK。下载对应架构的 Windows ZIP 并完整解压后，运行 Charloom.exe 即可。</answer>
       </item>
       <item id="faq-feedback">
         <question>遇到问题，在哪里反馈？</question>
         <answer>可以前往仓库的 Issues 页面。说明使用的版本、操作步骤和出现的情况，方便排查。</answer>
-        <link href="https://github.com/msmapwr/ascii-studio/issues">前往 Issues</link>
+        <link href="https://github.com/msmapwr/charloom/issues">前往 Issues</link>
       </item>
     </section>
   </main>
@@ -238,16 +238,16 @@
       <link href="help.html">帮助中心</link>
       <link href="roadmap.html">项目路线图</link>
       <link href="changelog.html">更新日志</link>
-      <link href="https://github.com/msmapwr/ascii-studio">GitHub 仓库</link>
-      <link href="https://github.com/msmapwr/ascii-studio/releases">Release 更新说明</link>
-      <link href="https://github.com/msmapwr/ascii-studio/blob/main/docs/ROADMAP.md">0.9 路线图</link>
-      <link href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md">展示素材说明</link>
+      <link href="https://github.com/msmapwr/charloom">GitHub 仓库</link>
+      <link href="https://github.com/msmapwr/charloom/releases">Release 更新说明</link>
+      <link href="https://github.com/msmapwr/charloom/blob/main/docs/ROADMAP.md">0.9 路线图</link>
+      <link href="https://github.com/msmapwr/charloom/blob/main/assets/showcase/README.md">展示素材说明</link>
     </navigation>
     <backToTop href="#top">回到顶部</backToTop>
   </footer>
   <changelogPage path="changelog.html" source="CHANGELOG.md">
     <title>更新日志 | Charloom 字织</title>
-    <description>查看 AsciiStudio 各版本的新增功能、调整、修复和测试记录。</description>
+    <description>查看 Charloom 各版本的新增功能、调整、修复和测试记录。</description>
     <heading>更新日志</heading>
     <intro>查看图片转换、文字排版、编辑和导出的版本变化。</intro>
     <downloadNote>版本记录包含预发布阶段的开发进展。可下载的安装包以 GitHub Releases 为准。</downloadNote>

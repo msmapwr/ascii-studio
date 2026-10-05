@@ -22,7 +22,7 @@ def inline(text):
         elif match := re.fullmatch(r"\[([^\]]+)\]\(([^)]+)\)", part):
             label, url = match.groups()
             if url == "CLI.md":
-                url = "https://github.com/msmapwr/ascii-studio/blob/main/docs/CLI.md"
+                url = "https://github.com/msmapwr/charloom/blob/main/docs/CLI.md"
             if not url.startswith(("https://", "#")):
                 raise ValueError(f"Unsupported tutorial link: {url}")
             extra = ' target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note"' if url.endswith("/releases") else ""
@@ -94,8 +94,8 @@ def build():
         chapters.append(f'<section class="guide-section" id="{anchor}" aria-labelledby="{anchor}-title"><h2 id="{anchor}-title">{number}. {html.escape(title)}</h2>{"".join(blocks)}</section>')
     return ET.fromstring(f'''<page file="cli.html" class="cli-page" label="CLI 教程">
     <title>CLI 教程 | Charloom 字织</title><description>在 PowerShell 中转换图片与文字、保存项目、导出作品，了解编辑、工作区和批处理命令的版本要求。</description><content>
-    <section class="container history-hero" aria-labelledby="cli-title"><a class="back-link" href="guide.html">返回入门教程</a><h1 id="cli-title">用命令行制作字符画</h1><p>在 PowerShell 中转换、导出与批处理。先运行一个文字命令，再按需要查看图片、项目和编辑章节。</p><p class="cli-version-note">教程文档版本：1.0.0-alpha.2。下载前请确认 Releases 是否提供对应版本；较早版本可能不支持 workspace、edit、history 和 --apply。先运行 --version，再用对应命令的 --help 核对参数。</p><nav class="task-links" aria-label="CLI 教程入口"><a class="button button-primary" href="#cli-chapter-2">五分钟入门</a><a class="button" href="#cli-chapter-1">准备终端</a><a class="text-link" href="https://github.com/msmapwr/ascii-studio/releases" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">查看可下载版本</a></nav></section>
-    <div class="container guide-layout cli-layout"><aside class="guide-index cli-index"><details open="open"><summary>本页 14 章</summary><nav aria-label="CLI 章节目录">{''.join(links)}</nav></details></aside><div class="guide-content cli-content">{''.join(chapters)}<a class="text-link" href="https://github.com/msmapwr/ascii-studio/blob/main/docs/CLI.md">查询 CLI 功能覆盖与版本范围</a></div></div>
+    <section class="container history-hero" aria-labelledby="cli-title"><a class="back-link" href="guide.html">返回入门教程</a><h1 id="cli-title">用命令行制作字符画</h1><p>在 PowerShell 中转换、导出与批处理。先运行一个文字命令，再按需要查看图片、项目和编辑章节。</p><p class="cli-version-note">教程文档版本：1.0.0-alpha.5。下载前请确认 Releases 是否提供对应版本；较早版本可能不支持 workspace、edit、history 和 --apply。先运行 --version，再用对应命令的 --help 核对参数。</p><nav class="task-links" aria-label="CLI 教程入口"><a class="button button-primary" href="#cli-chapter-2">五分钟入门</a><a class="button" href="#cli-chapter-1">准备终端</a><a class="text-link" href="https://github.com/msmapwr/charloom/releases" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">查看可下载版本</a></nav></section>
+    <div class="container guide-layout cli-layout"><aside class="guide-index cli-index"><details open="open"><summary>本页 14 章</summary><nav aria-label="CLI 章节目录">{''.join(links)}</nav></details></aside><div class="guide-content cli-content">{''.join(chapters)}<a class="text-link" href="https://github.com/msmapwr/charloom/blob/main/docs/CLI.md">查询 CLI 功能覆盖与版本范围</a></div></div>
     </content></page>''')
 
 

@@ -1,4 +1,4 @@
-# AsciiStudio 介绍网页计划
+# Charloom 介绍网页计划
 
 日期：2026-10-03。状态：首版已实现并完成本地验证，使用 GitHub Pages 发布。
 
@@ -25,7 +25,7 @@
 
 ## 2. 已核实的项目依据
 
-- 仓库：[msmapwr/ascii-studio](https://github.com/msmapwr/ascii-studio)，origin 使用该仓库的 SSH 地址。
+- 仓库：[msmapwr/charloom](https://github.com/msmapwr/charloom)，origin 使用该仓库的 SSH 地址。
 - 桌面技术栈：WinUI 3、C#、.NET 10、Windows App SDK；源项目版本为 `0.9.0-alpha.8`。
 - [README](../README.md) 介绍当前已实现功能；[路线图](ROADMAP.md) 约束后续范围。
 - [品牌规范](BRANDING.md) 提供 SVG Logo 与紫色、蓝色、青色品牌色。
@@ -58,7 +58,7 @@ website/
 
 ## 4. Fluent 视觉方向
 
-网页延续 AsciiStudio 的品牌，重点展示真实字符画作品与 Windows 创作界面。
+网页延续 Charloom 的品牌，重点展示真实字符画作品与 Windows 创作界面。
 
 - 配色起点：品牌紫 `#7741D8`、辅助蓝 `#32AEFF`、辅助青 `#85F0FF`、浅色背景 `#F5F5F5`、表面白 `#FFFFFF`、正文 `#242424`。正文、按钮和焦点实际配色以对比度验证为准。
 - 排版：优先使用本机 `Segoe UI Variable` / `Segoe UI`，中文回退到 `Microsoft YaHei`，最后使用系统无衬线字体；字符画使用等宽字体。
@@ -83,11 +83,11 @@ Fluent 2 官方使用设计 token 统一颜色、排版、间距与层级，可�
 5. **下载与常见问题**：Windows x64、ZIP 解压运行、预发布状态、处理是否上传、静态 GIF 限制。
 6. **页尾**：GitHub、Release 更新说明、路线图与素材来源。
 
-下载入口固定指向 [GitHub Releases](https://github.com/msmapwr/ascii-studio/releases)。首版不写死某次构建的文件 URL，不依赖浏览器请求 GitHub API 才能显示下载按钮。发布前再次核实最新可下载版本与系统要求。
+下载入口固定指向 [GitHub Releases](https://github.com/msmapwr/charloom/releases)。首版不写死某次构建的文件 URL，不依赖浏览器请求 GitHub API 才能显示下载按钮。发布前再次核实最新可下载版本与系统要求。
 
 首版复用以下素材：
 
-- [横版 SVG Logo](../assets/branding/asciistudio-horizontal.svg)。
+- [横版 SVG Logo](../assets/branding/charloom-horizontal.svg)。
 - [应用截图](../assets/showcase/app.png)。
 - [图片转换对照](../assets/showcase/landscape-before-after.png)。
 - [文字转换对照](../assets/showcase/text-before-after.png)。
@@ -219,4 +219,4 @@ Small 拆分：1. 保存指定文档的网站快照，生成 XML 章节和静态
 
 按用户确认，本轮 Small 只更新网站品牌，网站版本为 0.13.1。英文 Charloom、中文字织，主标题“把字符织成画面”，副标题“图片与文字的字符画创作工具”。导航与页脚采用两行字标，在手机上保持紧凑；网站 SVG 字符网格图标独立于桌面应用 Logo。
 
-页面标题、社交信息与无障碍名称同步更新。现有截图、安装包、可执行文件、CLI 命令、仓库地址和软件版本记录沿用 AsciiStudio，首页注明 Windows 程序当前的名称。
+页面标题、社交信息与无障碍名称同步更新。现有截图、安装包、可执行文件、CLI 命令、仓库地址和软件版本记录沿用 Charloom，首页注明 Windows 程序当前的名称。

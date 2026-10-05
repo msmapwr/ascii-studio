@@ -2,7 +2,7 @@
 
 ## 职责边界
 
-`AsciiStudio.Application` 提供 Windows 原生但不依赖 WinUI 的共享服务，包含字体栅格化、转换 Controller、项目读写、偏好和位图导出。桌面项目仅保留 MotionService、WindowPlacementService 和页面会话接口等 UI 服务；`AsciiStudio.Cli` 引用同一应用服务层，负责参数解析、输入输出与显式覆盖策略。算法继续位于 Core。共享服务不访问页面控件，CLI 不加载 WindowsAppSDK。
+`Charloom.Application` 提供 Windows 原生但不依赖 WinUI 的共享服务，包含字体栅格化、转换 Controller、项目读写、偏好和位图导出。桌面项目仅保留 MotionService、WindowPlacementService 和页面会话接口等 UI 服务；`Charloom.Cli` 引用同一应用服务层，负责参数解析、输入输出与显式覆盖策略。算法继续位于 Core。共享服务不访问页面控件，CLI 不加载 WindowsAppSDK。
 
 CLI 的 `ProjectEditSession` 管理项目旁侧文件与有界历史，`TextEditOperations` 统一 Unicode 选区边界，`CliWorkspace` 管理独立的路径清单与恢复列表；命令分发位于 `CliEditCommands`，避免继续扩充单一主调度文件。源项目保留转换来源，侧文件只保存作品修订与生成基准；SHA-256 检查外部修改，文件锁串行化 CLI 写入。检测到来源失效时，只允许显式恢复到独立快照或丢弃侧文件，不绑定到新来源。单文件原子替换，多文件提交不保证事务。
 
@@ -17,7 +17,7 @@ CLI 的 `ProjectEditSession` 管理项目旁侧文件与有界历史，`TextEdit
 | AnsiProjectMapper | ANSI 来源字节和恢复参数校验 | 解析任务调度和控件读写 |
 | LatestOperation | 取消前次操作、判断最新结果提交权、独立生命周期 | 线程池同步；由 UI 线程持有 |
 | ImagePipelineService | 解码／几何／采样／过滤／结果缓存与预算 | 结果编辑或保存策略 |
-| AsciiStudio.Core | 算法、文档网格、ANSI、历史、导出文本格式 | Windows UI |
+| Charloom.Core | 算法、文档网格、ANSI、历史、导出文本格式 | Windows UI |
 | ResultPane / WorkspaceService | 编辑保护、结果视图、保存、恢复会话 | 图片和文字转换算法 |
 
 页面继续采用项目已有代码式 WinUI 构建。先提取 Controller，后续逐步提取参数模型和恢复映射；
@@ -45,8 +45,8 @@ flowchart LR
 ## 测试
 
 ```powershell
-dotnet test tests/AsciiStudio.Core.Tests/AsciiStudio.Core.Tests.csproj -c Release --logger trx
-dotnet test tests/AsciiStudio.Creation.Tests/AsciiStudio.Creation.Tests.csproj -c Release --logger trx
+dotnet test tests/Charloom.Core.Tests/Charloom.Core.Tests.csproj -c Release --logger trx
+dotnet test tests/Charloom.Creation.Tests/Charloom.Creation.Tests.csproj -c Release --logger trx
 ```
 
 核心原有 75 个检查迁为 59 个 Fact 和 16 个 Theory 数据项，分成 11 个领域文件；原断言保留。

@@ -1,4 +1,4 @@
-# AsciiStudio 视觉标识
+# Charloom 视觉标识
 
 ## 主方案：Layered Glyph
 
@@ -10,13 +10,13 @@
 
 ## 交付
 
-- `assets/branding/asciistudio-primary.svg`：主标识，透明背景，512 单位画布。
-- `asciistudio-ribbon.svg`：折叠字母 A，适用于更简洁的符号方向。
-- `asciistudio-grid.svg`：字符入口，强调编辑与程序工具。
-- `asciistudio-horizontal.svg` / `asciistudio-vertical.svg`：组合字标，使用 Segoe UI 字体回退；交付印刷前需转轮廓。
-- `asciistudio-monochrome.svg`：单色几何 A，使用 currentColor。
+- `assets/branding/charloom-primary.svg`：主标识，透明背景，512 单位画布。
+- `charloom-ribbon.svg`：折叠字母 A，适用于更简洁的符号方向。
+- `charloom-grid.svg`：字符入口，强调编辑与程序工具。
+- `charloom-horizontal.svg` / `charloom-vertical.svg`：组合字标，使用 Segoe UI 字体回退；交付印刷前需转轮廓。
+- `charloom-monochrome.svg`：单色几何 A，使用 currentColor。
 - 三个 512px PNG 和概念板。
-- `src/AsciiStudio/Assets`：32–1024px PNG、多尺寸 ICO，以及 MSIX scale-100/200/400 资源。
+- `src/Charloom/Assets`：32–1024px PNG、多尺寸 ICO，以及 MSIX scale-100/200/400 资源。
 
 ## 规范
 

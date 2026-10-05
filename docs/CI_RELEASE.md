@@ -14,7 +14,7 @@
 先完成代码、版本号与 Changelog，再合并 main。确认 main 的 Build and Release 成功后：
 
 ```powershell
-$releaseVersion = ([xml](Get-Content ./src/AsciiStudio/AsciiStudio.csproj -Raw)).Project.PropertyGroup.Version
+$releaseVersion = ([xml](Get-Content ./src/Charloom/Charloom.csproj -Raw)).Project.PropertyGroup.Version
 git tag "v$releaseVersion"
 git push origin "v$releaseVersion"
 ```
@@ -23,12 +23,12 @@ git push origin "v$releaseVersion"
 
 ## 使用下载文件
 
-在 Releases 下载对应架构的 `AsciiStudio-<版本>-win-x64.zip` 或 `AsciiStudio-<版本>-win-arm64.zip`，解压完整目录后运行 `AsciiStudio.exe`。目标 Windows 10 1809 及以后；包含 .NET 和 Windows App SDK 运行时。ZIP 未代码签名，当前不自动发布 MSIX。ARM64 和干净机器实机验收独立记录，不以交叉编译代替。
+在 Releases 下载对应架构的 `Charloom-<版本>-win-x64.zip` 或 `Charloom-<版本>-win-arm64.zip`，解压完整目录后运行 `Charloom.exe`。目标 Windows 10 1809 及以后；包含 .NET 和 Windows App SDK 运行时。ZIP 未代码签名，当前不自动发布 MSIX。ARM64 和干净机器实机验收独立记录，不以交叉编译代替。
 
 SHA256SUMS.txt 可用于核对下载完整性：
 
 ```powershell
-Get-FileHash ./AsciiStudio-<版本>-win-x64.zip -Algorithm SHA256
+Get-FileHash ./Charloom-<版本>-win-x64.zip -Algorithm SHA256
 ```
 
 ## 本地复现 CI
@@ -37,19 +37,19 @@ Get-FileHash ./AsciiStudio-<版本>-win-x64.zip -Algorithm SHA256
 ./scripts/ci-build.ps1
 ./scripts/ci-build.ps1 -Architecture arm64
 # 标签校验也可在本机复现
-$releaseVersion = ([xml](Get-Content ./src/AsciiStudio/AsciiStudio.csproj -Raw)).Project.PropertyGroup.Version
+$releaseVersion = ([xml](Get-Content ./src/Charloom/Charloom.csproj -Raw)).Project.PropertyGroup.Version
 ./scripts/ci-build.ps1 -Tag "v$releaseVersion"
 ```
 
 这仅执行构建、检查和 ZIP 生成，不启动程序，也不发布 GitHub Release。日常 WinUI 开发继续使用 BuildAndRun.ps1 注入分析器。
 
-核心检查现在使用 `dotnet test tests/AsciiStudio.Core.Tests/AsciiStudio.Core.Tests.csproj -c Release --logger trx`。
+核心检查现在使用 `dotnet test tests/Charloom.Core.Tests/Charloom.Core.Tests.csproj -c Release --logger trx`。
 GitHub Actions 无论构建成功或失败都尝试上传 `artifacts/test-results/*.trx`。
-Windows 字体、项目与导出专项使用 `AsciiStudio.Creation.Tests` 的 xUnit；PowerShell UI 脚本在真实桌面执行，测试职责见[架构](ARCHITECTURE.md)。
+Windows 字体、项目与导出专项使用 `Charloom.Creation.Tests` 的 xUnit；PowerShell UI 脚本在真实桌面执行，测试职责见[架构](ARCHITECTURE.md)。
 
 构建完成后运行 `./scripts/ci-checks.ps1`，用本地替身检查 Draft 发布顺序、重跑、上传失败和校验和错误，不调用真正的发布 API。
 # 1.0 预发布同包交付
 
-从 `1.0.0-alpha.1` 开始，每种架构的 ZIP 同时包含桌面程序 `AsciiStudio.exe` 和独立命令程序 `asciistudio-cli.exe`，两者版本一致。发布检查包含共享应用服务、CLI 运行时配置和完整 GUI PRI／XBF；x64 CI 运行真实 CLI 进程验证帮助、UTF-8 stdin 和转换。桌面主窗口在本地解压包上另行验收；ARM64 实机验收独立记录。
+1.0 预发布的每种架构 ZIP 同时包含桌面端与 CLI，两者版本一致。Charloom 品牌包使用 `Charloom.exe` 和 `charloom-cli.exe`；首个公开新品牌预发布额外提供 `asciistudio-cli.exe` 兼容入口。alpha.1–alpha.3 的历史包仍使用 `AsciiStudio.exe` 和 `asciistudio-cli.exe`。发布检查包含共享应用服务、CLI 运行时配置和完整 GUI PRI／XBF；x64 CI 运行真实 CLI 进程验证帮助、UTF-8 stdin 和转换。桌面主窗口在本地解压包上另行验收；ARM64 实机验收独立记录。
 
 正式 0.9.0 保留稳定下载入口。`v1.0.0-alpha.1` 等预发布标签通过同一流水线发布为 prerelease，不能改标为正式 1.0.0；最终正式版须用户明确许可。

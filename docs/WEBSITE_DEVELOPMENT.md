@@ -4,7 +4,7 @@
 
 ## CLI 教程
 
-CLI 教程依据 [CLI_TUTORIAL.md](CLI_TUTORIAL.md)，网站校对副本位于 [WEBSITE_CLI_SOURCE.md](WEBSITE_CLI_SOURCE.md)。副本保留命令原文，安装入口改用 Releases 列表，并提醒读者核对 1.0.0-alpha.2 的版本要求。本轮已核对 main 中提交的源教程，只调整网站副本的安装入口。
+CLI 教程依据 [CLI_TUTORIAL.md](CLI_TUTORIAL.md)，网站校对副本位于 [WEBSITE_CLI_SOURCE.md](WEBSITE_CLI_SOURCE.md)。副本保留命令原文，安装入口改用 Releases 列表，并提醒读者核对 1.0.0-alpha.5 的版本要求。本轮已核对 main 中提交的源教程，只调整网站副本的安装入口。
 
 源教程变化后先同步并校对副本，再按顺序运行：
 
@@ -14,9 +14,10 @@ python scripts/build-website-pages.py
 python scripts/build-website-changelog.py
 python scripts/build-website-cli.py --check
 python scripts/check-website-cli.py
+node scripts/check-website-branding.mjs
 ```
 
-生成器只转换支持的 Markdown 结构，转义文字并限制链接协议。检查脚本逐字核对全部 53 个代码示例和 14 章顺序。52 个 PowerShell 示例已通过语法解析，网页不会运行命令。浏览器验收覆盖桌面、320px 手机目录、复制反馈与代码键盘滚动，页面无整页横向溢出。
+生成器只转换支持的 Markdown 结构，转义文字并限制链接协议。检查脚本逐字核对全部 54 个代码示例和 14 章顺序。PowerShell 示例由 CLI 教程烟测覆盖，网页不会运行命令。浏览器验收覆盖桌面、320px 手机目录、复制反馈与代码键盘滚动，页面无整页横向溢出。
 
 ## 修改内容
 
@@ -83,7 +84,7 @@ CSS 使用 Lightning CSS 解析验证，输出到临时目录，不覆盖源文�
 本轮目标网站 0.11.0，三个 Medium 分别推送 alpha.1、alpha.2、alpha.3；全部检查后正式发布网站 0.11.0。桌面应用版本与发布标签不改变。
 
 
-作品素材从 `assets/showcase` 原样复制到发布目录，参数来自 `tools/AsciiStudio.Showcase/Program.cs`。类型筛选与放大仅由脚本增强；无脚本时显示原有并排图和图片原文件链接。比较使用原生 range 输入，图像保持完整比例并在统一画框中裁显，不拉伸源图。原生 dialog 负责模态焦点、Escape 与关闭后的焦点恢复。首版只有仓库已有两组样例，不提供用户投稿或在线转换。
+作品素材从 `assets/showcase` 原样复制到发布目录，参数来自 `tools/Charloom.Showcase/Program.cs`。类型筛选与放大仅由脚本增强；无脚本时显示原有并排图和图片原文件链接。比较使用原生 range 输入，图像保持完整比例并在统一画框中裁显，不拉伸源图。原生 dialog 负责模态焦点、Escape 与关闭后的焦点恢复。首版只有仓库已有两组样例，不提供用户投稿或在线转换。
 
 
 下载页只链接仓库 Releases，不在浏览器请求 GitHub API，不写死最新安装包版本。便携包与 SHA256SUMS.txt 的存在已通过 Release API 核对；命令要求访客替换实际 ZIP 版本号。所有复制操作的状态显示在对应面板内，拒绝剪贴板权限时保留手动选择。下载及校验在访客设备进行，网页不读取、上传文件。

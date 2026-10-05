@@ -4,7 +4,7 @@ $env:Path=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environme
 $taskSkill=Join-Path $env:USERPROFILE '.codex/skills/winui-dev-workflow/BuildAndRun.ps1'
 if(!(Test-Path -LiteralPath $taskSkill)){throw 'Install microsoft/win-dev-skills before building.'}
 $taskArguments=@($args)
-if($taskArguments.Count -eq 0){$taskArguments=@((Join-Path $PSScriptRoot 'src/AsciiStudio/AsciiStudio.csproj'))}
+if($taskArguments.Count -eq 0){$taskArguments=@((Join-Path $PSScriptRoot 'src/Charloom/Charloom.csproj'))}
 $taskShell=(Get-Process -Id $PID).Path
 & $taskShell -NoProfile -File $taskSkill @taskArguments
 exit $LASTEXITCODE

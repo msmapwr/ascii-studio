@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
-    <meta name="application-version" content="0.13.1">
+    <meta name="application-version" content="0.13.2">
         <meta charset="utf-8" >
         <meta name="viewport" content="width=device-width, initial-scale=1" >
         <meta
             name="description"
-            content="获取 AsciiStudio Windows 便携版，了解解压启动、SHA-256 校验、更新与问题排查。"
+            content="获取 Charloom Windows 便携版，了解解压启动、SHA-256 校验、更新与问题排查。"
         >
         <meta
             property="og:title"
@@ -14,7 +14,7 @@
         >
         <meta
             property="og:description"
-            content="获取 AsciiStudio Windows 便携版，了解解压启动、SHA-256 校验、更新与问题排查。"
+            content="获取 Charloom Windows 便携版，了解解压启动、SHA-256 校验、更新与问题排查。"
         >
         <meta property="og:type" content="website" >
         <meta name="twitter:card" content="summary" >
@@ -120,15 +120,15 @@
         <main id="main" aria-label="下载与运行">
 <section class="container history-hero download-hero" aria-labelledby="downloads-title">
         <a class="back-link" href="index.html">返回产品介绍</a><h1 id="downloads-title">在 Windows 上开始创作</h1>
-        <p>下载 x64 便携版，完整解压后运行 AsciiStudio.exe。转换与导出在本机完成，使用软件无需开发 SDK。</p>
-        <div class="actions"><a class="button button-primary" href="https://github.com/msmapwr/ascii-studio/releases" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">前往 GitHub Releases 下载</a><a class="button" href="changelog.html">查看更新日志</a></div>
-        <p class="availability">提供 Windows x64 / ARM64 ZIP。正式版、预发布版及对应文件以 Releases 为准。</p><p>需要命令行？支持 CLI 的版本在同一 ZIP 内提供 asciistudio-cli.exe，使用前请查看 <a href="cli.html">CLI 教程与版本要求</a>。</p>
+        <p>下载 x64 便携版，完整解压后运行 Charloom.exe。转换与导出在本机完成，使用软件无需开发 SDK。</p>
+        <div class="actions"><a class="button button-primary" href="https://github.com/msmapwr/charloom/releases" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-note">前往 GitHub Releases 下载</a><a class="button" href="changelog.html">查看更新日志</a></div>
+        <p class="availability">提供 Windows x64 / ARM64 ZIP。正式版、预发布版及对应文件以 Releases 为准。新品牌包运行 Charloom.exe；0.9.0 等旧版本仍运行 AsciiStudio.exe，ZIP 前缀也仍为 AsciiStudio。</p><p>需要命令行？支持 CLI 的版本在同一 ZIP 内提供 charloom-cli.exe，使用前请查看 <a href="cli.html">CLI 教程与版本要求</a>。</p>
       </section>
       <div class="container download-content">
-        <section class="download-start" aria-labelledby="start-title"><div><h2 id="start-title">三步运行便携版</h2><p>在 Releases 的 Assets 列表中寻找对应架构的 ZIP：win-x64 或 win-arm64。</p><ol class="tutorial-steps"><li><h3>下载 ZIP</h3><p>在 Windows 系统信息中确认系统类型，从 GitHub Releases 获取对应 x64 或 ARM64 包。需要核对完整性时，同时下载 SHA256SUMS.txt。</p></li><li><h3>完整解压</h3><p>将 ZIP 中的完整目录解压到一个文件夹。保留随包文件，避免只取出 EXE，也不要直接在压缩包内启动。</p></li><li><h3>运行 AsciiStudio.exe</h3><p>从解压目录打开程序，然后导入图片或输入文字。首次创作可从入门教程开始。</p><a class="text-link" href="guide.html">打开入门教程</a></li></ol></div><figure class="app-frame"><img src="assets/app.png" width="1862" height="1079" alt="AsciiStudio 实际运行窗口，左侧设置参数，右侧查看字符画。" loading="lazy"><figcaption>下载后进入的 Windows 创作界面。</figcaption></figure></section>
-        <section class="download-section" aria-labelledby="checksum-title"><h2 id="checksum-title">核对下载文件</h2><p>SHA-256 可以检查 ZIP 是否与发布方提供的文件一致。将 ZIP 和同一 Release 的 SHA256SUMS.txt 放在同一文件夹，在该文件夹打开 PowerShell。</p><p>把命令中的“&lt;版本&gt;”替换为下载文件的实际版本号，再执行。将输出的 Hash 与 SHA256SUMS.txt 中对应 ZIP 的值逐字比较。</p><div class="copy-panel"><pre id="checksum-command">Get-FileHash -LiteralPath '.\AsciiStudio-&lt;版本&gt;-win-x64.zip' -Algorithm SHA256</pre><button class="button button-small" type="button" data-copy-target="checksum-command" hidden>复制校验命令</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><details class="faq-item"><summary>找不到文件，或校验值不同？</summary><p>检查当前目录和 ZIP 文件名，确认校验文件来自同一 Release。值不同可能是文件不完整或版本不对应；重新下载对应文件后再核对。</p></details></section>
+        <section class="download-start" aria-labelledby="start-title"><div><h2 id="start-title">三步运行便携版</h2><p>在 Releases 的 Assets 列表中寻找对应架构的 ZIP：win-x64 或 win-arm64。</p><ol class="tutorial-steps"><li><h3>下载 ZIP</h3><p>在 Windows 系统信息中确认系统类型，从 GitHub Releases 获取对应 x64 或 ARM64 包。需要核对完整性时，同时下载 SHA256SUMS.txt。</p></li><li><h3>完整解压</h3><p>将 ZIP 中的完整目录解压到一个文件夹。保留随包文件，避免只取出 EXE，也不要直接在压缩包内启动。</p></li><li><h3>运行 Charloom.exe</h3><p>从解压目录打开程序，然后导入图片或输入文字。首次创作可从入门教程开始。</p><a class="text-link" href="guide.html">打开入门教程</a></li></ol></div><figure class="app-frame"><img src="assets/app.png" width="1862" height="1079" alt="Charloom 实际运行窗口，左侧设置参数，右侧查看字符画。" loading="lazy"><figcaption>改名前的 AsciiStudio 实际运行界面。</figcaption></figure></section>
+        <section class="download-section" aria-labelledby="checksum-title"><h2 id="checksum-title">核对下载文件</h2><p>SHA-256 可以检查 ZIP 是否与发布方提供的文件一致。将 ZIP 和同一 Release 的 SHA256SUMS.txt 放在同一文件夹，在该文件夹打开 PowerShell。</p><p>把命令中的“&lt;版本&gt;”替换为下载文件的实际版本号，再执行。将输出的 Hash 与 SHA256SUMS.txt 中对应 ZIP 的值逐字比较。</p><div class="copy-panel"><pre id="checksum-command">Get-FileHash -LiteralPath '.\Charloom-&lt;版本&gt;-win-x64.zip' -Algorithm SHA256</pre><button class="button button-small" type="button" data-copy-target="checksum-command" hidden>复制校验命令</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><details class="faq-item"><summary>找不到文件，或校验值不同？</summary><p>检查当前目录和 ZIP 文件名，确认校验文件来自同一 Release。值不同可能是文件不完整或版本不对应；重新下载对应文件后再核对。</p></details></section>
         <section class="download-section" aria-labelledby="update-title"><h2 id="update-title">更新前保留作品</h2><ol class="tutorial-steps"><li><h3>保存并备份项目</h3><p>先保存正在编辑的 .asciiproj 项目，再复制一份备份。较新版本可能升级项目格式，升级前保留原始副本便于回退。</p></li><li><h3>新版本解压到独立目录</h3><p>关闭旧程序，把新 ZIP 解压到新的文件夹，保留旧包和旧目录。避免混用不同版本的运行文件。</p></li><li><h3>打开副本检查结果</h3><p>先用项目副本确认图片、文字、字体和导出。需要旧版本时，从 Releases 查找已有版本，并使用与其兼容的项目备份。</p></li></ol><a class="text-link" href="changelog.html">查看各版本变化</a></section>
-        <section class="download-section download-help" aria-labelledby="download-help-title"><h2 id="download-help-title">运行遇到问题</h2><details class="faq-item"><summary>点击程序后没有打开，或提示文件缺失？</summary><p>确认使用与系统架构对应的包，已完整解压，程序没有从压缩包内启动。不要混入其他版本的文件。仍无法运行时，请在 Issues 提供 Windows 版本、下载版本和错误信息。</p></details><details class="faq-item"><summary>Windows 显示发布者提示？</summary><p>当前便携 ZIP 未代码签名。请核对项目地址、下载来源和校验值；无法确认提示原因时，保留提示截图并向项目反馈。</p></details><details class="faq-item"><summary>旧项目打开后显示不同，或字体缺失？</summary><p>先保留原始备份，核对项目使用的字体。导入字体的项目会引用本机字体摘要；原字体缺失时，请重新导入同一字体，再检查结果。</p></details><div class="actions"><a class="button" href="https://github.com/msmapwr/ascii-studio/issues">前往 Issues 反馈</a><a class="text-link" href="https://github.com/msmapwr/ascii-studio/blob/main/docs/CI_RELEASE.md">查看便携包与发布说明</a></div></section>
+        <section class="download-section download-help" aria-labelledby="download-help-title"><h2 id="download-help-title">运行遇到问题</h2><details class="faq-item"><summary>点击程序后没有打开，或提示文件缺失？</summary><p>确认使用与系统架构对应的包，已完整解压，程序没有从压缩包内启动。不要混入其他版本的文件。仍无法运行时，请在 Issues 提供 Windows 版本、下载版本和错误信息。</p></details><details class="faq-item"><summary>Windows 显示发布者提示？</summary><p>当前便携 ZIP 未代码签名。请核对项目地址、下载来源和校验值；无法确认提示原因时，保留提示截图并向项目反馈。</p></details><details class="faq-item"><summary>旧项目打开后显示不同，或字体缺失？</summary><p>先保留原始备份，核对项目使用的字体。导入字体的项目会引用本机字体摘要；原字体缺失时，请重新导入同一字体，再检查结果。</p></details><div class="actions"><a class="button" href="https://github.com/msmapwr/charloom/issues">前往 Issues 反馈</a><a class="text-link" href="https://github.com/msmapwr/charloom/blob/main/docs/CI_RELEASE.md">查看便携包与发布说明</a></div></section>
       </div>
             </main>
         <footer class="site-footer">
@@ -152,22 +152,22 @@
                     <a href="help.html">帮助中心</a>
                     <a href="roadmap.html">项目路线图</a>
                     <a href="changelog.html">更新日志</a>
-                    <a class="" href="https://github.com/msmapwr/ascii-studio"
+                    <a class="" href="https://github.com/msmapwr/charloom"
                         >GitHub 仓库</a
                     ><a
                         class=""
-                        href="https://github.com/msmapwr/ascii-studio/releases"
+                        href="https://github.com/msmapwr/charloom/releases"
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-describedby="new-tab-note"
                         >Release 更新说明</a
                     ><a
                         class=""
-                        href="https://github.com/msmapwr/ascii-studio/blob/main/docs/ROADMAP.md"
+                        href="https://github.com/msmapwr/charloom/blob/main/docs/ROADMAP.md"
                         >0.9 路线图</a
                     ><a
                         class=""
-                        href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md"
+                        href="https://github.com/msmapwr/charloom/blob/main/assets/showcase/README.md"
                         >展示素材说明</a
                     ><a class="" href="#top">回到顶部</a>
                 </nav>

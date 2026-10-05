@@ -1,9 +1,9 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using AsciiStudio.Core;
-using AsciiStudio.Services;
-using ImageConverter = AsciiStudio.Core.ImageConverter;
+using Charloom.Core;
+using Charloom.Services;
+using ImageConverter = Charloom.Core.ImageConverter;
 
 var output = Path.GetFullPath(args.FirstOrDefault() ?? "assets/showcase");
 Directory.CreateDirectory(output);

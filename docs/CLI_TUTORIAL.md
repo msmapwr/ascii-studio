@@ -1,6 +1,6 @@
-# AsciiStudio 命令行详细教程
+# Charloom 命令行详细教程
 
-适用版本：**1.0.0-alpha.3**，Windows x64／ARM64。教程使用 PowerShell。命令功能与参数以当前程序的 `--help` 为准；[覆盖表](CLI.md)列出尚未实现的桌面功能。
+适用版本：**1.0.0-alpha.5**，Windows x64／ARM64。教程使用 PowerShell。命令功能与参数以当前程序的 `--help` 为准；[覆盖表](CLI.md)列出尚未实现的桌面功能。
 
 ## 目录
 
@@ -21,18 +21,18 @@
 
 ## 1. 安装与终端准备
 
-从 [alpha.2 Release](https://github.com/msmapwr/ascii-studio/releases/tag/v1.0.0-alpha.3) 下载对应电脑架构的 ZIP，**完整解压**。同目录应有 `AsciiStudio.exe`、`asciistudio-cli.exe`、DLL 和资源文件；不要只复制 EXE。程序已包含运行时，不需要安装 .NET SDK。
+从 [alpha.5 Release](https://github.com/msmapwr/charloom/releases/tag/v1.0.0-alpha.5) 下载对应电脑架构的 ZIP，**完整解压**。同目录应有 `Charloom.exe`、`charloom-cli.exe`、DLL 和资源文件；不要只复制 EXE。程序已包含运行时，不需要安装 .NET SDK。
 
 在解压目录打开 PowerShell，或用下面的命令进入目录。示例安装路径请改成你的实际路径：
 
 ```powershell
-Set-Location 'D:\Apps\AsciiStudio'
-$cli = (Resolve-Path '.\asciistudio-cli.exe').Path
+Set-Location 'D:\Apps\Charloom'
+$cli = (Resolve-Path '.\charloom-cli.exe').Path
 & $cli --version
 & $cli --help --language zh-CN
 ```
 
-下文的 `& $cli` 等同于在此目录运行 `.\asciistudio-cli.exe`。变量保存绝对路径，因此切到作品目录后仍可使用。
+下文的 `& $cli` 等同于在此目录运行 `.\charloom-cli.exe`。变量保存绝对路径，因此切到作品目录后仍可使用。
 
 建议把作品放到单独目录，便于管理项目、图片和导出文件：
 

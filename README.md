@@ -13,7 +13,9 @@ Windows 原生、离线、高质量 ASCII / ANSI 字符艺术创作工具。
 ### [⬇ 下载 0.9.0](https://github.com/msmapwr/charloom/releases/tag/v0.9.0)　[官网 · 教程与作品展示](https://msmapwr.github.io/charloom/)　[更新说明](CHANGELOG.md)
 
 Windows x64 / ARM64：完整解压对应架构的 ZIP，运行桌面端或 CLI。便携版包含运行时，无需开发 SDK。新品牌的入口为 `Charloom.exe` 和 `charloom-cli.exe`；旧版本仍使用原文件名。
-Charloom 原名 AsciiStudio。当前正式版本仍为 **0.9.0**（旧名发行）。当前源码进入 **1.0.0-alpha.4** 品牌迁移；正式 1.0.0 尚未发布。另有 [1.0.0-alpha.3 预发布](https://github.com/msmapwr/charloom/releases/tag/v1.0.0-alpha.3)，包含独立控制台 `asciistudio-cli.exe`、61 个命令及逐级中英文 `--help`，支持持久编辑历史、Unicode 选区、独立工作区和候选结果管理，详见 [CLI 使用与覆盖表](docs/CLI.md)。尚未覆盖全部桌面功能；双语桌面、扩展动效与个性化设置继续开发。
+Charloom 原名 AsciiStudio。正式版本仍为 **0.9.0**（旧名发行）；当前源码为 **1.0.0-alpha.5**，正式 1.0.0 尚未发布。新品牌预发布包使用 `Charloom.exe` 和 `charloom-cli.exe`；另保留 `asciistudio-cli.exe` 兼容入口一个公开预发布周期。预发布下载以 [GitHub Releases](https://github.com/msmapwr/charloom/releases) 为准。
+
+CLI 提供 61 个命令及逐级中英文 `--help`，支持持久编辑历史、Unicode 选区、独立工作区和候选结果管理，详见 [命令行详细教程](docs/CLI_TUTORIAL.md) 与 [功能覆盖表](docs/CLI.md)。尚未覆盖全部桌面功能；双语桌面、扩展动效与个性化设置继续开发。
 
 官网提供产品介绍。完整静态网站位于 [`website/dist`](website/dist)，包含[入门教程](website/dist/guide.html)、[作品展示](website/dist/gallery.html)、[下载与运行](website/dist/downloads.html)和[版本记录](website/dist/changelog.html)，可用于 GitHub Pages。
 
@@ -27,7 +29,7 @@ Charloom 原名 AsciiStudio。当前正式版本仍为 **0.9.0**（旧名发行�
   <img src="assets/showcase/text-workflow.gif" width="49%" alt="文字转换操作：输入、生成与切换内容" />
 </p>
 
-实机窗口截图与操作截图序列，无界面模拟。
+实机窗口截图与操作截图序列，展示改名前的 AsciiStudio 界面。
 
 ## 功能
 
@@ -52,6 +54,18 @@ Charloom 原名 AsciiStudio。当前正式版本仍为 **0.9.0**（旧名发行�
 在 [0.9.0 Release](https://github.com/msmapwr/charloom/releases/tag/v0.9.0) 下载 `AsciiStudio-0.9.0-win-x64.zip` 或 `AsciiStudio-0.9.0-win-arm64.zip`，完整解压后双击 `AsciiStudio.exe`。不要只复制 EXE，程序需要同目录下的 DLL、PRI、XBF 和资源文件。
 
 ZIP 未做代码签名；`SHA256SUMS.txt` 用于检查下载完整性。ARM64 构建验证与实机运行验收分开记录。
+
+### 命令行快速开始
+
+在新品牌 ZIP 的解压目录打开 PowerShell：
+
+```powershell
+.\charloom-cli.exe --help --language zh-CN
+.\charloom-cli.exe text --text "Charloom" --output hello.txt
+.\charloom-cli.exe image --help --language en-US
+```
+
+旧版本 CLI 名称为 `asciistudio-cli.exe`；请先运行 `--version`，按对应版本的帮助使用。
 
 ### 开发环境
 

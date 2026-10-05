@@ -1,22 +1,22 @@
-# AsciiStudio CLI
+# Charloom CLI
 
 从安装到创作、编辑、恢复和自动化，参见 [命令行详细教程](CLI_TUTORIAL.md)。本页为功能覆盖与行为约定。
 
 ## 版本与范围
 
-当前控制台预发布为 `1.0.0-alpha.3`，共有 61 个命令。Windows x64 / ARM64 ZIP 同时包含 `AsciiStudio.exe` 和 `asciistudio-cli.exe`。全部解压后在终端运行；无需开发 SDK。
+当前控制台预发布为 `1.0.0-alpha.5`，共有 61 个命令。Windows x64 / ARM64 ZIP 同时包含 `Charloom.exe` 和 `charloom-cli.exe`。全部解压后在终端运行；无需开发 SDK。旧 CLI 名称 `asciistudio-cli.exe` 在首个公开 Charloom 预发布周期保留为同实现兼容入口。默认数据目录继续使用 AsciiStudio，以保留旧偏好和字体。
 
 **1.0 的最终验收要求是桌面功能全部有命令入口，而非仅支持转换。当前尚未达到全部覆盖。** 中文／英文桌面界面、新个性化设置和扩展动效也在后续预发布实现。正式 1.0.0 仍需用户明确授权。
 
 ## 开始使用
 
 ```powershell
-.\asciistudio-cli.exe --help --language zh-CN
-.\asciistudio-cli.exe image --help --language en-US
-.\asciistudio-cli.exe text --text "Hello" --figlet-font Standard
-.\asciistudio-cli.exe image --input photo.png --columns 120 --set Color=true --format ANSI --output art.ans --save-project art.asciiproj
-.\asciistudio-cli.exe export --project art.asciiproj --format PNG --output art.png
-.\asciistudio-cli.exe capabilities --json
+.\charloom-cli.exe --help --language zh-CN
+.\charloom-cli.exe image --help --language en-US
+.\charloom-cli.exe text --text "Hello" --figlet-font Standard
+.\charloom-cli.exe image --input photo.png --columns 120 --set Color=true --format ANSI --output art.ans --save-project art.asciiproj
+.\charloom-cli.exe export --project art.asciiproj --format PNG --output art.png
+.\charloom-cli.exe capabilities --json
 ```
 
 每个命令和命令组支持 `--help`，包括参数、默认值、范围、枚举、示例、资源限制和退出码。帮助不分页，可重定向到文件。`--language system|zh-CN|en-US` 切换帮助语言；部分共享服务错误与分析内容暂保留原语言，固定机器错误码不随语言改变。
@@ -68,14 +68,14 @@
 ## 持久编辑与工作区
 
 ```powershell
-.\asciistudio-cli.exe workspace open --project art.asciiproj
-.\asciistudio-cli.exe edit select --row 0 --column 0 --end-row 1 --end-column 3 --rectangle
-.\asciistudio-cli.exe edit replace --selection --text "ABC"
-.\asciistudio-cli.exe history undo
-.\asciistudio-cli.exe tools upper --project art.asciiproj --apply
-.\asciistudio-cli.exe project save --overwrite
-.\asciistudio-cli.exe workspace close --action keep
-.\asciistudio-cli.exe workspace restore
+.\charloom-cli.exe workspace open --project art.asciiproj
+.\charloom-cli.exe edit select --row 0 --column 0 --end-row 1 --end-column 3 --rectangle
+.\charloom-cli.exe edit replace --selection --text "ABC"
+.\charloom-cli.exe history undo
+.\charloom-cli.exe tools upper --project art.asciiproj --apply
+.\charloom-cli.exe project save --overwrite
+.\charloom-cli.exe workspace close --action keep
+.\charloom-cli.exe workspace restore
 ```
 
 - 省略目标 `--project` 时，编辑／历史／项目命令与无输入的 `export` 使用工作区 active。新建 `workspace new --project NEW_PATH` 必须指定未使用路径；同一路径打开时只切换 active。工作区最多 32 项，最近项目最多 15 项，保留恢复最多 32 项。
