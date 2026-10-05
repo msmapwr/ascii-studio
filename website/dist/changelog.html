@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
-    <meta name="application-version" content="0.13.2">
+    <meta name="application-version" content="0.13.3">
         <meta charset="utf-8" >
         <meta name="viewport" content="width=device-width, initial-scale=1" >
         <meta
@@ -129,10 +129,14 @@
             </section>
             <div class="container history-layout">
                 <aside class="version-index" aria-label="版本索引"><h2>版本索引</h2>
-                    <nav aria-label="跳到版本"><a href="#version-1-0-0-alpha-5">1.0.0-alpha.5</a><a href="#version-1-0-0-alpha-4">1.0.0-alpha.4</a><a href="#version-1-0-0-alpha-3">1.0.0-alpha.3</a><a href="#version-1-0-0-alpha-2">1.0.0-alpha.2</a><a href="#version-1-0-0-alpha-1">1.0.0-alpha.1</a><a href="#version-0-9-0">0.9.0</a><a href="#version-0-9-0-alpha-9">0.9.0-alpha.9</a><a href="#version-0-9-0-alpha-8">0.9.0-alpha.8</a><a href="#version-0-9-0-alpha-7">0.9.0-alpha.7</a><a href="#version-0-9-0-alpha-6">0.9.0-alpha.6</a><a href="#version-0-9-0-alpha-5">0.9.0-alpha.5</a><a href="#version-0-9-0-alpha-4">0.9.0-alpha.4</a><a href="#version-0-9-0-alpha-3">0.9.0-alpha.3</a><a href="#version-0-9-0-alpha-2">0.9.0-alpha.2</a><a href="#version-0-9-0-alpha-1">0.9.0-alpha.1</a><a href="#version-0-8-0">0.8.0</a><a href="#version-0-7-0">0.7.0</a><a href="#version-0-6-0">0.6.0</a><a href="#version-0-6-0-alpha-5">0.6.0-alpha.5</a><a href="#version-0-6-0-alpha-4">0.6.0-alpha.4</a><a href="#version-0-6-0-alpha-3">0.6.0-alpha.3</a><a href="#version-0-6-0-alpha-2">0.6.0-alpha.2</a><a href="#version-0-6-0-alpha-1">0.6.0-alpha.1</a><a href="#version-0-5-0">0.5.0</a><a href="#version-0-4-0">0.4.0</a><a href="#version-0-3-0">0.3.0</a></nav>
+                    <nav aria-label="跳到版本"><a href="#version-1-0-0-alpha-6">1.0.0-alpha.6</a><a href="#version-1-0-0-alpha-5">1.0.0-alpha.5</a><a href="#version-1-0-0-alpha-4">1.0.0-alpha.4</a><a href="#version-1-0-0-alpha-3">1.0.0-alpha.3</a><a href="#version-1-0-0-alpha-2">1.0.0-alpha.2</a><a href="#version-1-0-0-alpha-1">1.0.0-alpha.1</a><a href="#version-0-9-0">0.9.0</a><a href="#version-0-9-0-alpha-9">0.9.0-alpha.9</a><a href="#version-0-9-0-alpha-8">0.9.0-alpha.8</a><a href="#version-0-9-0-alpha-7">0.9.0-alpha.7</a><a href="#version-0-9-0-alpha-6">0.9.0-alpha.6</a><a href="#version-0-9-0-alpha-5">0.9.0-alpha.5</a><a href="#version-0-9-0-alpha-4">0.9.0-alpha.4</a><a href="#version-0-9-0-alpha-3">0.9.0-alpha.3</a><a href="#version-0-9-0-alpha-2">0.9.0-alpha.2</a><a href="#version-0-9-0-alpha-1">0.9.0-alpha.1</a><a href="#version-0-8-0">0.8.0</a><a href="#version-0-7-0">0.7.0</a><a href="#version-0-6-0">0.6.0</a><a href="#version-0-6-0-alpha-5">0.6.0-alpha.5</a><a href="#version-0-6-0-alpha-4">0.6.0-alpha.4</a><a href="#version-0-6-0-alpha-3">0.6.0-alpha.3</a><a href="#version-0-6-0-alpha-2">0.6.0-alpha.2</a><a href="#version-0-6-0-alpha-1">0.6.0-alpha.1</a><a href="#version-0-5-0">0.5.0</a><a href="#version-0-4-0">0.4.0</a><a href="#version-0-3-0">0.3.0</a></nav>
                     <a class="history-source" href="https://github.com/msmapwr/charloom/blob/main/CHANGELOG.md">查看仓库原始记录</a>
                 </aside>
-                <div class="release-timeline"><article class="release-entry" id="version-1-0-0-alpha-5" aria-labelledby="version-1-0-0-alpha-5-title">
+                <div class="release-timeline"><article class="release-entry" id="version-1-0-0-alpha-6" aria-labelledby="version-1-0-0-alpha-6-title">
+    <header class="release-heading"><div><h2 id="version-1-0-0-alpha-6-title">1.0.0-alpha.6</h2>
+    <span class="release-badge">预发布</span></div><time datetime="2026-10-05">2026-10-05</time></header>
+    <section class="change-group"><h3>新增</h3><ul><li>CLI新增 clipboard read/write/paste 和中英文逐级help，共64个命令：文本原样读取、图片保存PNG、复制当前编辑结果；显式apply才将粘贴加入撤销历史，支持Unicode选区和active项目。</li><li>共享可注入剪贴板服务，文本8MB、PNG40MB／8000万像素预算；打开剪贴板有限重试，固定占用和格式错误码。</li></ul></section><section class="change-group"><h3>调整</h3><ul><li>完整CLI教程、README和覆盖表同步剪贴板行为、输出保护及公开版本范围。</li></ul></section><section class="change-group"><h3>验证</h3><ul><li>x64 / ARM64 自包含构建、384 项自动测试与 6 项桌面 UI 回归检查通过；WinUI 分析器检查无警告、无错误。</li><li>剪贴板测试使用隔离替身，未读写个人系统剪贴板；真实剪贴板与 ARM64 实机运行仍需独立验收。</li></ul></section>
+    </article><article class="release-entry" id="version-1-0-0-alpha-5" aria-labelledby="version-1-0-0-alpha-5-title">
     <header class="release-heading"><div><h2 id="version-1-0-0-alpha-5-title">1.0.0-alpha.5</h2>
     <span class="release-badge">预发布</span></div><time datetime="2026-10-05">2026-10-05</time></header>
     <section class="change-group"><h3>调整</h3><ul><li>README、命令行详细教程、架构与发布文档统一使用 Charloom；更新仓库与 Pages 链接，明确旧版文件名和数据目录的兼容规则。</li><li>网站同步新程序入口、下载说明和当前 CLI 教程；保留历史版本记录及真实旧界面展示。</li><li>首个公开 Charloom 预发布包包含改名后的桌面端 <code>Charloom.exe</code> 与 <code>charloom-cli.exe</code>，保留 <code>asciistudio-cli.exe</code> 兼容入口；继续兼容旧偏好、项目与密文，未发布正式 1.0.0。</li></ul></section><section class="change-group"><h3>验证</h3><ul><li>x64 / ARM64 自包含构建和 362 项自动测试通过；9 个网站页面、14 章 CLI 教程与 54 个代码片段一致性检查通过。</li><li>验证网站新旧主题偏好兼容、仓库链接迁移和样例工具构建；ARM64 实机运行仍需独立验收。</li></ul></section>

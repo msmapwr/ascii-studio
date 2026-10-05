@@ -97,6 +97,8 @@ public sealed class WindowsClipboardService : IClipboardService
                 var png = RegisterClipboardFormatW("PNG");
                 if (png == 0) throw new IOException("Cannot register the PNG clipboard format.");
                 if (IsClipboardFormatAvailable(png)) return CopyMemory(GetClipboardData(png), MaximumImageBytes);
+                // ponytail: CF_BITMAP has no alpha guarantee; add CF_DIBV5 decoding
+                // if transparent non-PNG clipboard sources require it.
                 if (!IsClipboardFormatAvailable(2)) throw new ClipboardContentException("Clipboard contains no supported image (PNG or Windows bitmap).");
                 var handle = GetClipboardData(2);
                 if (handle == 0 || GetObjectW(handle, Marshal.SizeOf<BitmapInfo>(), out var info) == 0)

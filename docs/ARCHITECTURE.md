@@ -59,3 +59,7 @@ LegacyImageConverter / LegacyImageQualityConverter 是固定在 Git `4e2b953` �
 Creation.Tests 同时验证 Controller 的原图准备、取消、预览尺寸、项目映射、恢复、迁移备份和快照隔离。
 PowerShell 保留为 UI / 端到端编排，核心质量不再依赖自定义测试计数器。
 GitHub Actions 上传 TRX；UI 验收需要真实桌面，CI 编译不能替代 DPI 和辅助功能实测。
+
+## 剪贴板边界
+
+应用层 IClipboardService 为可注入的文本／PNG交换接口。WindowsClipboardService 在工作线程执行显式Win32操作，以消息窗口作为写入所有者；在关闭剪贴板前复制外部数据，成功写入后交由系统管理内存。PNG在解码前检查IHDR尺寸，文本严格验证UTF-16／UTF-8和NUL。接口规则依据 [Windows剪贴板操作](https://learn.microsoft.com/en-us/windows/win32/dataxchg/clipboard-operations)。CLI通过同一编辑会话保留撤销、选区、候选和原文件保护。测试默认注入替身，不能据此宣称已完成真实剪贴板互通验收。

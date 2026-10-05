@@ -1,6 +1,6 @@
 # Charloom 命令行详细教程
 
-适用版本：**1.0.0-alpha.5**，Windows x64／ARM64。教程使用 PowerShell。命令功能与参数以当前程序的 `--help` 为准；[覆盖表](CLI.md)列出尚未实现的桌面功能。
+适用版本：**1.0.0-alpha.6**，Windows x64／ARM64。教程使用 PowerShell。命令功能与参数以当前程序的 `--help` 为准；[覆盖表](CLI.md)列出尚未实现的桌面功能。
 
 ## 目录
 
@@ -21,7 +21,7 @@
 
 ## 1. 安装与终端准备
 
-从 [alpha.5 Release](https://github.com/msmapwr/charloom/releases/tag/v1.0.0-alpha.5) 下载对应电脑架构的 ZIP，**完整解压**。同目录应有 `Charloom.exe`、`charloom-cli.exe`、DLL 和资源文件；不要只复制 EXE。程序已包含运行时，不需要安装 .NET SDK。
+从 [GitHub Releases](https://github.com/msmapwr/charloom/releases) 核对是否有与教程匹配的版本，再下载对应电脑架构的 ZIP，**完整解压**。同目录应有 `Charloom.exe`、`charloom-cli.exe`、DLL 和资源文件；不要只复制 EXE。程序已包含运行时，不需要安装 .NET SDK。
 
 在解压目录打开 PowerShell，或用下面的命令进入目录。示例安装路径请改成你的实际路径：
 
@@ -422,6 +422,20 @@ FIGlet 字体名或 ID 来自 `fonts list`，不要把系统字体名当作 FIGl
 
 文字编辑会清除当前结果颜色网格；撤销和原生成基准保留之前颜色。需要原样保留彩色作品时，先保存项目或输出副本。
 
+### 剪贴板（alpha.6 开发源码）
+
+已发布 alpha.5 没有此命令；先用 --version 和 clipboard --help 确认。读取文本不会改项目，图片先存 PNG 再转换。下面的 write 会替换系统剪贴板，paste 只改编辑状态；原项目仍须显式保存。
+
+```powershell
+& $cli clipboard read --output pasted.txt
+& $cli clipboard read --format PNG --output pasted.png
+& $cli clipboard write --project hello.asciiproj
+& $cli clipboard paste --project hello.asciiproj --apply
+& $cli history undo --project hello.asciiproj
+```
+
+文本原样读取，8 MB上限；图片40 MB／8000万像素。保存默认不覆盖；占用错误 code 为 clipboard_busy，释放剪贴板后可重试；内容格式错误为 clipboard_format。--selection 需要已有选区。没有 --apply 时不读取剪贴板或改项目。
+
 ## 9. 多项目工作区与恢复
 
 ### 候选结果：重新生成时保留手工编辑
@@ -681,4 +695,4 @@ CLI 工作区清单仍独立保存，不会变成桌面标签。`--desktop-data`
 
 资源边界：图片输入 40 MB／8000 万像素，文本输入 8 MB，ANSI 4 MB；算法自身的更低限制仍生效，例如加密编码通常输入 1 MB、还原输入 4 MB。作品网格最多 400 万列位；图像导出最多 4000 万像素且每边不超过 32767，HTML／SVG 标记最多 1600 万字符。侧文件 100 MB、历史 100 步／64 MB、工作区 32 项。
 
-当前没有独立 CLI 剪贴板、原图对比／视图控制、几何历史、代码变量包装等入口，也没有终端交互编辑器。动画／摄像头／3D 继续冻结。用 `capabilities --json` 查询实际支持能力，不把计划中的命令当成已实现功能。
+当前没有独立 CLI 原图对比／视图控制、几何历史、代码变量包装等入口，也没有终端交互编辑器。动画／摄像头／3D 继续冻结。用 `capabilities --json` 查询实际支持能力，不把计划中的命令当成已实现功能。

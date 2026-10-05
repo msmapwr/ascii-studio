@@ -4,7 +4,7 @@
 
 ## 版本与范围
 
-当前控制台预发布为 `1.0.0-alpha.5`，共有 61 个命令。Windows x64 / ARM64 ZIP 同时包含 `Charloom.exe` 和 `charloom-cli.exe`。全部解压后在终端运行；无需开发 SDK。旧 CLI 名称 `asciistudio-cli.exe` 在首个公开 Charloom 预发布周期保留为同实现兼容入口。默认数据目录继续使用 AsciiStudio，以保留旧偏好和字体。
+当前源码控制台版本为 `1.0.0-alpha.6`，共有 64 个命令。Windows x64 / ARM64 ZIP 同时包含 `Charloom.exe` 和 `charloom-cli.exe`。全部解压后在终端运行；无需开发 SDK。旧 CLI 名称 `asciistudio-cli.exe` 在首个公开 Charloom 预发布周期保留为同实现兼容入口。默认数据目录继续使用 AsciiStudio，以保留旧偏好和字体。
 
 **1.0 的最终验收要求是桌面功能全部有命令入口，而非仅支持转换。当前尚未达到全部覆盖。** 中文／英文桌面界面、新个性化设置和扩展动效也在后续预发布实现。正式 1.0.0 仍需用户明确授权。
 
@@ -40,7 +40,7 @@
 | 替换／插入／删除／查找／选区变换、持久撤销重做 | `edit show/select/replace/insert/delete/find/transform`，`history list/undo/redo/clear` | 已实现，100 步／64 MB |
 | 多项目工作区、active 项目、最近文件、会话恢复 | `workspace new/open/switch/close/list/recent/clear-recent/recovery/restore` | 已实现，CLI 独立清单与状态 |
 | 候选生成结果接受／保留／独立保存 | `candidate create/status/show/accept/save/discard` | 已实现，保留手工结果和来源 |
-| 剪贴板图片／文字读写 | 后续 `clipboard` | 待实现，显式调用 |
+| 剪贴板文本复制／粘贴、图片读取 | `clipboard read/write/paste` | 显式调用；文本8MB，PNG40MB/8000万像素；粘贴需apply |
 | 缩放、适应、分页、行跳转、选区定位、原图对比 | 后续 `preview/selection` | 待实现，TXT／ANSI／PNG／HTML 预览 |
 | 设置搜索／工具栏收藏、个人配方、平台建议 | 后续设置与配方命令 | 待实现，保留输入和编辑结果 |
 | 教程、新手说明与全部导航功能对应 | [中文详细教程](CLI_TUTORIAL.md)，后续 `tutorial` 与帮助扩展 | 文档已完成；命令入口与新手说明待实现 |
@@ -53,7 +53,7 @@
 - 文本来源四选一：`--text`、UTF-8 `--input`、`--stdin`、`--project`。文本 stdout 不额外加换行；需要脚本精确 UTF-8 输入时直接使用重定向文件或 UTF-8 管道。
 - `--set Name=Value` 支持模型字段；嵌套用 `geometry.Left=10` 或 `layout.MaximumWidth=80`。完整字段名与默认值由对应命令 `--help` 提供。
 - `--output` 默认拒绝覆盖；只有 `--overwrite` 可覆盖。项目与导出结果须使用不同路径。单文件写入采用同目录临时文件后替换；多文件输出不是事务。
-- 工具默认输出副本；文本整理和代码注释用项目作为输入时，`--apply` 明确写入可撤销侧文件，原项目暂不改写。已有侧文件的项目再生成请输出副本，当前不覆盖其编辑会话；候选结果管理另行补齐。
+- 工具默认输出副本；文本整理和代码注释用项目作为输入时，`--apply` 明确写入可撤销侧文件，原项目暂不改写。已有侧文件的项目再生成请输出副本，当前不覆盖其编辑会话；可使用 candidate 命令生成并保留独立候选。
 - 图像 40 MB／8000 万像素，文本 8 MB，ANSI 4 MB；算法可能有更低限制。位图最多 4000 万像素且每边不超过 32767，HTML／SVG 最多 1600 万标记字符，解压上限 4 MB。
 - 批处理默认仅当前目录，`--recursive` 才递归，不跟随目录链接；输出目录必须在输入目录之外。同批重名自动编号，已有文件仍须 `--overwrite`；失败继续，报告每项状态并返回 5。
 
@@ -99,3 +99,15 @@
 | 130 | 取消 |
 
 当前不提供终端交互编辑器。后续所有命令须同步加入中英文逐级帮助和桌面功能一致性测试。
+
+## 剪贴板
+
+alpha.6 开发源码提供显式剪贴板命令；已发布的 alpha.5 尚无这些入口。不会监听剪贴板，也不会自动读取、转换或替换作品。
+
+- `clipboard read` 原样输出 Unicode 文本，不额外添加换行；`--output` 保存无 BOM UTF-8，可用 `--json` 返回结构化文本。
+- `clipboard read --format PNG --output image.png` 读取注册 PNG 或 Windows 位图；图片必须显式指定输出路径，默认拒绝覆盖。传统 Windows 位图来源可能不含透明度；PNG 来源保留原字节。
+- `clipboard write --text/--input/--stdin/--project` 四选一，复制纯文本；项目输入使用侧文件中的当前编辑结果，不接受候选，不保存原文件。
+- `clipboard paste --project art.asciiproj --apply` 写入可撤销编辑状态。省略 project 时使用 active；`--selection` 粘贴到已有 Unicode 选区。粘贴时换行／制表符沿用编辑器的标准化。保存仍使用 project save。
+- 文本上限8MB UTF-8，图片40MB PNG／8000万像素；NUL、损坏编码与超限输入拒绝处理。打开剪贴板最多尝试5次，间隔50ms；占用返回退出码4与固定 `clipboard_busy`，缺失／无效内容为退出码3与 `clipboard_format`。其他 I/O 使用既有错误码。
+- Windows剪贴板不是事务；写入前验证和准备内存，但系统在清空旧内容后若传输失败，旧内容可能已改变。明确运行 write 才会改动系统剪贴板。
+- 自动测试使用注入替身，检查命令、文件保护、历史及错误。真实系统剪贴板只在显式验收时使用，本轮未读取或改写个人剪贴板。

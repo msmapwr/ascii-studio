@@ -4,7 +4,7 @@
 
 ## CLI 教程
 
-CLI 教程依据 [CLI_TUTORIAL.md](CLI_TUTORIAL.md)，网站校对副本位于 [WEBSITE_CLI_SOURCE.md](WEBSITE_CLI_SOURCE.md)。副本保留命令原文，安装入口改用 Releases 列表，并提醒读者核对 1.0.0-alpha.5 的版本要求。本轮已核对 main 中提交的源教程，只调整网站副本的安装入口。
+CLI 教程依据 [CLI_TUTORIAL.md](CLI_TUTORIAL.md)，网站校对副本位于 [WEBSITE_CLI_SOURCE.md](WEBSITE_CLI_SOURCE.md)。副本保留命令原文，安装入口改用 Releases 列表，并提醒读者核对 1.0.0-alpha.6 的版本要求。本轮已核对 main 中提交的源教程，只调整网站副本的安装入口。
 
 源教程变化后先同步并校对副本，再按顺序运行：
 
@@ -17,7 +17,7 @@ python scripts/check-website-cli.py
 node scripts/check-website-branding.mjs
 ```
 
-生成器只转换支持的 Markdown 结构，转义文字并限制链接协议。检查脚本逐字核对全部 54 个代码示例和 14 章顺序。PowerShell 示例由 CLI 教程烟测覆盖，网页不会运行命令。浏览器验收覆盖桌面、320px 手机目录、复制反馈与代码键盘滚动，页面无整页横向溢出。
+生成器只转换支持的 Markdown 结构，转义文字并限制链接协议。检查脚本逐字核对全部 55 个代码示例和 14 章顺序。PowerShell 示例由 CLI 教程烟测覆盖，网页不会运行命令。浏览器验收覆盖桌面、320px 手机目录、复制反馈与代码键盘滚动，页面无整页横向溢出。
 
 ## 修改内容
 
