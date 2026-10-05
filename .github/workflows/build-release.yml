@@ -56,7 +56,7 @@ jobs:
       - name: Upload Windows package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: AsciiStudio-${{ steps.build.outputs.version }}-win-${{ matrix.architecture }}
+          name: Charloom-${{ steps.build.outputs.version }}-win-${{ matrix.architecture }}
           path: artifacts/release/*
           if-no-files-found: error
           retention-days: 14
@@ -76,7 +76,7 @@ jobs:
       - name: Download verified build
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          pattern: AsciiStudio-${{ needs.build.outputs.version }}-win-*
+          pattern: Charloom-${{ needs.build.outputs.version }}-win-*
           path: artifacts/downloads
       - name: Verify and collect both architectures
         shell: pwsh

@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 if ($Tag -notmatch '^v\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$') { throw 'Invalid release tag.' }
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskOutput = Join-Path $taskRoot 'artifacts/release'
-$taskArchives = @(Get-ChildItem -LiteralPath $taskOutput -Filter "AsciiStudio-$($Tag.Substring(1))-win-*.zip" | Where-Object { $_.Name -match '-win-(x64|arm64)\.zip$' } | Sort-Object Name)
+$taskArchives = @(Get-ChildItem -LiteralPath $taskOutput -Filter "Charloom-$($Tag.Substring(1))-win-*.zip" | Where-Object { $_.Name -match '-win-(x64|arm64)\.zip$' } | Sort-Object Name)
 if (!$taskArchives.Count) { throw 'Missing release archives.' }
 $taskChecksums = Join-Path $taskOutput 'SHA256SUMS.txt'
 $taskNotes = Join-Path $taskOutput 'release-notes.md'
@@ -18,7 +18,7 @@ $taskExisting = & gh release view $Tag --json isDraft 2>$null
 if ($LASTEXITCODE -eq 0) {
     if (!(($taskExisting | ConvertFrom-Json).isDraft)) { Write-Output "Release $Tag already published; leaving its assets unchanged."; return }
 } else {
-    $taskArguments = @('release', 'create', $Tag, '--verify-tag', '--draft', '--title', "AsciiStudio $Tag", '--notes-file', $taskNotes)
+    $taskArguments = @('release', 'create', $Tag, '--verify-tag', '--draft', '--title', "Charloom $Tag", '--notes-file', $taskNotes)
     if ($taskPrerelease) { $taskArguments += '--prerelease' }
     & gh @taskArguments
     if ($LASTEXITCODE) { throw 'Could not create draft release.' }

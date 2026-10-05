@@ -1,7 +1,7 @@
 param([Parameter(Mandatory)][string]$PublishDirectory)
 $ErrorActionPreference='Stop'
 $taskDirectory=(Resolve-Path -LiteralPath $PublishDirectory).Path
-$taskExecutable=Join-Path $taskDirectory 'asciistudio-cli.exe'
+$taskExecutable=Join-Path $taskDirectory 'charloom-cli.exe'
 $taskData=Join-Path (Split-Path $PSScriptRoot -Parent) "artifacts/cli-startup-tests/$([Guid]::NewGuid().ToString('N'))"
 function Invoke-StudioCli([string[]]$Arguments,[string]$InputText='') {
     $taskStart=[Diagnostics.ProcessStartInfo]::new($taskExecutable)
@@ -29,6 +29,13 @@ $taskText=Invoke-StudioCli @('text','--text','abc')
 if ($taskText -notlike '*_*') { throw 'FIGlet CLI produced no expected output.' }
 $taskCapabilities=Invoke-StudioCli @('capabilities','--json') | ConvertFrom-Json
 if ($taskCapabilities.result.desktopParityComplete -ne $false -or !$taskCapabilities.result.pending.Count) { throw 'Prerelease parity status is inaccurate.' }
+$taskCurrentExecutable=$taskExecutable
+$taskExecutable=Join-Path $taskDirectory 'asciistudio-cli.exe'
+if (!(Test-Path -LiteralPath $taskExecutable)) { throw 'Legacy CLI entry missing.' }
+$taskLegacyHelp=Invoke-StudioCli @('--help','--language','en-US')
+if ($taskLegacyHelp -cne $taskHelp) { throw 'Legacy CLI entry differs from new entry.' }
+$taskExecutable=$taskCurrentExecutable
+Write-Output 'PASS legacy CLI entry loads the same Charloom implementation'
 Write-Output "PASS standalone CLI help, UTF-8 stdin, FIGlet and honest capability reporting: $taskExecutable"
 if ($taskCapabilities.result.complete -contains 'persistent-edit-history') {
     $taskProject=Join-Path $taskData 'edit-smoke.asciiproj'

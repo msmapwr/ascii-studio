@@ -1,0 +1,43 @@
+<Window x:Class="Charloom.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <Grid x:Name="Root" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+  <Grid.RowDefinitions><RowDefinition Height="64"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+  <Grid Padding="24,0" ColumnSpacing="12">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <Image Source="ms-appx:///Assets/Logo128.png" Width="44" Height="44" AutomationProperties.Name="Charloom Logo" AutomationProperties.AutomationId="BrandLogo"/>
+   <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+    <TextBlock x:Name="BrandTitle" Text="Charloom｜字织" FontSize="19" FontWeight="SemiBold" AutomationProperties.AutomationId="BrandTitle"/>
+    <TextBlock Text="离线 ASCII / ANSI 字符艺术创作工具" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="BrandSubtitle"/>
+   </StackPanel>
+  </Grid>
+  <NavigationView x:Name="Navigation" Grid.Row="1" PaneDisplayMode="Auto" CompactModeThresholdWidth="640" ExpandedModeThresholdWidth="1008" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="True" OpenPaneLength="210" SelectionChanged="OnNavigationChanged" AutomationProperties.AutomationId="AppNavigation">
+   <NavigationView.MenuItems>
+    <NavigationViewItem Content="开始创作" Tag="home" Icon="Home" AutomationProperties.AutomationId="NavHome"/>
+    <NavigationViewItem Content="图片转换" Tag="image" Icon="Pictures" AutomationProperties.AutomationId="NavImage"/>
+    <NavigationViewItem Content="文字转换" Tag="text" Icon="Font" AutomationProperties.AutomationId="NavText"/>
+    <NavigationViewItem Content="ANSI 查看器" Tag="ansi" Icon="View" AutomationProperties.AutomationId="NavAnsi"/>
+    <NavigationViewItemSeparator/>
+    <NavigationViewItem Content="生成器" Tag="generators" Icon="Shuffle" AutomationProperties.AutomationId="NavGenerator"/>
+    <NavigationViewItem Content="文本工具" Tag="tools" Icon="Edit" AutomationProperties.AutomationId="NavTools"/>
+    <NavigationViewItem Content="加密与编码" Tag="crypto" Icon="Permissions" AutomationProperties.AutomationId="NavCrypto"/>
+    <NavigationViewItem Content="最近项目" Tag="library" Icon="Folder" AutomationProperties.AutomationId="NavLibrary"/>
+   </NavigationView.MenuItems>
+   <NavigationView.FooterMenuItems>
+    <NavigationViewItem Content="使用教程" Tag="tutorial" Icon="Help" AutomationProperties.AutomationId="NavTutorial"/>
+   </NavigationView.FooterMenuItems>
+   <Grid x:Name="PageContainer" Padding="24,12,24,20">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <InfoBar x:Name="Notice" IsOpen="False" IsClosable="True" Margin="0,0,0,12"/>
+    <TabView x:Name="ProjectTabs" Grid.Row="1" IsAddTabButtonVisible="True" AddTabButtonClick="OnAddProjectTab" TabCloseRequested="OnProjectTabCloseRequested" SelectionChanged="OnProjectTabSelectionChanged" AutomationProperties.AutomationId="ProjectTabs">
+     <TabView.TabItems>
+      <TabViewItem x:Name="WorkspaceTab" Header="工作区" IsClosable="False" AutomationProperties.AutomationId="WorkspaceTab">
+       <ContentControl x:Name="PageHost" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+      </TabViewItem>
+     </TabView.TabItems>
+    </TabView>
+   </Grid>
+  </NavigationView>
+  <Image x:Name="ThemeSnapshot" Grid.RowSpan="2" Stretch="Fill" Visibility="Collapsed" IsHitTestVisible="False" AutomationProperties.AutomationId="ThemeTransitionOverlay"/>
+ </Grid>
+</Window>

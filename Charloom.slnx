@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Charloom.Cli.Tests/Charloom.Cli.Tests.csproj" />
+    <Project Path="tests/Charloom.Core.Tests/Charloom.Core.Tests.csproj" />
+    <Project Path="tests/Charloom.Creation.Tests/Charloom.Creation.Tests.csproj" />
+  </Folder>
+  <Project Path="src/Charloom.Core/Charloom.Core.csproj" />
+  <Project Path="src/Charloom.Application/Charloom.Application.csproj" />
+  <Project Path="src/Charloom.Cli/Charloom.Cli.csproj" />
+  <Project Path="src/Charloom/Charloom.csproj" />
+</Solution>

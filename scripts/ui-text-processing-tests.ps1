@@ -4,7 +4,7 @@ $env:Path=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environme
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskResults = [Collections.Generic.List[object]]::new()
 $taskWindows = & winapp ui list-windows -a $AppPid --json | ConvertFrom-Json
-$taskHwnd = ($taskWindows | Where-Object { $_.title -like 'AsciiStudio*' -and $_.ownerHwnd -eq 0 } | Select-Object -First 1).hwnd
+$taskHwnd = ($taskWindows | Where-Object { $_.title -like 'Charloom*' -and $_.ownerHwnd -eq 0 } | Select-Object -First 1).hwnd
 if (!$taskHwnd) { throw 'Main window not found.' }
 function UI {
     $taskResponse = & winapp ui @args -w $taskHwnd 2>&1

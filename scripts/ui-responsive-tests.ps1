@@ -25,7 +25,7 @@ $taskResults=[System.Collections.Generic.List[object]]::new()
 function Main-Window {
  for($taskAttempt=0;$taskAttempt -lt 15;$taskAttempt++) {
  $taskWindows=& winapp ui list-windows -a $script:AppPid --json | ConvertFrom-Json
- $script:taskHwnd=($taskWindows | Where-Object {$_.title -like 'AsciiStudio*' -and $_.ownerHwnd -eq 0} | Select-Object -First 1).hwnd
+ $script:taskHwnd=($taskWindows | Where-Object {$_.title -like 'Charloom*' -and $_.ownerHwnd -eq 0} | Select-Object -First 1).hwnd
  if($script:taskHwnd){return}
  Start-Sleep -Milliseconds 200
  }
@@ -110,7 +110,7 @@ Check 'Narrow home preserves all creation cards' {
 }
 Check 'Window placement persists through restart' {
  Resize-Window 900 600;UI invoke Close
- $taskLaunch=& (Join-Path (Split-Path $PSScriptRoot -Parent) 'BuildAndRun.ps1') (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/AsciiStudio/AsciiStudio.csproj') -c Release --no-build --detach
+ $taskLaunch=& (Join-Path (Split-Path $PSScriptRoot -Parent) 'BuildAndRun.ps1') (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/Charloom/Charloom.csproj') -c Release --no-build --detach
  if($LASTEXITCODE -ne 0){throw 'App relaunch failed.'}
  $script:AppPid=[int]($taskLaunch | Select-Object -Last 1);Main-Window
  $taskState=Window-Snapshot;$taskRect=$taskState.elements[0]

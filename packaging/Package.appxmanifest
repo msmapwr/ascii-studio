@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" IgnorableNamespaces="uap rescap">
  <Identity Name="AsciiStudio.Desktop" Publisher="CN=AsciiStudio Development" Version="1.0.0.0" ProcessorArchitecture="x64"/>
- <Properties><DisplayName>AsciiStudio</DisplayName><PublisherDisplayName>AsciiStudio</PublisherDisplayName><Logo>Assets\StoreLogo.png</Logo></Properties>
+ <Properties><DisplayName>Charloom｜字织</DisplayName><PublisherDisplayName>Charloom</PublisherDisplayName><Logo>Assets\StoreLogo.png</Logo></Properties>
  <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0"/></Dependencies>
  <Resources><Resource Language="zh-cn"/><Resource Language="en-us"/></Resources>
- <Applications><Application Id="App" Executable="AsciiStudio.exe" EntryPoint="Windows.FullTrustApplication"><uap:VisualElements DisplayName="AsciiStudio" Description="本地图片与文字字符创作工作室" BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png"/></Application></Applications>
+ <Applications><Application Id="App" Executable="Charloom.exe" EntryPoint="Windows.FullTrustApplication"><uap:VisualElements DisplayName="Charloom｜字织" Description="离线 ASCII / ANSI 字符艺术创作工具 · 把字符织成画面" BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png"/></Application></Applications>
  <Capabilities><rescap:Capability Name="runFullTrust"/></Capabilities>
 </Package>

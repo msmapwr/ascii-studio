@@ -4,10 +4,10 @@ $ErrorActionPreference='Stop'
 $taskRoot=Split-Path $PSScriptRoot -Parent
 if (!$PublishDirectory) { $PublishDirectory=Join-Path $taskRoot "artifacts/publish-$Architecture" }
 $taskLayout=(Resolve-Path -LiteralPath $PublishDirectory).Path
-foreach ($taskFile in @('AsciiStudio.exe','AsciiStudio.pri','App.xbf','MainWindow.xbf')) {
+foreach ($taskFile in @('Charloom.exe','Charloom.pri','App.xbf','MainWindow.xbf')) {
     if (!(Test-Path -LiteralPath (Join-Path $taskLayout $taskFile))) { throw "Missing verified publish resource: $taskFile. Run ci-build.ps1 first." }
 }
-[xml]$taskProject=Get-Content (Join-Path $taskRoot 'src/AsciiStudio/AsciiStudio.csproj') -Raw
+[xml]$taskProject=Get-Content (Join-Path $taskRoot 'src/Charloom/Charloom.csproj') -Raw
 $taskVersion=[string]$taskProject.Project.PropertyGroup.Version
 $taskOutput=Join-Path $taskRoot 'artifacts/packages'
 New-Item -ItemType Directory -Path $taskOutput -Force | Out-Null
@@ -17,7 +17,7 @@ $taskManifestPath=Join-Path $taskOutput "Package-$Architecture.appxmanifest"
 $taskManifest.Save($taskManifestPath)
 $env:Path=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User')
 $taskLabel=if ($CertificatePath) { 'signed' } else { 'unsigned' }
-$taskArguments=@('package',$taskLayout,'--manifest',$taskManifestPath,'--skip-pri','--output',(Join-Path $taskOutput "AsciiStudio-$taskVersion-win-$Architecture-$taskLabel.msix"))
+$taskArguments=@('package',$taskLayout,'--manifest',$taskManifestPath,'--skip-pri','--output',(Join-Path $taskOutput "Charloom-$taskVersion-win-$Architecture-$taskLabel.msix"))
 if($CertificatePath){$taskArguments+=@('--cert',$CertificatePath,'--cert-password',$CertificatePassword)}else{$taskArguments+='--no-sign'}
 & winapp @taskArguments
 if($LASTEXITCODE -ne 0){throw "MSIX packaging failed: $LASTEXITCODE"}

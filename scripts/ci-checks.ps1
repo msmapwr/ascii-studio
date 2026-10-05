@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
-[xml]$taskProject = Get-Content (Join-Path $taskRoot 'src/AsciiStudio/AsciiStudio.csproj') -Raw
+[xml]$taskProject = Get-Content (Join-Path $taskRoot 'src/Charloom/Charloom.csproj') -Raw
 $taskTag = 'v' + $taskProject.Project.PropertyGroup.Version
 $taskCalls = [Collections.Generic.List[string]]::new()
 $taskMode = 'new'

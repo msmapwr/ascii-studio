@@ -1,7 +1,7 @@
 param([Parameter(Mandatory)][string]$PublishDirectory)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
-$taskExecutable = Join-Path (Resolve-Path -LiteralPath $PublishDirectory).Path 'asciistudio-cli.exe'
+$taskExecutable = Join-Path (Resolve-Path -LiteralPath $PublishDirectory).Path 'charloom-cli.exe'
 $taskDirectory = Join-Path $taskRoot "artifacts/tutorial-tests/$([Guid]::NewGuid().ToString('N'))"
 New-Item -ItemType Directory -Path $taskDirectory | Out-Null
 function Run([string[]]$Arguments) {

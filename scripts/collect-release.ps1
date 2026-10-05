@@ -5,7 +5,7 @@ $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskOutput = Join-Path $taskRoot 'artifacts/release'
 New-Item -ItemType Directory -Force $taskOutput | Out-Null
 $taskHashes = foreach ($taskArchitecture in @('x64','arm64')) {
-    $taskName = "AsciiStudio-$Version-win-$taskArchitecture"
+    $taskName = "Charloom-$Version-win-$taskArchitecture"
     $taskInput = Join-Path $taskRoot "artifacts/downloads/$taskName"
     $taskArchive = Join-Path $taskInput "$taskName.zip"
     $taskActual = (Get-FileHash -LiteralPath $taskArchive -Algorithm SHA256).Hash.ToLowerInvariant() + "  $taskName.zip"
@@ -14,4 +14,4 @@ $taskHashes = foreach ($taskArchitecture in @('x64','arm64')) {
     $taskActual
 }
 $taskHashes | Set-Content (Join-Path $taskOutput 'SHA256SUMS.txt') -Encoding utf8NoBOM
-Copy-Item -LiteralPath (Join-Path $taskRoot "artifacts/downloads/AsciiStudio-$Version-win-x64/release-notes.md") -Destination $taskOutput -Force
+Copy-Item -LiteralPath (Join-Path $taskRoot "artifacts/downloads/Charloom-$Version-win-x64/release-notes.md") -Destination $taskOutput -Force

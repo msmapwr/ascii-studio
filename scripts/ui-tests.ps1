@@ -5,8 +5,8 @@ $taskOutput=Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts/ui-layout'
 New-Item -ItemType Directory -Path $taskOutput -Force | Out-Null
 $taskResults=[System.Collections.Generic.List[object]]::new()
 $taskWindows=& winapp ui list-windows -a $AppPid --json | ConvertFrom-Json
-$taskHwnd=($taskWindows | Where-Object {$_.title -like 'AsciiStudio*' -and $_.ownerHwnd -eq 0} | Select-Object -First 1).hwnd
-if(-not $taskHwnd){throw 'AsciiStudio main window not found.'}
+$taskHwnd=($taskWindows | Where-Object {$_.title -like 'Charloom*' -and $_.ownerHwnd -eq 0} | Select-Object -First 1).hwnd
+if(-not $taskHwnd){throw 'Charloom main window not found.'}
 function Invoke-UI {
     $taskResponse=& winapp ui @args -w $taskHwnd 2>&1
     if($LASTEXITCODE -ne 0){throw ($taskResponse -join "`n")}

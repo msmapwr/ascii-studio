@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType><IsTestProject>true</IsTestProject>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Charloom.Core/Charloom.Core.csproj" />
+    <PackageReference Include="Figgle" Version="0.6.6" />
+    <PackageReference Include="Figgle.Fonts" Version="0.6.6" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+    <Compile Include="../../src/Charloom/Services/ProductIdentity.cs" Link="ProductIdentity.cs" />
+    <Compile Include="../../src/Charloom/Services/TextFontLibrary.cs" Link="TextFontLibrary.cs" />
+    <Compile Include="../../src/Charloom/Services/TextRasterService.cs" Link="TextRasterService.cs" />
+    <Compile Include="../../src/Charloom/Services/FontCatalog.cs" Link="FontCatalog.cs" />
+    <Compile Include="../../src/Charloom/Services/WorkspaceService.cs" Link="WorkspaceService.cs" />
+    <Compile Include="../../src/Charloom/Services/ImagingService.cs" Link="ImagingService.cs" />
+    <Compile Include="../../src/Charloom/Services/GlyphPainter.cs" Link="GlyphPainter.cs" />
+    <Compile Include="../../src/Charloom/Services/ImageSourceState.cs" Link="ImageSourceState.cs" />
+    <Compile Include="../../src/Charloom/Services/ImagePipelineService.cs" Link="ImagePipelineService.cs" />
+    <Compile Include="../../src/Charloom/Services/ImageCreationController.cs" Link="ImageCreationController.cs" />
+    <Compile Include="../../src/Charloom/Services/TextCreationController.cs" Link="TextCreationController.cs" />
+    <Compile Include="../../src/Charloom/Services/BoundedFile.cs" Link="BoundedFile.cs" />
+    <Compile Include="../../src/Charloom/Services/ProjectFileService.cs" Link="ProjectFileService.cs" />
+    <Compile Include="../../src/Charloom/Services/AnsiProjectMapper.cs" Link="AnsiProjectMapper.cs" />
+    <Compile Include="../../src/Charloom/Services/WorkspaceSessionService.cs" Link="WorkspaceSessionService.cs" />
+    <Compile Include="../../src/Charloom/Services/CreationSnapshot.cs" Link="CreationSnapshot.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

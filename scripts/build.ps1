@@ -7,6 +7,6 @@ try {
     # project uses a build-only command with the skill analyzer in build props.
     $taskAnalyzer=Join-Path $env:USERPROFILE '.codex/skills/winui-dev-workflow/analyzer/Microsoft.WindowsAppSDK.Analyzers.dll'
     if(!(Test-Path -LiteralPath $taskAnalyzer)){throw 'Install microsoft/win-dev-skills before building.'}
-    & dotnet build 'src/AsciiStudio/AsciiStudio.csproj' -c $Configuration
+    & dotnet build 'src/Charloom/Charloom.csproj' -c $Configuration
     if ($LASTEXITCODE -ne 0) { throw "Build failed: $LASTEXITCODE" }
 } finally { Pop-Location }
