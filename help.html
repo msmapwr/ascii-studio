@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
-    <meta name="application-version" content="0.13.1">
+    <meta name="application-version" content="0.13.2">
         <meta charset="utf-8" >
         <meta name="viewport" content="width=device-width, initial-scale=1" >
         <meta
             name="description"
-            content="查找 AsciiStudio 下载、运行、字体、中文排版、图片转换、项目与导出的常见问题。"
+            content="查找 Charloom 下载、运行、字体、中文排版、图片转换、项目与导出的常见问题。"
         >
         <meta
             property="og:title"
@@ -14,7 +14,7 @@
         >
         <meta
             property="og:description"
-            content="查找 AsciiStudio 下载、运行、字体、中文排版、图片转换、项目与导出的常见问题。"
+            content="查找 Charloom 下载、运行、字体、中文排版、图片转换、项目与导出的常见问题。"
         >
         <meta property="og:type" content="website" >
         <meta name="twitter:card" content="summary" >
@@ -123,13 +123,13 @@
       <search class="help-search" id="help-search" hidden><label for="help-query">搜索问题或关键词</label><div class="search-controls"><input id="help-query" type="search" maxlength="120" placeholder="例如：中文、字体、PNG、项目" aria-describedby="help-search-note"><button class="button" id="help-clear" type="button">清除搜索</button></div><p id="help-search-note">在本页文字中搜索；多个关键词用空格分开。</p><p id="help-count" role="status" aria-live="polite"></p><p id="help-empty" hidden>没有找到匹配的问题。试试更短的关键词，或清除搜索查看全部问题。</p></search>
       <section class="guide-section" data-help-group="download" aria-labelledby="help-download-title"><h2 id="help-download-title">下载与运行</h2>
         <details class="faq-item" data-help-item="architecture"><summary>选 x64 还是 ARM64？</summary><p>在 Windows 的“设置 → 系统 → 系统信息”查看系统类型，然后下载对应架构 ZIP。x64 与 ARM64 都提供构建包；ARM64 实机运行验收独立记录，不能仅凭构建成功推定所有设备已验证。</p><a href="downloads.html">查看下载与运行说明</a></details>
-        <details class="faq-item" data-help-item="start"><summary>双击 AsciiStudio.exe 后没有窗口？</summary><p>先确认已完整解压到独立目录，使用对应架构的包，且没有混入旧版文件。不要在压缩包里直接运行或只复制 EXE。旧包曾存在资源遗漏问题，请核对当前 Releases 的更新说明。</p><a href="changelog.html">查看修复记录</a></details>
+        <details class="faq-item" data-help-item="start"><summary>双击 Charloom.exe 后没有窗口？</summary><p>先确认已完整解压到独立目录，使用对应架构的包，且没有混入旧版文件。不要在压缩包里直接运行或只复制 EXE。旧包曾存在资源遗漏问题，请核对当前 Releases 的更新说明。</p><a href="changelog.html">查看修复记录</a></details>
         <details class="faq-item" data-help-item="checksum"><summary>SHA-256 校验值不同怎么办？</summary><p>确认 ZIP 文件名、版本与 SHA256SUMS.txt 一致。重新下载对应 ZIP 后再核对。校验用于检查下载完整性，不能代替对下载来源的确认。</p><a href="downloads.html#checksum-title">查看校验命令</a></details>
       </section>
       <section class="guide-section" data-help-group="text" aria-labelledby="help-text-title"><h2 id="help-text-title">文字、字体与中文</h2>
         <details class="faq-item" data-help-item="chinese"><summary>中文转换失败，或出现方框？</summary><p>FIGlet 模式只接受 ASCII 输入，中文与中英文混排请选系统字体模式。方框可能是字体缺少对应字形，换用本机支持这些字符的字体，并查看页面缺字提示。</p><a href="guide.html#text-guide">查看文字与中文教程</a></details>
-        <details class="faq-item" data-help-item="alignment"><summary>中文、emoji 或边框不对齐？</summary><p>应用按字符簇与显示列计算网格，中文、全角和 emoji 采用双列。查看工具使用的实际字体可能不同；试用等宽字体，保留空格与换行，并与 PNG 导出对照。</p><a href="https://github.com/msmapwr/ascii-studio/blob/main/docs/UNICODE.md">查看 Unicode 规则</a></details>
-        <details class="faq-item" data-help-item="font"><summary>打开项目时提示字体缺失？</summary><p>检查本机是否安装所用系统字体。FIGlet 导入字体按摘要引用，缺失时重新导入同一字体文件。先保留原项目与现有结果，再决定是否替换字体重新生成。</p><a href="https://github.com/msmapwr/ascii-studio/blob/main/docs/TEXT_LAYOUT.md">查看字体导入说明</a></details>
+        <details class="faq-item" data-help-item="alignment"><summary>中文、emoji 或边框不对齐？</summary><p>应用按字符簇与显示列计算网格，中文、全角和 emoji 采用双列。查看工具使用的实际字体可能不同；试用等宽字体，保留空格与换行，并与 PNG 导出对照。</p><a href="https://github.com/msmapwr/charloom/blob/main/docs/UNICODE.md">查看 Unicode 规则</a></details>
+        <details class="faq-item" data-help-item="font"><summary>打开项目时提示字体缺失？</summary><p>检查本机是否安装所用系统字体。FIGlet 导入字体按摘要引用，缺失时重新导入同一字体文件。先保留原项目与现有结果，再决定是否替换字体重新生成。</p><a href="https://github.com/msmapwr/charloom/blob/main/docs/TEXT_LAYOUT.md">查看字体导入说明</a></details>
       </section>
       <section class="guide-section" data-help-group="image" aria-labelledby="help-image-title"><h2 id="help-image-title">图片与转换</h2>
         <details class="faq-item" data-help-item="ratio"><summary>图片变扁、变长或细节太少？</summary><p>检查字符宽高比、结果字体与输出列数，先保持原图比例。列数低会丢失细节；增加列数也会提高资源消耗。先裁剪主体，再逐项比较参数效果。</p><a href="guide.html#image-guide">查看图片转换教程</a></details>
@@ -139,9 +139,9 @@
       <section class="guide-section" data-help-group="project" aria-labelledby="help-project-title"><h2 id="help-project-title">保存、项目与导出</h2>
         <details class="faq-item" data-help-item="project"><summary>怎样保存，才能下次继续编辑？</summary><p>保存 .asciiproj 项目，保留创作来源与参数。TXT、PNG、JSON 等导出作品文件不能替代项目。更新应用前保存项目，并另外保留备份。</p><a href="guide.html#save-guide">项目与作品文件的区别</a></details>
         <details class="faq-item" data-help-item="png"><summary>PNG 导出提示过大？</summary><p>位图最多 4000 万像素，单边不超过 32767 像素。降低字号或导出倍率；较大作品也可使用文本格式。预览缩放不改变导出尺寸。</p><a href="formats.html#format-notes">查看导出预算</a></details>
-        <details class="faq-item" data-help-item="ansi"><summary>ANSI 文件打开后出现乱码或控制字符？</summary><p>用应用 ANSI 查看器或支持 ANSI 的工具打开。旧文件自动检测 UTF-8 失败后使用 CP437，可手动切换；普通文本编辑器不一定能解析颜色控制序列。</p><a href="https://github.com/msmapwr/ascii-studio/blob/main/docs/ANSI_VIEWER.md">查看编码与 ANSI 说明</a></details>
+        <details class="faq-item" data-help-item="ansi"><summary>ANSI 文件打开后出现乱码或控制字符？</summary><p>用应用 ANSI 查看器或支持 ANSI 的工具打开。旧文件自动检测 UTF-8 失败后使用 CP437，可手动切换；普通文本编辑器不一定能解析颜色控制序列。</p><a href="https://github.com/msmapwr/charloom/blob/main/docs/ANSI_VIEWER.md">查看编码与 ANSI 说明</a></details>
       </section>
-      <section class="guide-section" aria-labelledby="help-feedback-title"><h2 id="help-feedback-title">仍然没有解决？</h2><p>在 Issues 说明应用版本、Windows 版本与架构、复现步骤、实际结果及错误文字。截图前隐藏私人文件路径与作品内容；能用小样例复现时，优先提供该样例。</p><div class="actions"><a class="button button-primary" href="https://github.com/msmapwr/ascii-studio/issues">查看或提交问题</a><a class="text-link" href="changelog.html">先查看已有修复</a></div></section>
+      <section class="guide-section" aria-labelledby="help-feedback-title"><h2 id="help-feedback-title">仍然没有解决？</h2><p>在 Issues 说明应用版本、Windows 版本与架构、复现步骤、实际结果及错误文字。截图前隐藏私人文件路径与作品内容；能用小样例复现时，优先提供该样例。</p><div class="actions"><a class="button button-primary" href="https://github.com/msmapwr/charloom/issues">查看或提交问题</a><a class="text-link" href="changelog.html">先查看已有修复</a></div></section>
     </div>
           </main>
         <footer class="site-footer">
@@ -165,22 +165,22 @@
                     <a href="help.html">帮助中心</a>
                     <a href="roadmap.html">项目路线图</a>
                     <a href="changelog.html">更新日志</a>
-                    <a class="" href="https://github.com/msmapwr/ascii-studio"
+                    <a class="" href="https://github.com/msmapwr/charloom"
                         >GitHub 仓库</a
                     ><a
                         class=""
-                        href="https://github.com/msmapwr/ascii-studio/releases"
+                        href="https://github.com/msmapwr/charloom/releases"
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-describedby="new-tab-note"
                         >Release 更新说明</a
                     ><a
                         class=""
-                        href="https://github.com/msmapwr/ascii-studio/blob/main/docs/ROADMAP.md"
+                        href="https://github.com/msmapwr/charloom/blob/main/docs/ROADMAP.md"
                         >0.9 路线图</a
                     ><a
                         class=""
-                        href="https://github.com/msmapwr/ascii-studio/blob/main/assets/showcase/README.md"
+                        href="https://github.com/msmapwr/charloom/blob/main/assets/showcase/README.md"
                         >展示素材说明</a
                     ><a class="" href="#top">回到顶部</a>
                 </nav>

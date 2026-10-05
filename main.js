@@ -5,7 +5,7 @@ const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const themeNames = { system: "跟随系统", light: "浅色", dark: "深色" };
 let preference = "system";
 try {
-    const saved = localStorage.getItem("asciistudio-theme");
+    const saved = localStorage.getItem("charloom-theme") ?? localStorage.getItem("asciistudio-theme");
     if (Object.hasOwn(themeNames, saved)) preference = saved;
 } catch {
     /* Storage can be unavailable in private or embedded browsing. */
@@ -118,8 +118,8 @@ function initDemo() {
             ? "assets/text-workflow.gif"
             : "assets/text-result.png";
         demoImage.alt = playing
-            ? "AsciiStudio 中输入文字、生成字符画并切换内容的操作过程。"
-            : "AsciiStudio 生成的文字字符画静态结果。";
+            ? "Charloom 中输入文字、生成字符画并切换内容的操作过程。"
+            : "Charloom 生成的文字字符画静态结果。";
         demoCaption.textContent = playing
             ? "文字转换的实际操作过程。"
             : "文字转换结果。";
@@ -238,7 +238,7 @@ async function loadFluent() {
                 if (!Object.hasOwn(themeNames, selected)) return;
                 preference = selected;
                 try {
-                    localStorage.setItem("asciistudio-theme", preference);
+                    localStorage.setItem("charloom-theme", preference);
                 } catch {
                     /* The current theme remains usable without persistence. */
                 }

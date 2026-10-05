@@ -70,7 +70,7 @@ export async function refreshChangelog() {
     status.textContent = "正在读取仓库更新记录…";
     try {
         const response = await fetch(
-            "https://raw.githubusercontent.com/msmapwr/ascii-studio/main/CHANGELOG.md",
+            "https://raw.githubusercontent.com/msmapwr/charloom/main/CHANGELOG.md",
             {
                 signal: AbortSignal.timeout(8000),
                 cache: "no-cache",
