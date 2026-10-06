@@ -9,11 +9,15 @@ namespace Charloom.Cli;
 public sealed class CliConflictException(string message, bool busy = false) : IOException(message)
 { public bool Busy { get; } = busy; }
 public sealed record EditRevision(AsciiDocument Document, bool Edited,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AsciiDocument? Generated = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AsciiDocument? Generated = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ImageGeometry? Geometry = null);
+public sealed record GeometryEditState(List<ImageGeometry> Revisions, int Index);
 public sealed record EditSelection(int Row, int Column, int EndRow, int EndColumn, bool Rectangle = false);
 public sealed record EditState(int Schema, string BaseDigest, List<EditRevision> Revisions, int Index,
     string SavedDigest, AsciiDocument Generated, EditSelection? Selection = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AsciiDocument? Candidate = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AsciiDocument? Candidate = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] GeometryEditState? GeometryHistory = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ImageGeometry? CandidateGeometry = null);
 
 /// <summary>Each invocation locks its sidecar, verifies the source, and commits atomically.</summary>
 public sealed class ProjectEditSession : IDisposable
@@ -26,8 +30,12 @@ public sealed class ProjectEditSession : IDisposable
     public StudioProject Source { get; private set; }
     public EditState State { get; private set; }
     public StudioProject Current => Source with { Document = State.Revisions[State.Index].Document,
-        Edited = State.Revisions[State.Index].Edited, GeneratedDocument = State.Revisions[State.Index].Generated ?? State.Generated };
-    public StudioProject CandidateProject => Source with { Document = State.Candidate ?? throw new CliUsageException("No candidate; use candidate create."), Edited = false, GeneratedDocument = null };
+        Edited = State.Revisions[State.Index].Edited, GeneratedDocument = State.Revisions[State.Index].Generated ?? State.Generated,
+        Geometry = State.Revisions[State.Index].Geometry ?? Source.Geometry };
+    public StudioProject CandidateProject => Current with { Document = State.Candidate ?? throw new CliUsageException("No candidate; use candidate create."),
+        Edited = false, GeneratedDocument = null, Geometry = State.CandidateGeometry ?? Current.Geometry };
+    public ImageGeometry DraftGeometry => State.GeometryHistory is { } history ? history.Revisions[history.Index] : Current.Geometry ?? new();
+    public bool GeometryPending => Source.Mode == "image" && DraftGeometry != (Current.Geometry ?? new());
     public bool Dirty => Digest(State.Revisions[State.Index]) != State.SavedDigest;
     public bool CanUndo => State.Index > 0;
     public bool CanRedo => State.Index < State.Revisions.Count - 1;
@@ -59,7 +67,23 @@ public sealed class ProjectEditSession : IDisposable
                     ?? throw new InvalidDataException("Edit state is empty.");
                 Validate(state);
                 if (state.BaseDigest != digest) throw new CliConflictException("Project changed outside this edit session. Use project recover --output NEW_PATH or project reload --discard-edits.");
-                state = state with { Schema = 2 };
+                state = state with { Schema = Math.Max(state.Schema, 2) };
+            }
+            if (source.Mode == "image")
+            {
+                if (state.Schema == 3 && (state.GeometryHistory is null || state.Revisions.Any(r => r.Geometry is null)
+                    || state.Candidate is not null && state.CandidateGeometry is null)) throw new InvalidDataException("Incomplete image geometry state.");
+                if (state.Schema < 3)
+                {
+                    // Capture absolute geometry before a save can change Source.Geometry.
+                    // Rehash only during migration, not on every image invocation.
+                    var saved = state.Revisions.FindIndex(r => Digest(r) == state.SavedDigest);
+                    var revisions = state.Revisions.Select(r => r with { Geometry = source.Geometry ?? new() }).ToList();
+                    state = state with { Schema = 3, Revisions = revisions,
+                        SavedDigest = saved < 0 ? state.SavedDigest : Digest(revisions[saved]),
+                        GeometryHistory = new([revisions[state.Index].Geometry!], 0),
+                        CandidateGeometry = state.Candidate is null ? null : source.Geometry ?? new() };
+                }
             }
             return new(path, gate, source, state);
         }
@@ -72,7 +96,7 @@ public sealed class ProjectEditSession : IDisposable
         512L + DocumentSize(value.Document) + (value.Generated is null ? 0 : DocumentSize(value.Generated)));
     private static void Validate(EditState state)
     {
-        if (state.Schema is not (1 or 2) || state.Revisions is null || state.Revisions.Count is < 1 or > MaximumSteps + 1
+        if (state.Schema is not (1 or 2 or 3) || state.Revisions is null || state.Revisions.Count is < 1 or > MaximumSteps + 1
             || state.Index < 0 || state.Index >= state.Revisions.Count || state.Generated is null
             || !ValidDigest(state.BaseDigest) || !ValidDigest(state.SavedDigest)) throw new InvalidDataException("Invalid edit state.");
         state.Generated.Validate();
@@ -81,10 +105,21 @@ public sealed class ProjectEditSession : IDisposable
         {
             if (revision?.Document is null || revision.Document.GridVersion != 1) throw new InvalidDataException("Invalid edit revision.");
             revision.Document.Validate();
+            revision.Geometry?.Validate();
             if (revision.Generated is { } generated) { generated.Validate(); if (generated.GridVersion != 1) throw new InvalidDataException("Invalid generated revision."); }
         }
         if (state.Candidate is { } candidate) { candidate.Validate(); if (candidate.GridVersion != 1) throw new InvalidDataException("Invalid candidate grid."); }
         if (state.Schema == 1 && (state.Candidate is not null || state.Revisions.Any(r => r.Generated is not null))) throw new InvalidDataException("Candidate state requires schema 2.");
+        if (state.Schema < 3 && (state.GeometryHistory is not null || state.CandidateGeometry is not null || state.Revisions.Any(r => r.Geometry is not null)))
+            throw new InvalidDataException("Geometry state requires schema 3.");
+        if (state.GeometryHistory is { } geometry)
+        {
+            if (geometry.Revisions is null || geometry.Revisions.Count is < 1 or > 41 || geometry.Index < 0 || geometry.Index >= geometry.Revisions.Count)
+                throw new InvalidDataException("Invalid geometry history.");
+            foreach (var value in geometry.Revisions) (value ?? throw new InvalidDataException("Missing geometry revision.")).Validate();
+        }
+        state.CandidateGeometry?.Validate();
+        if (state.Candidate is null && state.CandidateGeometry is not null) throw new InvalidDataException("Geometry without a candidate.");
         if (state.Revisions.Count > 1 && state.Revisions.Sum(Size) > MaximumHistoryBytes) throw new InvalidDataException("History exceeds 64MB.");
         if (state.Selection is { } selection) TextEditOperations.ValidateSelection(state.Revisions[state.Index].Document.Text, selection);
     }
@@ -103,7 +138,8 @@ public sealed class ProjectEditSession : IDisposable
         var previous = Current.Document;
         var document = AsciiDocument.FromText(text, previous.Title) with { FontFamily = previous.FontFamily, CellWidth = previous.CellWidth, CellHeight = previous.CellHeight };
         if (document.Text == previous.Text) return;
-        var revisions = TrimHistory(State.Revisions.Take(State.Index + 1).Append(new EditRevision(document, true, State.Revisions[State.Index].Generated)).ToArray());
+        var current = State.Revisions[State.Index];
+        var revisions = TrimHistory(State.Revisions.Take(State.Index + 1).Append(new EditRevision(document, true, current.Generated, current.Geometry)).ToArray());
         State = State with { Revisions = revisions, Index = revisions.Count - 1, Selection = null };
         await Persist(token);
     }
@@ -126,22 +162,52 @@ public sealed class ProjectEditSession : IDisposable
     }
     public async Task ClearHistory(CancellationToken token)
     { State = State with { Revisions = [State.Revisions[State.Index]], Index = 0 }; await Persist(token); }
-    public async Task SetCandidate(AsciiDocument document, bool replace, CancellationToken token)
+    private GeometryEditState ImageHistory()
+    {
+        if (Source.Mode != "image" || Source.SourceImage is null) throw new CliUsageException("Geometry requires an image project with its source.");
+        return State.GeometryHistory ?? new([Current.Geometry ?? new()], 0);
+    }
+    public object GeometrySummary()
+    {
+        var history = ImageHistory();
+        return new { path = Path, current = DraftGeometry, applied = Current.Geometry, pending = GeometryPending,
+            count = history.Revisions.Count, index = history.Index, canUndo = history.Index > 0,
+            canRedo = history.Index < history.Revisions.Count - 1, maximumSteps = 40, candidateGeometry = State.CandidateGeometry };
+    }
+    public async Task SetGeometry(ImageGeometry geometry, CancellationToken token)
+    {
+        var history = ImageHistory(); geometry.Validate();
+        if (geometry == DraftGeometry) return;
+        var revisions = history.Revisions.Take(history.Index + 1).Append(geometry).TakeLast(41).ToList();
+        State = State with { Schema = 3, GeometryHistory = new(revisions, revisions.Count - 1) };
+        await Persist(token);
+    }
+    public async Task MoveGeometry(bool redo, CancellationToken token)
+    {
+        var history = ImageHistory();
+        if (redo ? history.Index >= history.Revisions.Count - 1 : history.Index == 0)
+            throw new CliUsageException(redo ? "No geometry to redo." : "No geometry to undo.");
+        State = State with { GeometryHistory = history with { Index = history.Index + (redo ? 1 : -1) } };
+        await Persist(token);
+    }
+    public async Task SetCandidate(AsciiDocument document, bool replace, CancellationToken token, ImageGeometry? geometry = null)
     {
         if (State.Candidate is not null && !replace) throw new CliConflictException("Candidate already exists; explicit --replace-candidate required.");
-        State = State with { Schema = 2, Candidate = document }; await Persist(token);
+        State = State with { Schema = Math.Max(State.Schema, geometry is null ? 2 : 3), Candidate = document,
+            CandidateGeometry = geometry ?? (Source.Mode == "image" ? Current.Geometry : null) }; await Persist(token);
     }
     public async Task AcceptCandidate(CancellationToken token)
     {
-        var document = CandidateProject.Document;
-        var revisions = TrimHistory(State.Revisions.Take(State.Index + 1).Append(new EditRevision(document, false, document)).ToArray());
-        State = State with { Schema = 2, Revisions = revisions, Index = revisions.Count - 1, Selection = null, Candidate = null };
+        var project = CandidateProject; var document = project.Document;
+        var revisions = TrimHistory(State.Revisions.Take(State.Index + 1).Append(new EditRevision(document, false, document, project.Geometry)).ToArray());
+        State = State with { Schema = Math.Max(State.Schema, 2), Revisions = revisions, Index = revisions.Count - 1,
+            Selection = null, Candidate = null, CandidateGeometry = null };
         await Persist(token);
     }
     public async Task DiscardCandidate(CancellationToken token)
     {
         _ = CandidateProject;
-        State = State with { Candidate = null }; await Persist(token);
+        State = State with { Candidate = null, CandidateGeometry = null }; await Persist(token);
     }
     public async Task SaveCandidate(string destination, bool overwrite, CancellationToken token)
     {
@@ -181,6 +247,7 @@ public sealed class ProjectEditSession : IDisposable
     public object Summary() => new { path = Path, dirty = Dirty, edited = Current.Edited, count = State.Revisions.Count,
         index = State.Index, canUndo = CanUndo, canRedo = CanRedo, retainedBytes = RetainedBytes, maximumSteps = MaximumSteps,
         maximumBytes = MaximumHistoryBytes, selection = State.Selection, Current.Document.Width, Current.Document.Height,
+        geometryPending = GeometryPending,
         candidate = State.Candidate is { } document ? new { document.Width, document.Height, document.Title } : null };
     public static async Task<StudioProject> Read(string path, CancellationToken token)
     {
@@ -207,7 +274,10 @@ public sealed class ProjectEditSession : IDisposable
         ProjectFileService.Validate(project);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(project);
         if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("Recovered project exceeds 100MB.");
-        state = state with { BaseDigest = Digest(bytes), SavedDigest = Digest(revision) };
+        // Geometry belongs to the invalidated image source, not the recovered snapshot.
+        var revisions = state.Revisions.Select(r => r with { Geometry = null }).ToList();
+        state = state with { BaseDigest = Digest(bytes), Revisions = revisions, SavedDigest = Digest(revisions[state.Index]),
+            GeometryHistory = null, CandidateGeometry = null };
         var stateBytes = JsonSerializer.SerializeToUtf8Bytes(state);
         if (stateBytes.Length > MaximumStateBytes) throw new InvalidDataException("Recovered history exceeds 100MB.");
         await Atomic(destination, bytes, false, token); await Atomic(StatePath(destination), stateBytes, false, token);
@@ -217,7 +287,22 @@ public sealed class ProjectEditSession : IDisposable
     {
         var directory = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(path))!; Directory.CreateDirectory(directory);
         var temp = System.IO.Path.Combine(directory, ".cli-" + Guid.NewGuid().ToString("N") + ".tmp");
-        try { await File.WriteAllBytesAsync(temp, bytes, token); token.ThrowIfCancellationRequested(); File.Move(temp, path, overwrite); }
+        try
+        {
+            await File.WriteAllBytesAsync(temp, bytes, token);
+            for (var attempt = 0; ; attempt++)
+            {
+                token.ThrowIfCancellationRequested();
+                try { File.Move(temp, path, overwrite); break; }
+                // Windows can briefly deny rename/delete while a file is inspected.
+                // Keep the old file intact, retry only these native errors, and fail
+                // after 150ms rather than hiding persistent permission problems.
+                catch (Exception failure) when (OperatingSystem.IsWindows() && attempt < 3
+                    && (failure is UnauthorizedAccessException && (failure.HResult & 0xffff) == 5
+                        || failure is IOException && (failure.HResult & 0xffff) is 32 or 33))
+                { await Task.Delay(50, token); }
+            }
+        }
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }
     public void Dispose() => gate.Dispose();

@@ -16,8 +16,10 @@ public static partial class CliHost
                     // candidate against a different source/edited revision.
                     if (session.State.Candidate is not null && !Args.Flag("replace-candidate"))
                         throw new CliConflictException("Candidate already exists; explicit --replace-candidate required.");
-                    var generated = await Regenerate(session.Current);
-                    await session.SetCandidate(generated.Document, Args.Flag("replace-candidate"), Token); break;
+                    var source = session.Current;
+                    if (source.Mode == "image") source = source with { Geometry = session.DraftGeometry };
+                    var generated = await Regenerate(source);
+                    await session.SetCandidate(generated.Document, Args.Flag("replace-candidate"), Token, source.Geometry); break;
                 case "candidate show": await Emit(session.CandidateProject.Document); return;
                 case "candidate accept": await session.AcceptCandidate(Token); break;
                 case "candidate discard": await session.DiscardCandidate(Token); break;

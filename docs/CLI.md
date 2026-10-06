@@ -4,7 +4,7 @@
 
 ## 版本与范围
 
-当前源码控制台版本为 `1.0.0-alpha.6`，共有 64 个命令。Windows x64 / ARM64 ZIP 同时包含 `Charloom.exe` 和 `charloom-cli.exe`。全部解压后在终端运行；无需开发 SDK。旧 CLI 名称 `asciistudio-cli.exe` 在首个公开 Charloom 预发布周期保留为同实现兼容入口。默认数据目录继续使用 AsciiStudio，以保留旧偏好和字体。
+当前源码控制台版本为 `1.0.0-alpha.6`，共有 69 个命令（包含 Unreleased 新增的 5 个几何历史入口；已发布版本以对应 help 为准）。Windows x64 / ARM64 ZIP 同时包含 `Charloom.exe` 和 `charloom-cli.exe`。全部解压后在终端运行；无需开发 SDK。旧 CLI 名称 `asciistudio-cli.exe` 在首个公开 Charloom 预发布周期保留为同实现兼容入口。默认数据目录继续使用 AsciiStudio，以保留旧偏好和字体。
 
 **1.0 的最终验收要求是桌面功能全部有命令入口，而非仅支持转换。当前尚未达到全部覆盖。** 中文／英文桌面界面、新个性化设置和扩展动效也在后续预发布实现。正式 1.0.0 仍需用户明确授权。
 
@@ -25,7 +25,7 @@
 
 | 桌面能力 | 命令入口 | 状态 |
 |---|---|---|
-| 图片全部质量参数、比例补偿、原图尺寸、裁剪／旋转／翻转 | `image`，`--options`，重复 `--set`，`--geometry` | 已实现；几何历史待补 |
+| 图片全部质量参数、比例补偿、原图尺寸、裁剪／旋转／翻转 | `image`，`--options`，重复 `--set`，`--geometry`；`geometry status/set/undo/redo/reset` | 已实现；独立40步几何历史见 [几何教程](CLI_GEOMETRY.md) |
 | FIGlet、系统字形、中文描边／填充、换行与排版 | `text`，`--options`，`--layout` | 已实现；缺字默认报错 |
 | ANSI 编码、SAUCE、列数、iCE | `ansi` | 已实现 |
 | 七种现有生成器及全部配方参数 | `generate` | 已实现 |

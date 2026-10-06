@@ -63,6 +63,7 @@ public static partial class CliHost
             if (args.Flag("apply") && (!args.Has("project") || args.Command == "comment" && args.Flag("list") || args.Command == "tools analyze"))
                 throw new CliUsageException("--apply requires a project input and a text-changing operation.");
             if (args.Command.StartsWith("candidate ", StringComparison.Ordinal)) { await CandidateCommand(); return 0; }
+            if (args.Command.StartsWith("geometry ", StringComparison.Ordinal)) { await GeometryCommand(); return 0; }
             if (args.Command.StartsWith("edit ", StringComparison.Ordinal) || args.Command.StartsWith("history ", StringComparison.Ordinal)
                 || args.Command is "project save" or "project reload" or "project recover") { await EditCommand(); return 0; }
             if (args.Command.StartsWith("workspace ", StringComparison.Ordinal)) return await WorkspaceCommand();
@@ -149,8 +150,8 @@ public static partial class CliHost
                 case "capabilities": await Report(new
                 {
                     schema = 1, version = "1.0.0-alpha.6", status = "prerelease", commands = CliCatalog.Commands.Select(c => c.Name).ToArray(),
-                    complete = new[] { "image-quality-options", "image-geometry", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery", "candidate-result-management", "clipboard" },
-                    pending = new[] { "viewport-selection-and-comparison", "geometry-history", "settings-search-and-favorites", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
+                    complete = new[] { "image-quality-options", "image-geometry", "geometry-history", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery", "candidate-result-management", "clipboard" },
+                    pending = new[] { "viewport-selection-and-comparison", "settings-search-and-favorites", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
                     desktopParityComplete = false, formal100Authorized = false
                 }); break;
                 default:

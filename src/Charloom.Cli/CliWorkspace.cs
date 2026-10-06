@@ -68,11 +68,11 @@ public sealed class CliWorkspace : IDisposable
         project = Path.GetFullPath(project ?? State.Active ?? throw new CliUsageException("No active project."));
         if (!State.Projects.Contains(project, StringComparer.OrdinalIgnoreCase)) throw new CliUsageException("Project is not open.");
         using var session = await OpenForClose(project, action, token);
-        var dirty = session is null ? File.Exists(ProjectEditSession.StatePath(project)) : session.Dirty || session.State.Candidate is not null;
+        var dirty = session is null ? File.Exists(ProjectEditSession.StatePath(project)) : session.Dirty || session.State.Candidate is not null || session.GeometryPending;
         if (dirty && action == "cancel") throw new CliUsageException("Unsaved edits: choose --action save --overwrite or --action keep.");
         var recovery = State.Recovery;
         if (dirty && action == "save") await session!.Save(project, overwrite, token);
-        if (dirty && action == "keep" || action == "save" && session?.State.Candidate is not null)
+        if (dirty && action == "keep" || action == "save" && (session?.State.Candidate is not null || session?.GeometryPending == true))
         {
             recovery = new[] { project }.Concat(recovery).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
             if (recovery.Length > 32) throw new CliUsageException("Recovery list is full; restore a project before closing another.");
