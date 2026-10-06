@@ -204,7 +204,7 @@ public static partial class CliHost
             if (saved is not null && saved.Mode != "image") throw new CliUsageException("Expected an image project.");
             if (saved is not null && saved.SourceImage is null) throw new ArgumentException("Image project source missing.");
             var bytes = saved?.SourceImage is { } encoded ? Convert.FromBase64String(encoded)
-                : await BoundedFile.ReadAsync(sourcePath ?? args.Require("input"), 40_000_000, token);
+                : await BoundedFile.ReadAsync(sourcePath ?? args.Require("input"), ImageResourceLimits.FileBytes, token);
             var options = args.Model(saved?.Options ?? new ConversionOptions(), fileOption: "options");
             if (args.Has("columns")) options = options with { Columns = args.Integer("columns", 120) };
             if (args.Has("rows")) options = options with { Rows = args.Integer("rows", 0) };
@@ -379,7 +379,7 @@ public static partial class CliHost
                 ProjectFileService.Validate(project);
                 var upgraded = project with { Version = WorkspaceService.CurrentProjectVersion, Document = UnicodeGrid.Upgrade(project.Document), GeneratedDocument = project.GeneratedDocument is null ? null : UnicodeGrid.Upgrade(project.GeneratedDocument) };
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(upgraded);
-                if (bytes.Length > ProjectFileService.MaximumBytes) throw new ArgumentException("Project exceeds 100MB.");
+                if (bytes.Length > ProjectFileService.MaximumBytes) throw new ArgumentException("Project exceeds 256MB.");
                 await Write(path, bytes, true);
             }
         }

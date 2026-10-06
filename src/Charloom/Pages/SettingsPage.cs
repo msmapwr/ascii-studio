@@ -1,5 +1,6 @@
 using Charloom.Controls;
 using Charloom.Services;
+using Charloom.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Automation;
@@ -32,7 +33,7 @@ public sealed class SettingsPage : Grid
         var conversion = Group(content, "图片转换");
         Toggle(conversion, "调整参数后自动转换", "SettingsAutoConvert", s => s.AutoConvert, (s, v) => s with { AutoConvert = v });
         Number(conversion, "自动转换等待时间（毫秒）", "SettingsDelay", 0, 1000, s => s.ConversionDelay, (s, v) => s with { ConversionDelay = (int)v });
-        Number(conversion, "默认列数", "SettingsColumns", 8, 2000, s => s.DefaultColumns, (s, v) => s with { DefaultColumns = (int)v });
+        Number(conversion, "默认列数", "SettingsColumns", 8, ImageResourceLimits.GridSide, s => s.DefaultColumns, (s, v) => s with { DefaultColumns = (int)v });
         var export = Group(content, "导出");
         string[] formats = ["TXT", "PNG", "JPEG", "GIF", "HTML", "SVG", "ANSI", "JSON", "Markdown"];
         Choice(export, "默认格式", "SettingsExportFormat", formats, s => Array.IndexOf(formats, s.DefaultExportFormat), (s, i) => s with { DefaultExportFormat = formats[i] });

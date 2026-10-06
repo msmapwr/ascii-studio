@@ -8,6 +8,16 @@ namespace Charloom.Creation.Tests;
 public sealed class NativeExportTests
 {
     [Fact]
+    public void RenderSizeAllowsLargerAreaButRetainsPixelAndAxisGuards()
+    {
+        var document = AsciiDocument.FromText(string.Join('\n', Enumerable.Repeat(new string('x', 900), 500)));
+        var size = ImagingService.RenderSize(document);
+        Assert.InRange((long)size.Width * size.Height, 40_000_001, ImageResourceLimits.BitmapPixels);
+        Assert.Throws<ArgumentException>(() => ImagingService.RenderSize(document, scale: 2));
+        Assert.Throws<ArgumentException>(() => ImagingService.RenderSize(AsciiDocument.FromText(new string('x', 10000))));
+    }
+
+    [Fact]
     public void TransparentHalfBlocksKeepIndependentAlphaAndColors()
     {
         var document = AsciiDocument.FromText("▀") with { Colors = [0x80FF0000], BackgroundColors = [0x400000FF] };

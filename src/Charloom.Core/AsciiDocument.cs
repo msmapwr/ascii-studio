@@ -21,7 +21,7 @@ public sealed record AsciiDocument
         if (!Enum.IsDefined(ColorEncoding)) throw new ArgumentException("不支持的 ANSI 色彩模式。");
         if (string.IsNullOrWhiteSpace(FontFamily) || FontFamily.Length > 128 || FontFamily.Any(char.IsControl)) throw new ArgumentException("字体名称无效。");
         if (!double.IsFinite(CellWidth) || !double.IsFinite(CellHeight) || CellWidth is <= 0 or > 200 || CellHeight is <= 0 or > 200) throw new ArgumentException("字符尺寸无效。");
-        if (Width < 0 || Height < 0 || (Height == 0 && Width != 0) || (long)Width * Height > 4_000_000)
+        if (Width < 0 || Height < 0 || (Height == 0 && Width != 0) || (long)Width * Height > ImageResourceLimits.SamplePoints)
             throw new ArgumentException("字符画尺寸超出安全范围。");
         if (Colors is not null && Colors.Length != Width * Height)
             throw new ArgumentException("颜色网格与字符画尺寸不一致。");

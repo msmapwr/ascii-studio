@@ -11,9 +11,9 @@ public static class ImageConverter
         ArgumentNullException.ThrowIfNull(rgba); cancellationToken.ThrowIfCancellationRequested();
         if (options.Style != ImageArtStyle.Density || options.MeasureGlyphDensity || options.AdaptiveStrength != 0 || options.PreserveTransparent || options.TrimTransparent || options.PaletteMode != ImagePaletteMode.Original)
             return ImageQualityConverter.Convert(rgba, width, height, options, glyphs, cancellationToken);
-        if (width <= 0 || height <= 0 || (long)width * height > 80_000_000 || (long)width * height * 4 != rgba.LongLength)
+        if (width <= 0 || height <= 0 || (long)width * height > ImageResourceLimits.SourcePixels || (long)width * height * 4 != rgba.LongLength)
             throw new ArgumentException("图片像素数据无效。");
-        if (options.Columns is < 8 or > 2000 || options.Rows is < 0 or > 2000 || !double.IsFinite(options.CellAspect) || options.CellAspect is <= 0 or > 2 || !double.IsFinite(options.Gamma) || options.Gamma is <= 0 or > 5)
+        if (options.Columns is < 8 or > ImageResourceLimits.GridSide || options.Rows is < 0 or > ImageResourceLimits.GridSide || !double.IsFinite(options.CellAspect) || options.CellAspect is <= 0 or > 2 || !double.IsFinite(options.Gamma) || options.Gamma is <= 0 or > 5)
             throw new ArgumentOutOfRangeException(nameof(options), "输出尺寸、比例或 Gamma 无效。");
         if (!new[] { options.Brightness, options.Contrast, options.Saturation, options.Hue, options.Grayscale, options.Sepia, options.Sharpness }.All(double.IsFinite) || options.Brightness is < 0 or > 5 || options.Contrast is < 0 or > 5 || options.Saturation is < 0 or > 5 || options.Grayscale is < 0 or > 1 || options.Sepia is < 0 or > 1 || options.Sharpness is < 0 or > 10 || options.ThresholdValue is < 0 or > 255 || !Enum.IsDefined(options.Dither))
             throw new ArgumentException("图片调整参数无效。");
@@ -22,8 +22,8 @@ public static class ImageConverter
             throw new ArgumentException("图片字符集至少需要两个不同的单列字符；中文、emoji 和组合标记请用于文字创作。");
         var columns = options.Columns;
         var requestedRows = options.Rows == 0 ? Math.Max(1, Math.Round(columns * (double)height / width * options.CellAspect)) : options.Rows;
-        if (requestedRows > 2000 || columns * requestedRows > 4_000_000)
-            throw new ArgumentException("输出分辨率超过 2000 行或 400 万字符，请降低列数或指定行数。");
+        if (requestedRows > ImageResourceLimits.GridSide || columns * requestedRows > ImageResourceLimits.SamplePoints)
+            throw new ArgumentException("输出分辨率超过 200000 行或 4000 万字符，请降低列数或指定行数。");
         var rows = (int)requestedRows;
         var luminance = new double[rows * columns];
         var colors = options.Color ? new uint[rows * columns] : null;

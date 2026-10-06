@@ -36,6 +36,22 @@ public sealed class CliCollection : ICollectionFixture<CliFixture>;
 [Collection("CLI")]
 public sealed class CliTests(CliFixture fixture)
 {
+    [Fact]
+    public async Task GifInputConvertsAboveOldColumnLimitAndKeepsOriginalInProject()
+    {
+        var source = fixture.PathFor(Guid.NewGuid().ToString("N") + ".gif");
+        var projectPath = source + ".asciiproj";
+        using (var bitmap = new Bitmap(1, 1))
+        {
+            bitmap.SetPixel(0, 0, Color.Black); bitmap.Save(source, ImageFormat.Gif);
+        }
+        var result = await Run(["image", "--input", source, "--columns", "2001", "--rows", "1", "--save-project", projectPath]);
+        Assert.Equal(0, result.Exit); Assert.Empty(result.Error);
+        var project = JsonSerializer.Deserialize<StudioProject>(await File.ReadAllTextAsync(projectPath))!;
+        Assert.Equal(2001, project.Document.Width); Assert.Equal(1, project.Document.Height);
+        Assert.Equal(await File.ReadAllBytesAsync(source), System.Convert.FromBase64String(project.SourceImage!));
+    }
+
     private static async Task<(int Exit, string Out, string Error)> Run(string[] args, string input = "", CancellationToken token = default)
     {
         using var output = new StringWriter(); using var error = new StringWriter(); using var stdin = new StringReader(input);

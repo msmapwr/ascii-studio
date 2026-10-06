@@ -22,7 +22,7 @@ public sealed class ImageCreationController
     public Task<ImageSourceSnapshot> PrepareSource(byte[] bytes, string title, string? encoded = null, CancellationToken token = default) => Task.Run(() =>
     {
         token.ThrowIfCancellationRequested();
-        if (bytes.Length > 40_000_000) throw new InvalidDataException("输入文件超过 40MB，请先压缩图片。");
+        if (bytes.Length > ImageResourceLimits.FileBytes) throw new InvalidDataException("输入文件超过 100MB，请先压缩图片。");
         var decoded = Pipeline.Decode(bytes);
         token.ThrowIfCancellationRequested();
         return new ImageSourceSnapshot(bytes, decoded.Key, encoded ?? System.Convert.ToBase64String(bytes), decoded.Frame,
@@ -36,7 +36,7 @@ public sealed class ImageCreationController
         ImageSourceSnapshot? source = null;
         if (project.SourceImage is { } encoded)
         {
-            if (encoded.Length > (40_000_000L + 2) / 3 * 4) throw new InvalidDataException("项目中的图片超过 40MB。");
+            if (encoded.Length > ((long)ImageResourceLimits.FileBytes + 2) / 3 * 4) throw new InvalidDataException("项目中的图片超过 100MB。");
             var bytes = System.Convert.FromBase64String(encoded);
             source = await PrepareSource(bytes, project.Document.Title, encoded, token);
         }
@@ -60,8 +60,8 @@ public sealed class ImageCreationController
             {
                 var frame = await Task.Run(() => Pipeline.Transform(request.Pixels, request.Width, request.Height,
                     request.Revision, request.Geometry, options.TrimTransparent, options.AlphaThreshold, token), token);
-                var count = Math.Clamp((int)Math.Round(frame.Width / request.CellWidth), 8, 2000);
-                count = Math.Max(8, Math.Min(count, (int)Math.Floor(2000d * frame.Width / frame.Height / options.CellAspect)));
+                var count = Math.Clamp((int)Math.Round(frame.Width / request.CellWidth), 8, ImageResourceLimits.GridSide);
+                count = Math.Max(8, Math.Min(count, (int)Math.Floor((double)ImageResourceLimits.GridSide * frame.Width / frame.Height / options.CellAspect)));
                 options = options with { Columns = count, Rows = 0 };
             }
             async Task<AsciiDocument> Render(ConversionOptions settings) => await Task.Run(() =>

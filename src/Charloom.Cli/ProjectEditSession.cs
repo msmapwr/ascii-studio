@@ -24,7 +24,7 @@ public sealed class ProjectEditSession : IDisposable
 {
     public const int MaximumSteps = 100;
     public const long MaximumHistoryBytes = 64L * 1024 * 1024;
-    public const int MaximumStateBytes = 100_000_000;
+    public const int MaximumStateBytes = ProjectFileService.MaximumBytes;
     private readonly FileStream gate;
     public string Path { get; }
     public StudioProject Source { get; private set; }
@@ -130,7 +130,7 @@ public sealed class ProjectEditSession : IDisposable
         var sourceBytes = await BoundedFile.ReadAsync(Path, ProjectFileService.MaximumBytes, token);
         if (Digest(sourceBytes) != State.BaseDigest) throw new CliConflictException("Project changed before state commit; no edit was written.");
         var bytes = JsonSerializer.SerializeToUtf8Bytes(State);
-        if (bytes.Length > MaximumStateBytes) throw new InvalidDataException("Edit state exceeds 100MB; reduce the result size.");
+        if (bytes.Length > MaximumStateBytes) throw new InvalidDataException("Edit state exceeds 256MB; reduce the result size.");
         await Atomic(StatePath(Path), bytes, true, token);
     }
     public async Task Edit(string text, CancellationToken token)
@@ -217,7 +217,7 @@ public sealed class ProjectEditSession : IDisposable
         if (File.Exists(StatePath(destination))) throw new CliConflictException("Destination has an edit session; choose another path.");
         var project = CandidateProject; ProjectFileService.Validate(project);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(project);
-        if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("Candidate project exceeds 100MB.");
+        if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("Candidate project exceeds 256MB.");
         await Atomic(destination, bytes, overwrite, token);
     }
     public async Task Save(string destination, bool overwrite, CancellationToken token)
@@ -228,7 +228,7 @@ public sealed class ProjectEditSession : IDisposable
         var same = destination.Equals(Path, StringComparison.OrdinalIgnoreCase);
         var project = Current; ProjectFileService.Validate(project);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(project);
-        if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("Project exceeds 100MB.");
+        if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("Project exceeds 256MB.");
         if (same)
         {
             if (Digest(await BoundedFile.ReadAsync(Path, ProjectFileService.MaximumBytes, token)) != State.BaseDigest)
@@ -273,13 +273,13 @@ public sealed class ProjectEditSession : IDisposable
             Edited: revision.Edited, GeneratedDocument: revision.Generated ?? state.Generated);
         ProjectFileService.Validate(project);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(project);
-        if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("Recovered project exceeds 100MB.");
+        if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("Recovered project exceeds 256MB.");
         // Geometry belongs to the invalidated image source, not the recovered snapshot.
         var revisions = state.Revisions.Select(r => r with { Geometry = null }).ToList();
         state = state with { BaseDigest = Digest(bytes), Revisions = revisions, SavedDigest = Digest(revisions[state.Index]),
             GeometryHistory = null, CandidateGeometry = null };
         var stateBytes = JsonSerializer.SerializeToUtf8Bytes(state);
-        if (stateBytes.Length > MaximumStateBytes) throw new InvalidDataException("Recovered history exceeds 100MB.");
+        if (stateBytes.Length > MaximumStateBytes) throw new InvalidDataException("Recovered history exceeds 256MB.");
         await Atomic(destination, bytes, false, token); await Atomic(StatePath(destination), stateBytes, false, token);
         return new { path = destination, recovered = true, sourcePreserved = false, historyPreserved = true };
     }

@@ -75,7 +75,7 @@ public static class UnicodeGrid
         if (document.GridVersion == 1) return document.Text.Contains('\t') ? document with { Text = ExpandTabs(document.Text) } : document;
         var lines = document.Text.Split('\n');
         var width = Math.Max(document.Width, lines.Max(Width));
-        if ((long)width * document.Height > 4_000_000) throw new ArgumentException("升级后的 Unicode 网格超过 400 万列位限制。");
+        if ((long)width * document.Height > ImageResourceLimits.SamplePoints) throw new ArgumentException("升级后的 Unicode 网格超过 4000 万列位限制。");
         uint[]? Migrate(uint[]? source, uint fallback)
         {
             if (source is null) return null;

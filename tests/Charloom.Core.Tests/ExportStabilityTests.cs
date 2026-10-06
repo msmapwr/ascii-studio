@@ -37,5 +37,5 @@ public sealed class ExportStabilityTests
     }
     [Fact]
     public void MarkupBudgetStopsLargeExports()
-        => Assert.Throws<ArgumentException>(() => ExportService.Html(AsciiDocument.FromText(new string('A', 300_000))));
+        => Assert.Throws<ArgumentException>(() => ExportService.Html(AsciiDocument.FromText(new string('A', 2_000_000))));
 }

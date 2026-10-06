@@ -5,10 +5,10 @@ namespace Charloom.Services;
 
 public static class ProjectFileService
 {
-    public const int MaximumBytes = 100_000_000;
+    public const int MaximumBytes = 256_000_000;
     public static StudioProject Parse(byte[] bytes)
     {
-        if (bytes.Length > MaximumBytes) throw new InvalidDataException("项目超过 100MB 限制。");
+        if (bytes.Length > MaximumBytes) throw new InvalidDataException("项目超过 256MB 限制。");
         var project = JsonSerializer.Deserialize<StudioProject>(BoundedFile.JsonBytes(bytes).Span) ?? throw new InvalidDataException("项目为空。");
         Validate(project);
         return project with
@@ -28,7 +28,7 @@ public static class ProjectFileService
         if (project.Options is not null) ImageQualityConverter.Validate(project.Options);
         if (project.Parameters is { } parameters && (parameters.Count > 128 || parameters.Any(p => p.Key.Length > 128 || p.Value is null)))
             throw new InvalidDataException("项目参数无效。");
-        if (project.SourceImage?.Length > (40_000_000L + 2) / 3 * 4) throw new InvalidDataException("项目中的图片超过 40MB。");
+        if (project.SourceImage?.Length > ((long)ImageResourceLimits.FileBytes + 2) / 3 * 4) throw new InvalidDataException("项目中的图片超过 100MB。");
         if (project.Mode == "text") _ = TextProjectMapper.Restore(project);
         if (project.Mode == "ansi") _ = AnsiProjectMapper.Restore(project);
     }

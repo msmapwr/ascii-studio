@@ -3,6 +3,7 @@ using System.Drawing.Imaging;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Text;
+using Charloom.Core;
 
 namespace Charloom.Services;
 
@@ -20,7 +21,7 @@ public sealed class ClipboardContentException(string message) : ArgumentExceptio
 public sealed class WindowsClipboardService : IClipboardService
 {
     public const int MaximumTextBytes = 8_000_000;
-    public const int MaximumImageBytes = 40_000_000;
+    public const int MaximumImageBytes = ImageResourceLimits.FileBytes;
     private static readonly UTF8Encoding Utf8 = new(false, true);
     private static readonly UnicodeEncoding Utf16 = new(false, false, true);
 
@@ -32,7 +33,7 @@ public sealed class WindowsClipboardService : IClipboardService
 
     public static void ValidatePng(byte[] bytes)
     {
-        if (bytes.Length > MaximumImageBytes) throw new ClipboardContentException("Clipboard image exceeds the 40MB PNG budget.");
+        if (bytes.Length > MaximumImageBytes) throw new ClipboardContentException("Clipboard image exceeds the 100MB PNG budget.");
         if (bytes.Length < 33 || !bytes.AsSpan().StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 })
             || !bytes.AsSpan(12, 4).SequenceEqual("IHDR"u8) || BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(8, 4)) != 13)
             throw new ClipboardContentException("Clipboard PNG payload is not a PNG image.");
@@ -114,7 +115,7 @@ public sealed class WindowsClipboardService : IClipboardService
                 return bytes;
             }
             using var encoded = new MemoryStream(); bitmap!.Save(encoded, ImageFormat.Png);
-            if (encoded.Length > MaximumImageBytes) throw new ClipboardContentException("Clipboard image exceeds the 40MB PNG budget.");
+            if (encoded.Length > MaximumImageBytes) throw new ClipboardContentException("Clipboard image exceeds the 100MB PNG budget.");
             token.ThrowIfCancellationRequested(); return encoded.ToArray();
         }
         finally { bitmap?.Dispose(); }
@@ -122,8 +123,8 @@ public sealed class WindowsClipboardService : IClipboardService
 
     private static void ValidateDimensions(int width, int height)
     {
-        if (width <= 0 || height <= 0 || (long)width * height > 80_000_000)
-            throw new ClipboardContentException("Clipboard image dimensions exceed the 80 million pixel budget.");
+        if (width <= 0 || height <= 0 || (long)width * height > ImageResourceLimits.SourcePixels)
+            throw new ClipboardContentException("Clipboard image dimensions exceed the 200 million pixel budget.");
     }
     private static byte[] CopyMemory(nint handle, int maximum)
     {

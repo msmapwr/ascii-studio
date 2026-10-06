@@ -43,9 +43,13 @@ public static class ImagingService
 
     public static (byte[] pixels, int width, int height) Decode(byte[] data)
     {
+        if (data.Length > ImageResourceLimits.FileBytes) throw new InvalidDataException("图片超过 100MB，请先压缩图片。");
         using var stream = new MemoryStream(data);
         using var original = System.Drawing.Image.FromStream(stream, true, true);
-        if ((long)original.Width * original.Height > 80_000_000) throw new InvalidDataException("图片超过 8000 万像素，请先降低分辨率。");
+        if ((long)original.Width * original.Height > ImageResourceLimits.SourcePixels) throw new InvalidDataException("图片超过 2 亿像素，请先降低分辨率。");
+        // GIF is a still-image input: select the first animation frame explicitly.
+        if (original.RawFormat.Guid == ImageFormat.Gif.Guid && original.FrameDimensionsList.Contains(FrameDimension.Time.Guid))
+            original.SelectActiveFrame(FrameDimension.Time, 0);
         if (original.PropertyIdList.Contains(0x112))
         {
             var value = original.GetPropertyItem(0x112)?.Value;
@@ -61,8 +65,8 @@ public static class ImagingService
                 _ => RotateFlipType.RotateNoneFlipNone
             });
         }
-        var scale = Math.Min(1d, 2400d / Math.Max(original.Width, original.Height));
-        using var bitmap = new Bitmap(Math.Max(1, (int)(original.Width * scale)), Math.Max(1, (int)(original.Height * scale)), PixelFormat.Format32bppArgb);
+        var size = ImageResourceLimits.ProcessingSize(original.Width, original.Height);
+        using var bitmap = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(bitmap))
         {
             g.CompositingMode = CompositingMode.SourceCopy;
@@ -121,7 +125,7 @@ public static class ImagingService
         var cell = g.MeasureString("M", font, new PointF(0, 0), StringFormat.GenericTypographic).Width;
         var width = Math.Max(1, checked((int)Math.Ceiling(document.Width * cell) + padding * scale * 2));
         var height = Math.Max(1, checked((int)Math.Ceiling(document.Height * font.GetHeight(g)) + padding * scale * 2));
-        if ((long)width * height > 40_000_000 || width > 32767 || height > 32767) throw new ArgumentException("输出图片超过 4000 万像素或单边 32767 像素，请降低字号、倍率或字符网格尺寸。");
+        if ((long)width * height > ImageResourceLimits.BitmapPixels || width > ImageResourceLimits.BitmapSide || height > ImageResourceLimits.BitmapSide) throw new ArgumentException("输出图片超过 1 亿像素或单边 32767 像素，请降低字号、倍率或字符网格尺寸。");
         return (width, height);
     }
     public static byte[] Render(AsciiDocument document, float size = 14, int padding = 20, bool transparent = false, ImageFormat? format = null, int scale = 1)
@@ -135,7 +139,7 @@ public static class ImagingService
         var lineHeight = font.GetHeight(mg);
         var width = dimensions.Width;
         var height = dimensions.Height;
-        if ((long)width * height > 40_000_000) throw new ArgumentException("输出图片超过 4000 万像素，请降低字号或字符画尺寸。");
+        if ((long)width * height > ImageResourceLimits.BitmapPixels) throw new ArgumentException("输出图片超过 1 亿像素，请降低字号或字符画尺寸。");
         using var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(bitmap))
         {

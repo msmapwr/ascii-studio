@@ -684,7 +684,7 @@ public sealed class ResultPane : Grid
             if ((Document is null && DraftFactory is null) || restoring || (!isDirty && projectPath is not null)) return;
             var snapshot = ProjectForSave();
             var bytes = await Task.Run(() => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(snapshot));
-            if (bytes.Length > 100_000_000) throw new InvalidDataException("恢复项目超过 100MB，请降低字符画尺寸或输入图片大小。");
+            if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("恢复项目超过 256MB，请降低字符画尺寸或输入图片大小。");
             await WorkspaceService.AtomicWrite(Path.Combine(WorkspaceService.DataDirectory, "recovery.asciiproj"), bytes);
             await WorkspaceService.AtomicWrite(WorkspaceSessionService.RecoveryPath(recoveryId), bytes);
         }

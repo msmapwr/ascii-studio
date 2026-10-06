@@ -18,8 +18,8 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     private readonly Image thumbnail = new() { Height = 120, Stretch = Stretch.Uniform };
     private readonly TextBlock sourceInfo = Ui.Text("PNG · JPEG · BMP · GIF · TIFF", 12, true);
     private readonly ProgressRing progress = new() { Width = 20, Height = 20, IsActive = false };
-    private readonly NumberBox columns = new NumberBox() { Minimum = 8, Maximum = 2000, Value = 120, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
-    private readonly NumberBox rows = new NumberBox() { Minimum = 1, Maximum = 2000, Value = 60, IsEnabled = false, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
+    private readonly NumberBox columns = new NumberBox() { Minimum = 8, Maximum = ImageResourceLimits.GridSide, Value = 120, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
+    private readonly NumberBox rows = new NumberBox() { Minimum = 1, Maximum = ImageResourceLimits.GridSide, Value = 60, IsEnabled = false, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
     private readonly CheckBox autoRows = new() { Content = "保持原图比例（自动计算行数）", IsChecked = true };
     private readonly ComboBox resolution = Ui.Choice(["标准 · 120 列", "精细 · 240 列", "高清 · 480 列", "超清 · 960 列", "原图像素尺寸", "自定义"]);
     private readonly Slider cellAspect = Ui.Slider(.25, 1, .5, .05);
@@ -81,7 +81,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
         sizeSettings.Children.Add(Ui.WithHelp(autoRows, "保持原图比例（自动计算行数）"));
         sizeSettings.Children.Add(Ui.WithHelp(fontAspect, "按字体实际宽高补偿比例"));
         sizeSettings.Children.Add(Ui.Field("字符宽高比 · 默认 0.5", cellAspect));
-        sizeSettings.Children.Add(Ui.Text("最高 2000 × 2000 字符。字体补偿保留图像比例；自定义固定宽高可能拉伸。原图尺寸按处理图片和 13px 字体换算，像素尺寸为近似值。", 12, true));
+        sizeSettings.Children.Add(Ui.Text("每边最多 200000 字符，总计最多 4000 万采样点（Braille 每字符 8 点，半块 2 点）。GIF 转换首帧。字体补偿保留图像比例；自定义固定宽高可能拉伸。原图尺寸按处理图片和 13px 字体换算，像素尺寸为近似值。", 12, true));
         result.AddSettings("分辨率", sizeSettings, "ImageSizeSettings");
         var characterSettings = Ui.Stack(); characterSettings.Width = 300;
         characterSettings.Children.Add(Ui.Field("字符风格", ramp));
@@ -113,7 +113,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
         performance.Children.Add(cacheStatus);
         var clearCache = Ui.Button("清空本项目转换缓存", () => { pipeline.Clear(); cacheStatus.Text = "已清空本项目转换缓存"; });
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(clearCache, "ImageClearCache"); performance.Children.Add(clearCache);
-        performance.Children.Add(Ui.Text("最多400万采样点。Braille每字符8点，半块每字符2点。缓存预算不含当前原图和正在处理的数据。", 12, true));
+        performance.Children.Add(Ui.Text("最多4000万采样点。Braille每字符8点，半块每字符2点。缓存预算不含当前原图和正在处理的数据。", 12, true));
         result.AddSettings("性能", performance, "ImagePerformanceSettings");
         foreach (var (control, id) in new (DependencyObject, string)[] { (artStyle, "ImageArtStyle"), (measuredDensity, "ImageMeasuredDensity"), (adaptive, "ImageAdaptive"), (structureThreshold, "ImageStructureThreshold"), (preserveAlpha, "ImagePreserveAlpha"), (trimAlpha, "ImageTrimAlpha"), (alphaThreshold, "ImageAlphaThreshold"), (background, "ImageBackground"), (palette, "ImagePalette"), (paletteColors, "ImagePaletteColors"), (paletteSize, "ImagePaletteSize"), (quickPreview, "ImageQuickPreview"), (cancel, "ImageCancel"), (processingStatus, "ImageProcessingStatus"), (cacheStatus, "ImageCacheStatus") })
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(control, id);
@@ -201,8 +201,8 @@ public sealed class ImagePage : Grid, IProjectSessionPage
         {
             var crop = geometry.Current; var w = controller.Source.Decoded.width * crop.Width / 100; var h = controller.Source.Decoded.height * crop.Height / 100;
             if (crop.QuarterTurns % 2 != 0) (w, h) = (h, w);
-            count = Math.Clamp((int)Math.Round(w / metrics.Width), 8, 2000);
-            count = Math.Max(8, Math.Min(count, (int)Math.Floor(2000 * w / h / aspect)));
+            count = Math.Clamp((int)Math.Round(w / metrics.Width), 8, ImageResourceLimits.GridSide);
+            count = Math.Max(8, Math.Min(count, (int)Math.Floor(ImageResourceLimits.GridSide * w / h / aspect)));
         }
         return new()
         {
@@ -296,12 +296,12 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     {
         using var loading = controller.Loads.Begin(); controller.Operations.Cancel();
         controller.Source.LoadVersion++; controller.Source.ThumbnailVersion++;
-        var bytes = await BoundedFile.ReadAsync(file.Path, 40_000_000, loading.Token);
+        var bytes = await BoundedFile.ReadAsync(file.Path, ImageResourceLimits.FileBytes, loading.Token);
         if (loading.IsCurrent) await LoadBytes(bytes, Path.GetFileNameWithoutExtension(file.Name));
     }
     private async Task LoadBytes(byte[] bytes, string name)
     {
-        if (bytes.Length > 40_000_000) throw new InvalidDataException("输入文件超过 40MB，请先压缩图片。");
+        if (bytes.Length > ImageResourceLimits.FileBytes) throw new InvalidDataException("输入文件超过 100MB，请先压缩图片。");
         using var loading = controller.Loads.Begin();
         controller.Operations.Cancel(); controller.Source.ThumbnailVersion++; var version = ++controller.Source.LoadVersion;
         var prepared = await controller.PrepareSource(bytes, name, token: loading.Token);
@@ -338,7 +338,7 @@ public sealed class ImagePage : Grid, IProjectSessionPage
     {
         using var loading = controller.Loads.Begin(); controller.Operations.Cancel();
         controller.Source.LoadVersion++; controller.Source.ThumbnailVersion++;
-        using var stream = await reference.OpenReadAsync(); if (stream.Size > 40_000_000) throw new InvalidDataException("剪贴板图片过大。");
+        using var stream = await reference.OpenReadAsync(); if (stream.Size > ImageResourceLimits.FileBytes) throw new InvalidDataException("剪贴板图片过大。");
         loading.Token.ThrowIfCancellationRequested();
         using var reader = new DataReader(stream); await reader.LoadAsync((uint)stream.Size); var bytes = new byte[(int)stream.Size]; reader.ReadBytes(bytes);
         if (loading.IsCurrent) await LoadBytes(bytes, "Clipboard");

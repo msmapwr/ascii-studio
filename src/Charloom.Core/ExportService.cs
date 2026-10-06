@@ -6,10 +6,10 @@ namespace Charloom.Core;
 
 public static class ExportService
 {
-    public const int MaximumMarkupCharacters = 16_000_000;
+    public const int MaximumMarkupCharacters = 160_000_000;
     private static void AppendMarkup(StringBuilder output, string markup)
     {
-        if ((long)output.Length + markup.Length > MaximumMarkupCharacters) throw new ArgumentException("HTML / SVG 标记超过 1600 万字符上限，请降低网格尺寸。");
+        if ((long)output.Length + markup.Length > MaximumMarkupCharacters) throw new ArgumentException("HTML / SVG 标记超过 16000 万字符上限，请降低网格尺寸。");
         output.Append(markup);
     }
     public static string Html(AsciiDocument document)
@@ -40,7 +40,9 @@ public static class ExportService
         }
         var family = WebUtility.HtmlEncode("'" + document.FontFamily.Replace("\\", "\\\\").Replace("'", "\\'") + "','Microsoft YaHei UI','Segoe UI Emoji',monospace");
         var lineHeight = document.CellHeight.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-        return $"<!doctype html><html lang=\"zh\"><meta charset=\"utf-8\"><title>{WebUtility.HtmlEncode(document.Title)}</title><style>body{{background:#121822;color:#e7edf7;padding:24px}}pre{{font-size:13px;line-height:{lineHeight}px;white-space:pre}}</style><pre style=\"font-family:{family}\">{content}</pre></html>";
+        var result = new StringBuilder($"<!doctype html><html lang=\"zh\"><meta charset=\"utf-8\"><title>{WebUtility.HtmlEncode(document.Title)}</title><style>body{{background:#121822;color:#e7edf7;padding:24px}}pre{{font-size:13px;line-height:{lineHeight}px;white-space:pre}}</style><pre style=\"font-family:{family}\">");
+        AppendMarkup(result, content.ToString()); AppendMarkup(result, "</pre></html>");
+        return result.ToString();
     }
 
     public static string Svg(AsciiDocument document)
@@ -76,7 +78,7 @@ public static class ExportService
                 AppendMarkup(result, $"<text x=\"{Number(pad + glyph.Column * cw)}\" y=\"{Number(pad + (y + 1) * ch)}\" textLength=\"{Number(glyph.Width * cw)}\" lengthAdjust=\"spacingAndGlyphs\" fill=\"#{color & 0xFFFFFF:X6}\"{SvgAlpha(color)}>{WebUtility.HtmlEncode(glyph.Text)}</text>");
             }
         }
-        return result.Append("</g></svg>").ToString();
+        AppendMarkup(result, "</g></svg>"); return result.ToString();
     }
 
     public static string Ansi(AsciiDocument document)

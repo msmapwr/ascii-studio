@@ -22,7 +22,7 @@ public static class ImageQualityConverter
         if (o.Characters is null || o.Characters.Length > 200 || o.Style == ImageArtStyle.Density && (o.Characters.Distinct().Count() < 2
             || o.Characters.Any(c => char.IsControl(c) || char.IsSurrogate(c) || UnicodeGrid.GlyphWidth(c.ToString()) != 1)))
             throw new ArgumentException("字符集需要至少两个不同的单列字符。");
-        if (o.Columns is < 8 or > 2000 || o.Rows is < 0 or > 2000 || !double.IsFinite(o.CellAspect) || o.CellAspect is <= 0 or > 2
+        if (o.Columns is < 8 or > ImageResourceLimits.GridSide || o.Rows is < 0 or > ImageResourceLimits.GridSide || !double.IsFinite(o.CellAspect) || o.CellAspect is <= 0 or > 2
             || !double.IsFinite(o.Gamma) || o.Gamma is <= 0 or > 5
             || !new[] { o.Brightness, o.Contrast, o.Saturation, o.Hue, o.Grayscale, o.Sepia, o.Sharpness }.All(double.IsFinite)
             || o.Brightness is < 0 or > 5 || o.Contrast is < 0 or > 5 || o.Saturation is < 0 or > 5
@@ -52,8 +52,8 @@ public static class ImageQualityConverter
     private static void ValidatePixels(byte[] pixels, int width, int height)
     {
         ArgumentNullException.ThrowIfNull(pixels);
-        if (width <= 0 || height <= 0 || (long)width * height > 80_000_000 || (long)width * height * 4 != pixels.LongLength)
-            throw new ArgumentException("图片像素数据无效或超过8000万像素。");
+        if (width <= 0 || height <= 0 || (long)width * height > ImageResourceLimits.SourcePixels || (long)width * height * 4 != pixels.LongLength)
+            throw new ArgumentException("图片像素数据无效或超过2亿像素。");
     }
 
     public static ImageSample Sample(byte[] pixels, int width, int height, ConversionOptions o, CancellationToken token = default)
@@ -62,8 +62,8 @@ public static class ImageQualityConverter
         var rows = o.Rows == 0 ? Math.Max(1, Math.Round(o.Columns * (double)height / width * o.CellAspect)) : o.Rows;
         var sx = o.Style == ImageArtStyle.Braille ? 2 : 1;
         var sy = o.Style == ImageArtStyle.Braille ? 4 : o.Style == ImageArtStyle.HalfBlock ? 2 : 1;
-        if (rows > 2000 || o.Columns * rows * sx * sy > 4_000_000)
-            throw new ArgumentException("超过400万采样点：Braille最多50万字符，半块最多200万字符；请降低分辨率。");
+        if (rows > ImageResourceLimits.GridSide || o.Columns * rows * sx * sy > ImageResourceLimits.SamplePoints)
+            throw new ArgumentException("超过4000万采样点：Braille最多500万字符，半块最多2000万字符；请降低分辨率。");
         var w = o.Columns * sx; var h = (int)rows * sy; var rgba = new float[w * h * 4];
         for (var y = 0; y < h; y++)
         {

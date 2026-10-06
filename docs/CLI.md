@@ -40,7 +40,7 @@
 | 替换／插入／删除／查找／选区变换、持久撤销重做 | `edit show/select/replace/insert/delete/find/transform`，`history list/undo/redo/clear` | 已实现，100 步／64 MB |
 | 多项目工作区、active 项目、最近文件、会话恢复 | `workspace new/open/switch/close/list/recent/clear-recent/recovery/restore` | 已实现，CLI 独立清单与状态 |
 | 候选生成结果接受／保留／独立保存 | `candidate create/status/show/accept/save/discard` | 已实现，保留手工结果和来源 |
-| 剪贴板文本复制／粘贴、图片读取 | `clipboard read/write/paste` | 显式调用；文本8MB，PNG40MB/8000万像素；粘贴需apply |
+| 剪贴板文本复制／粘贴、图片读取 | `clipboard read/write/paste` | 显式调用；文本8MB，PNG100MB/2亿像素；粘贴需apply |
 | 缩放、适应、分页、行跳转、选区定位、原图对比 | 后续 `preview/selection` | 待实现，TXT／ANSI／PNG／HTML 预览 |
 | 设置搜索／工具栏收藏、个人配方、平台建议 | 后续设置与配方命令 | 待实现，保留输入和编辑结果 |
 | 教程、新手说明与全部导航功能对应 | [中文详细教程](CLI_TUTORIAL.md)，后续 `tutorial` 与帮助扩展 | 文档已完成；命令入口与新手说明待实现 |
@@ -54,7 +54,7 @@
 - `--set Name=Value` 支持模型字段；嵌套用 `geometry.Left=10` 或 `layout.MaximumWidth=80`。完整字段名与默认值由对应命令 `--help` 提供。
 - `--output` 默认拒绝覆盖；只有 `--overwrite` 可覆盖。项目与导出结果须使用不同路径。单文件写入采用同目录临时文件后替换；多文件输出不是事务。
 - 工具默认输出副本；文本整理和代码注释用项目作为输入时，`--apply` 明确写入可撤销侧文件，原项目暂不改写。已有侧文件的项目再生成请输出副本，当前不覆盖其编辑会话；可使用 candidate 命令生成并保留独立候选。
-- 图像 40 MB／8000 万像素，文本 8 MB，ANSI 4 MB；算法可能有更低限制。位图最多 4000 万像素且每边不超过 32767，HTML／SVG 最多 1600 万标记字符，解压上限 4 MB。
+- 图像 100 MB／2 亿源像素（处理图最长边 12000、最多 1600 万像素；GIF 转换首帧），文本 8 MB，ANSI 4 MB；算法可能有更低限制。位图最多 1 亿像素且每边不超过 32767，HTML／SVG 最多 16000 万标记字符，解压上限 4 MB。
 - 批处理默认仅当前目录，`--recursive` 才递归，不跟随目录链接；输出目录必须在输入目录之外。同批重名自动编号，已有文件仍须 `--overwrite`；失败继续，报告每项状态并返回 5。
 
 ## 数据隔离与安全
@@ -63,7 +63,7 @@
 
 加密口令从 `--password-file` 或 `--password-stdin` 读取，不接受命令行明文口令。口令 stdin 与文本 stdin 互斥，末尾换行不计入口令。RSA 公私钥通过 `--key-file` 导入；`crypto keys --output ./keys` 显式生成 3072 位 PEM 文件，私钥不打印，文件默认拒绝覆盖。传统密码用于教学，编码与压缩不提供保密性，摘要不可还原；现代保密用途优先 AES-256-GCM。
 
-编辑与撤销记录保存在项目旁 `<项目路径>.cli-state.json`，项目列表与活动项目保存到 CLI 数据目录的 `cli-workspace.json`；也可用 `--workspace PATH` 指定独立清单。CLI 清单与桌面标签／恢复文件始终独立，即使使用 `--desktop-data`。空 `.lock` 文件用于进程锁，保留它不表示任务仍在运行。历史最多 100 步且受 64 MB 预算限制，取序列化大小与文档内存估算中较大值；当前单状态超预算时保留当前结果，侧文件总计最多 100 MB。
+编辑与撤销记录保存在项目旁 `<项目路径>.cli-state.json`，项目列表与活动项目保存到 CLI 数据目录的 `cli-workspace.json`；也可用 `--workspace PATH` 指定独立清单。CLI 清单与桌面标签／恢复文件始终独立，即使使用 `--desktop-data`。空 `.lock` 文件用于进程锁，保留它不表示任务仍在运行。历史最多 100 步且受 64 MB 预算限制，取序列化大小与文档内存估算中较大值；当前单状态超预算时保留当前结果，项目及侧文件总计各最多 256 MB。
 
 ## 持久编辑与工作区
 
@@ -108,6 +108,6 @@ alpha.6 开发源码提供显式剪贴板命令；已发布的 alpha.5 尚无这
 - `clipboard read --format PNG --output image.png` 读取注册 PNG 或 Windows 位图；图片必须显式指定输出路径，默认拒绝覆盖。传统 Windows 位图来源可能不含透明度；PNG 来源保留原字节。
 - `clipboard write --text/--input/--stdin/--project` 四选一，复制纯文本；项目输入使用侧文件中的当前编辑结果，不接受候选，不保存原文件。
 - `clipboard paste --project art.asciiproj --apply` 写入可撤销编辑状态。省略 project 时使用 active；`--selection` 粘贴到已有 Unicode 选区。粘贴时换行／制表符沿用编辑器的标准化。保存仍使用 project save。
-- 文本上限8MB UTF-8，图片40MB PNG／8000万像素；NUL、损坏编码与超限输入拒绝处理。打开剪贴板最多尝试5次，间隔50ms；占用返回退出码4与固定 `clipboard_busy`，缺失／无效内容为退出码3与 `clipboard_format`。其他 I/O 使用既有错误码。
+- 文本上限8MB UTF-8，图片100MB PNG／2亿像素；NUL、损坏编码与超限输入拒绝处理。打开剪贴板最多尝试5次，间隔50ms；占用返回退出码4与固定 `clipboard_busy`，缺失／无效内容为退出码3与 `clipboard_format`。其他 I/O 使用既有错误码。
 - Windows剪贴板不是事务；写入前验证和准备内存，但系统在清空旧内容后若传输失败，旧内容可能已改变。明确运行 write 才会改动系统剪贴板。
 - 自动测试使用注入替身，检查命令、文件保护、历史及错误。真实系统剪贴板只在显式验收时使用，本轮未读取或改写个人剪贴板。

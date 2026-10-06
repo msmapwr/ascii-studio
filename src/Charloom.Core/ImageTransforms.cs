@@ -18,7 +18,7 @@ public static class ImageTransforms
     public static (byte[] Pixels, int Width, int Height) Apply(byte[] rgba, int width, int height,
         ImageGeometry geometry, CancellationToken cancellationToken = default)
     {
-        if (width <= 0 || height <= 0 || (long)width * height > 80_000_000 || (long)width * height * 4 != rgba.LongLength)
+        if (width <= 0 || height <= 0 || (long)width * height > ImageResourceLimits.SourcePixels || (long)width * height * 4 != rgba.LongLength)
             throw new ArgumentException("图片像素数据或尺寸无效。");
         geometry.Validate();
         cancellationToken.ThrowIfCancellationRequested();

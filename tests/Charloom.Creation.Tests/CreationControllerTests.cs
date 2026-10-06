@@ -8,6 +8,40 @@ namespace Charloom.Creation.Tests;
 public sealed class CreationControllerTests
 {
     [Fact]
+    public async Task AnimatedGifUsesFirstFrameAndKeepsOriginalThroughProjectRestore()
+    {
+        // Two 1x1 frames: black, then white; both use the global palette.
+        byte[] gif = [71,73,70,56,57,97,1,0,1,0,128,0,0,0,0,0,255,255,255,
+            33,249,4,0,10,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,
+            33,249,4,0,10,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,76,1,0,59];
+        using (var stream = new MemoryStream(gif))
+        using (var animation = System.Drawing.Image.FromStream(stream))
+            Assert.Equal(2, animation.GetFrameCount(System.Drawing.Imaging.FrameDimension.Time));
+        var controller = new ImageCreationController();
+        var prepared = await controller.PrepareSource(gif, "animated.gif");
+        Assert.Equal((1, 1), (prepared.Frame.Width, prepared.Frame.Height));
+        Assert.Equal(new byte[] { 0, 0, 0, 255 }, prepared.Frame.Pixels);
+        var document = ImageConverter.Convert(prepared.Frame.Pixels, 1, 1, new() { Columns = 8, Rows = 1, Color = true });
+        Assert.All(document.Colors!, color => Assert.Equal(0xFF000000u, color));
+        var project = controller.Project(document, new(), prepared.Encoded, true, 0, new());
+        var restored = new ImageCreationController();
+        var state = await restored.RestoreProject(project, default);
+        restored.Source.Apply(state.Source!);
+        Assert.Equal(gif, restored.Source.Source);
+        Assert.Equal(prepared.Frame.Pixels, restored.Source.Decoded.pixels);
+    }
+
+    [Fact]
+    public void DecodeRetainsDetailBeyondOldProcessingSide()
+    {
+        using var bitmap = new System.Drawing.Bitmap(3000, 1);
+        using var stream = new MemoryStream(); bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+        var decoded = ImagingService.Decode(stream.ToArray());
+        Assert.Equal((3000, 1), (decoded.width, decoded.height));
+        Assert.Equal(12000, decoded.pixels.Length);
+    }
+
+    [Fact]
     public async Task SourcePreparationAndSnapshotRetainOriginalBytes()
     {
         var bytes = ImagingService.Thumbnail([25, 125, 225, 255], 1, 1);

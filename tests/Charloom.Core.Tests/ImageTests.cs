@@ -30,14 +30,14 @@ public sealed class ImageTests
     [Fact(DisplayName = "grid boundaries rejected")]
     public void GridBoundariesRejected()
     {
-        try { ImageConverter.Convert(pixels, 2, 2, new() { Columns = 2001 }); throw new Exception("Oversized columns accepted"); } catch (ArgumentOutOfRangeException) { }
-        try { ImageConverter.Convert(pixels, 2, 2, new() { Columns = 120, Rows = 2001 }); throw new Exception("Oversized rows accepted"); } catch (ArgumentOutOfRangeException) { }
+        try { ImageConverter.Convert(pixels, 2, 2, new() { Columns = 200001 }); throw new Exception("Oversized columns accepted"); } catch (ArgumentOutOfRangeException) { }
+        try { ImageConverter.Convert(pixels, 2, 2, new() { Columns = 120, Rows = 200001 }); throw new Exception("Oversized rows accepted"); } catch (ArgumentOutOfRangeException) { }
     }
 
     [Fact(DisplayName = "tall auto grid is not silently distorted")]
     public void TallAutoGridIsNotSilentlyDistorted()
     {
-        try { ImageConverter.Convert(new byte[4 * 100], 1, 100, new() { Columns = 240 }); throw new Exception("Tall image was silently clamped"); } catch (ArgumentException) { }
+        try { ImageConverter.Convert(new byte[4 * 4000], 1, 4000, new() { Columns = 240 }); throw new Exception("Tall image was silently clamped"); } catch (ArgumentException) { }
     }
 
     [Fact(DisplayName = "legacy default options retain aspect")]
@@ -144,7 +144,7 @@ public sealed class ImageTests
     [Fact(DisplayName = "quality bounds and cancellation")]
     public void QualityBoundsAndCancellation()
     {
-        foreach (var options in new ConversionOptions[] { new() { Style = (ImageArtStyle)99 }, new() { AdaptiveStrength = double.NaN }, new() { PaletteSize = 65 }, new() { AlphaThreshold = 0 }, new() { Style = ImageArtStyle.Braille, Columns = 2000, Rows = 2000 } })
+        foreach (var options in new ConversionOptions[] { new() { Style = (ImageArtStyle)99 }, new() { AdaptiveStrength = double.NaN }, new() { PaletteSize = 65 }, new() { AlphaThreshold = 0 }, new() { Style = ImageArtStyle.Braille, Columns = 200000, Rows = 200000 } })
         { try { ImageConverter.Convert(pixels, 2, 2, options); throw new Exception("Invalid or oversized quality options accepted"); } catch (ArgumentException) { } }
         using var cancel = new CancellationTokenSource(); cancel.Cancel();
         try { ImageConverter.Convert(pixels, 2, 2, new() { Style = ImageArtStyle.Braille }, cancel.Token); throw new Exception("Cancelled quality conversion accepted"); } catch (OperationCanceledException) { }

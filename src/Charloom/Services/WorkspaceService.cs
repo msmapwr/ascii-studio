@@ -39,7 +39,7 @@ public static class WorkspaceService
             GeneratedDocument = project.GeneratedDocument is null ? null : UnicodeGrid.Upgrade(project.GeneratedDocument)
         };
         var bytes = await Task.Run(() => JsonSerializer.SerializeToUtf8Bytes(savedProject));
-        if (bytes.Length > 100_000_000) throw new InvalidDataException("项目超过 100MB，请降低字符画尺寸或输入图片大小。");
+        if (bytes.Length > ProjectFileService.MaximumBytes) throw new InvalidDataException("项目超过 256MB，请降低字符画尺寸或输入图片大小。");
         if (File.Exists(path))
         {
             var current = await ReadProjectVersion(path);
@@ -95,7 +95,7 @@ public static class WorkspaceService
         UiFontSize = double.IsFinite(settings.UiFontSize) ? Math.Clamp(settings.UiFontSize, 12, 24) : 14,
         UiFontFamily = !string.IsNullOrWhiteSpace(settings.UiFontFamily) && settings.UiFontFamily.Length <= 128 && !settings.UiFontFamily.Any(char.IsControl) ? settings.UiFontFamily : "Segoe UI",
         ExportScale = Math.Clamp(settings.ExportScale, 1, 4),
-        DefaultColumns = Math.Clamp(settings.DefaultColumns, 8, 2000),
+        DefaultColumns = Math.Clamp(settings.DefaultColumns, 8, ImageResourceLimits.GridSide),
         ConversionDelay = Math.Clamp(settings.ConversionDelay, 0, 1000),
         DefaultExportFormat = new[] { "TXT", "PNG", "JPEG", "GIF", "HTML", "SVG", "ANSI", "JSON", "Markdown" }.Contains(settings.DefaultExportFormat) ? settings.DefaultExportFormat : "TXT",
         FilePrefix = new string((settings.FilePrefix ?? "").Where(c => !Path.GetInvalidFileNameChars().Contains(c)).Take(32).ToArray()),
