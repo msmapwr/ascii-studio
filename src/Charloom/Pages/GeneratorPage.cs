@@ -110,7 +110,7 @@ public sealed class GeneratorPage : Grid, IProjectSessionPage
         var output = await Task.Run(recipe.Generate);
         if (current != version) return;
         saved = recipe;
-        await result.SetDocument(AsciiDocument.FromText(output, kind.SelectedItem?.ToString() ?? "Generator") with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height });
+        await result.SetDocument(AsciiDocument.FromText(output, Ui.ChoiceValue(kind) ?? "Generator") with { FontFamily = family, CellWidth = metrics.Width, CellHeight = metrics.Height });
         if (current == version) status.Text = $"已生成 · {result.Document!.Width} × {result.Document.Height}";
     }
 

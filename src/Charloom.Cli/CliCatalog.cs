@@ -263,6 +263,7 @@ public static class CliCatalog
         "AutoConvert" => "true/false; desktop automatic conversion / 桌面自动转换",
         "ConversionDelay" => "0–1000ms; desktop debounce / 桌面自动转换合并延迟",
         "DefaultColumns" => "8–200000; new image project columns / 新项目默认列数",
+        "UiLanguage" => "system | zh-CN | en-US; desktop labels only / 仅切换桌面界面，不修改作品或CLI --language",
         "FavoriteSettings" => "Use settings favorite or preferences import; --set rejects arrays / 收藏设置键数组，通过favorite或偏好导入修改",
         "RememberWindow" => "true/false; remember desktop window position / 记住桌面窗口位置",
         "PreviewZoom" => "0.25–4; preview only / 仅预览缩放",

@@ -172,8 +172,8 @@ public static partial class CliHost
                 case "capabilities": await Report(new
                 {
                     schema = 1, version = "1.0.0-alpha.6", status = "prerelease", commands = CliCatalog.Commands.Select(c => c.Name).ToArray(),
-                    complete = new[] { "image-quality-options", "image-geometry", "geometry-history", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "settings-search-and-favorites", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery", "candidate-result-management", "clipboard" },
-                    pending = new[] { "viewport-selection-and-comparison", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
+                    complete = new[] { "image-quality-options", "image-geometry", "geometry-history", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "settings-search-and-favorites", "GUI-zh-CN-en-US", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery", "candidate-result-management", "clipboard" },
+                    pending = new[] { "viewport-selection-and-comparison", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
                     desktopParityComplete = false, formal100Authorized = false
                 }); break;
                 default:

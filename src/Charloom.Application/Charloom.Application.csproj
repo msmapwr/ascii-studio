@@ -5,6 +5,7 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../Charloom/Resources/Gui.en-US.json" LogicalName="Charloom.Gui.en-US.json" WithCulture="false" />
     <ProjectReference Include="../Charloom.Core/Charloom.Core.csproj" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
     <PackageReference Include="Figgle" Version="0.6.6" />

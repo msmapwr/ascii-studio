@@ -8,9 +8,10 @@ namespace Charloom.Controls;
 public static class Ui
 {
     public static StackPanel Stack(double spacing = 12) => new() { Spacing = spacing };
-    public static TextBlock Text(string text, double size = 14, bool secondary = false)
+    public static TextBlock Text(string text, double size = 14, bool secondary = false, bool localize = true)
     {
         var block = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Style = (Style)Application.Current.Resources[secondary ? "StudioSecondaryText" : "StudioText"] };
+        if (localize) UiLocalization.Watch(block, TextBlock.TextProperty); else UiLocalization.Verbatim(block);
         void Apply(StudioSettings settings) { block.FontSize = size * settings.UiFontSize / 14; }
         Apply(WorkspaceService.Settings);
         block.Loaded += (_, _) => { Apply(WorkspaceService.Settings); WorkspaceService.SettingsChanged += Apply; };
@@ -35,6 +36,7 @@ public static class Ui
         var b = new Button { Content = label, HorizontalAlignment = HorizontalAlignment.Stretch };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(b, Id("Button", label));
         if (accent) b.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
+        UiLocalization.Watch(b, ContentControl.ContentProperty);
         b.Click += (_, _) => action(); return b;
     }
     public static Button AsyncButton(string label, Func<Task> action, bool accent = false)
@@ -46,12 +48,26 @@ public static class Ui
     public static ComboBox Choice(IEnumerable<string> values, int selected = 0)
     {
         var c = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch };
-        foreach (var value in values) c.Items.Add(value);
+        foreach (var value in values)
+        {
+            var item = new ComboBoxItem { Content = value, Tag = value };
+            UiLocalization.Watch(item, ComboBoxItem.ContentProperty); c.Items.Add(item);
+        }
         c.SelectedIndex = selected; return c;
     }
+    public static async Task<ContentDialogResult> ShowDialog(ContentDialog dialog, bool localizeContent = true)
+    {
+        if (!localizeContent) UiLocalization.Preserve(dialog, ContentDialog.ContentProperty);
+        dialog.Language = GuiText.ResolveLanguage(WorkspaceService.Settings.UiLanguage);
+        UiLocalization.Attach(dialog); return await dialog.ShowAsync();
+    }
+    public static string? ChoiceValue(ComboBox choice) => choice.SelectedItem is ComboBoxItem item ? item.Tag?.ToString() : choice.SelectedItem?.ToString();
+    public static void ToolTip(DependencyObject target, object value)
+    { ToolTipService.SetToolTip(target, value); UiLocalization.Watch(target, ToolTipService.ToolTipProperty); }
     public static FrameworkElement Field(string label, UIElement control)
     {
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(control, label);
+        UiLocalization.Watch(control, Microsoft.UI.Xaml.Automation.AutomationProperties.NameProperty);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(control, Id("Field", label));
         if (control is NumberBox number)
         {
@@ -61,6 +77,7 @@ public static class Ui
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(input,
                     Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(number) + "Input");
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(input, label);
+                UiLocalization.Watch(input, Microsoft.UI.Xaml.Automation.AutomationProperties.NameProperty);
             };
         }
         var p = Stack(6);
@@ -82,6 +99,7 @@ public static class Ui
     {
         if (string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(control)))
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(control, Id("Field", label));
+        UiLocalization.Attach(control);
         var panel = Stack(6); panel.Children.Add(control); AddHelp(panel, label); return panel;
     }
     private static void AddHelp(StackPanel panel, string label)
@@ -247,7 +265,7 @@ public static class Ui
         void RootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => Resize();
         flyout.Opened += (_, _) =>
         {
-            ApplyTypeface(flyoutRoot);
+            ApplyTypeface(flyoutRoot); UiLocalization.Attach(flyoutRoot);
             activeRoot = scroll.XamlRoot;
             if (activeRoot is not null) activeRoot.Changed += RootChanged;
             Resize();
@@ -335,7 +353,7 @@ public static class Ui
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         grid.Children.Add(heading); Grid.SetRow(content, 1); grid.Children.Add(content);
-        grid.Loaded += (_, _) => ApplyTypeface(grid);
+        grid.Loaded += (_, _) => { ApplyTypeface(grid); UiLocalization.Attach(grid); };
         grid.SizeChanged += (_, _) =>
         {
             var shortWindow = grid.ActualHeight < 420;

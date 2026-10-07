@@ -24,6 +24,7 @@ public sealed class SettingsPage : Grid
     {
         var content = Ui.Stack(20);
         var common = Group(content, "常用与外观");
+        Choice(common, "界面语言", "SettingsUiLanguage", ["跟随系统", "中文", "English"], s => s.UiLanguage switch { "zh-CN" => 1, "en-US" => 2, _ => 0 }, (s, i) => s with { UiLanguage = i switch { 1 => "zh-CN", 2 => "en-US", _ => "system" } });
         Choice(common, "主题", "SettingsTheme", ["深色", "浅色", "跟随系统"], s => s.Theme switch { "Light" => 1, "System" => 2, _ => 0 }, (s, i) => s with { Theme = i switch { 1 => "Light", 2 => "System", _ => "Dark" } });
         Toggle(common, "动画（遵循 Windows 设置）", "SettingsAnimations", s => s.Animations, (s, v) => s with { Animations = v });
         Toggle(common, "新手模式", "SettingsBeginner", s => s.BeginnerMode, (s, v) => s with { BeginnerMode = v });
@@ -136,7 +137,7 @@ public sealed class SettingsPage : Grid
             {
                 var selected = settings.FavoriteSettings?.Contains(row.Entry.Key) == true;
                 row.Favorite.IsChecked = selected; row.Favorite.Content = selected ? "★" : "☆";
-                ToolTipService.SetToolTip(row.Favorite, selected ? "取消收藏：" + row.Entry.Name : "收藏设置：" + row.Entry.Name);
+                Ui.ToolTip(row.Favorite, selected ? "取消收藏：" + row.Entry.Name : "收藏设置：" + row.Entry.Name);
             }
             Filter();
         }
@@ -160,7 +161,7 @@ public sealed class SettingsPage : Grid
     private async Task Export()
     {
         var picker = new FileSavePicker { SuggestedFileName = "charloom-preferences" };
-        picker.FileTypeChoices.Add("Charloom 偏好", [".json"]); App.Window.InitializePicker(picker);
+        picker.FileTypeChoices.Add(GuiText.Translate("Charloom 偏好"), [".json"]); App.Window.InitializePicker(picker);
         var file = await picker.PickSaveFileAsync(); if (file is null) return;
         WorkspaceService.ValidatePreferencesExportPath(file.Path);
         await WorkspaceService.AtomicWrite(file.Path, WorkspaceService.ExportPreferences());
@@ -170,11 +171,11 @@ public sealed class SettingsPage : Grid
     private async Task Reset()
     {
         var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "恢复默认设置？", Content = "界面、转换和导出偏好将恢复默认值，设置收藏将清空，最近项目记录保留。", PrimaryButtonText = "恢复默认", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) await WorkspaceService.ResetPreferences();
+        if (await Ui.ShowDialog(dialog) == ContentDialogResult.Primary) await WorkspaceService.ResetPreferences();
     }
     private async Task ClearRecent()
     {
         var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "清空最近项目记录？", PrimaryButtonText = "清空记录", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) await WorkspaceService.UpdateSettings(s => s with { RecentFiles = [] });
+        if (await Ui.ShowDialog(dialog) == ContentDialogResult.Primary) await WorkspaceService.UpdateSettings(s => s with { RecentFiles = [] });
     }
 }

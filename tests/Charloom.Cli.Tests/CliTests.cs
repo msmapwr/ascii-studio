@@ -197,6 +197,8 @@ public sealed class CliTests(CliFixture fixture)
     public async Task SettingsSearchAndFavoriteAreBilingualPersistentAndIdempotent()
     {
         await WorkspaceService.SetSettings(new(RecentFiles: ["private-project.asciiproj"]));
+        Assert.Equal(0, (await Run(["settings", "set", "--set", "UiLanguage=en-US"])).Exit);
+        Assert.Equal("en-US", WorkspaceService.Settings.UiLanguage);
         foreach (var language in new[] { "en-US", "zh-CN" })
         {
             var query = await Run(["settings", "list", "--search", "font appearance", "--language", language]);
@@ -274,5 +276,7 @@ public sealed class CliTests(CliFixture fixture)
     {
         var result = await Run(["capabilities", "--json"]); Assert.Equal(0, result.Exit);
         var report = JsonDocument.Parse(result.Out).RootElement.GetProperty("result"); Assert.False(report.GetProperty("desktopParityComplete").GetBoolean()); Assert.NotEmpty(report.GetProperty("pending").EnumerateArray());
+        Assert.Contains("GUI-zh-CN-en-US", report.GetProperty("complete").EnumerateArray().Select(entry => entry.GetString()));
+        Assert.DoesNotContain("GUI-zh-CN-en-US", report.GetProperty("pending").EnumerateArray().Select(entry => entry.GetString()));
     }
 }

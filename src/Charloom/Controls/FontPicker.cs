@@ -8,7 +8,7 @@ public sealed class FontPicker : StackPanel
 {
     private readonly AutoSuggestBox search = new() { QueryIcon = new SymbolIcon(Symbol.Find), PlaceholderText = "搜索字体", MaxSuggestionListHeight = 260 };
     private readonly ComboBox filter = Ui.Choice(["全部字体", "等宽字体", "中文常用"]);
-    private readonly TextBlock sample = Ui.Text("abc · 测试", 18);
+    private readonly TextBlock sample = Ui.Text("abc · 测试", 18, localize: false);
     private string[] monospace = [];
     public string SelectedFont { get; private set; } = "Consolas";
     public event Action<string>? Changed;

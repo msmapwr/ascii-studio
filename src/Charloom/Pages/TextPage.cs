@@ -27,7 +27,7 @@ public sealed class TextPage : Grid, IProjectSessionPage
     private bool loading;
     private int page;
     private readonly TextCreationController controller = new();
-    private readonly TextBlock previewSample = Ui.Text("abc", 18), fontPreview = new() { FontFamily = new FontFamily("Consolas"), FontSize = 8 };
+    private readonly TextBlock previewSample = Ui.Text("abc", 18, localize: false), fontPreview = new() { FontFamily = new FontFamily("Consolas"), FontSize = 8 };
     private readonly ScrollViewer fontPreviewScroll;
     private readonly FontPicker systemFont = new("TextSystemFont");
     private readonly ComboBox systemStyle = Ui.Choice(["标准", "细线", "点阵", "方块", "高密度"]);
@@ -45,6 +45,7 @@ public sealed class TextPage : Grid, IProjectSessionPage
     private static FrameworkElement Field(string label, UIElement element, string id) { var field = Ui.Field(label, element); Id(element, id); return field; }
     public TextPage()
     {
+        UiLocalization.Verbatim(fontPreview);
         result.RestoreProject = LoadProject;
         figFont.TextChanged += (_, _) => { figFont.ItemsSource = fonts.Where(f => f.Name.Contains(figFont.Text, StringComparison.OrdinalIgnoreCase)).Select(f => f.Name).ToArray(); if (fonts.FirstOrDefault(f => f.Name.Equals(figFont.Text, StringComparison.OrdinalIgnoreCase)) is { } f && f.Id != selectedFont) SelectFont(f.Id); };
         figFont.GotFocus += (_, _) => figFont.ItemsSource = fonts.Select(f => f.Name).ToArray();
@@ -108,8 +109,8 @@ public sealed class TextPage : Grid, IProjectSessionPage
                 var art = sample.Any(c => c > 127) ? "当前输入含非 ASCII 字符\n请使用 abc 样本" : await Task.Run(() => TextFontLibrary.Render(e.Id, sample, new() { Trim = true }, token), token);
                 token.ThrowIfCancellationRequested();
                 var panel = Ui.Stack(4); panel.Width = 220;
-                panel.Children.Add(Ui.Text((TextFontLibrary.IsFavorite(e.Id) ? "★ " : "") + e.Name, 14));
-                panel.Children.Add(new TextBlock { Text = DocumentViewIndex.Prefix(art, 2000), FontFamily = new FontFamily("Consolas"), FontSize = 8, MaxHeight = 110, TextWrapping = TextWrapping.NoWrap });
+                panel.Children.Add(Ui.Text((TextFontLibrary.IsFavorite(e.Id) ? "★ " : "") + e.Name, 14, localize: false));
+                panel.Children.Add(UiLocalization.Verbatim(new TextBlock { Text = DocumentViewIndex.Prefix(art, 2000), FontFamily = new FontFamily("Consolas"), FontSize = 8, MaxHeight = 110, TextWrapping = TextWrapping.NoWrap }));
                 var item = new GridViewItem { Content = panel, Tag = e.Id }; Id(item, "FontTile_" + e.Name); fontGrid.Items.Add(item);
             }
         }

@@ -9,7 +9,7 @@ public sealed record StudioSettings(string Theme = "Dark", double PreviewFontSiz
     string DefaultExportFormat = "TXT", int ExportScale = 1, string FilePrefix = "",
     bool AutoConvert = true, int ConversionDelay = 180, int DefaultColumns = 120, bool RememberWindow = true,
     double PreviewZoom = 1, bool BeginnerMode = false, string UiFontFamily = "Segoe UI", double UiFontSize = 14,
-    string[]? FavoriteSettings = null);
+    string[]? FavoriteSettings = null, string UiLanguage = "system");
 
 public static class WorkspaceService
 {
@@ -114,6 +114,7 @@ public static class WorkspaceService
 
     private static StudioSettings Normalize(StudioSettings settings) => settings with
     {
+        UiLanguage = settings.UiLanguage is "system" or "zh-CN" or "en-US" ? settings.UiLanguage : "system",
         Theme = settings.Theme is "Light" or "Dark" or "System" ? settings.Theme : "Dark",
         PreviewFontSize = double.IsFinite(settings.PreviewFontSize) ? Math.Clamp(settings.PreviewFontSize, 8, 30) : 13,
         PreviewZoom = double.IsFinite(settings.PreviewZoom) ? Math.Clamp(settings.PreviewZoom, .25, 4) : 1,

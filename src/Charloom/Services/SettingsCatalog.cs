@@ -6,6 +6,7 @@ public sealed record SettingEntry(string Key, string AutomationId, string Name, 
 public static class SettingsCatalog
 {
     public static IReadOnlyList<SettingEntry> Entries { get; } = Array.AsReadOnly<SettingEntry>([
+        new("UiLanguage", "SettingsUiLanguage", "界面语言", "Interface language", "常用与外观", "Appearance"),
         new("Theme", "SettingsTheme", "主题", "Theme", "常用与外观", "Appearance"),
         new("Animations", "SettingsAnimations", "动画（遵循 Windows 设置）", "Animations (follow Windows settings)", "常用与外观", "Appearance"),
         new("BeginnerMode", "SettingsBeginner", "新手模式", "Beginner mode", "常用与外观", "Appearance"),

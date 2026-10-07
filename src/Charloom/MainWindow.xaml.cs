@@ -22,6 +22,7 @@ public sealed partial class MainWindow : Window
     private int themeVersion;
     private string? appliedUiFont;
     private double appliedUiSize;
+    private string? appliedLanguage;
     private sealed class ProjectTabState(TabViewItem tab, IProjectSessionPage page, ProjectSessionEntry entry)
     {
         public TabViewItem Tab { get; } = tab;
@@ -71,7 +72,7 @@ public sealed partial class MainWindow : Window
         };
         Root.KeyboardAccelerators.Add(closeTabKey);
         WorkspaceService.SettingsChanged += OnSettingsChanged;
-        Root.Loaded += (_, _) => ApplyUiFont();
+        Root.Loaded += (_, _) => { ApplyUiFont(); ApplyLanguage(); };
     }
 
     private void CapturePlacement()
@@ -109,10 +110,27 @@ public sealed partial class MainWindow : Window
 
     private async void OnSettingsChanged(StudioSettings settings)
     {
+        ApplyLanguage();
         ApplyDensity();
         ApplyUiFont();
         var theme = settings.Theme switch { "Light" => ElementTheme.Light, "System" => ElementTheme.Default, _ => ElementTheme.Dark };
         await Guard(() => ChangeTheme(theme));
+    }
+
+    private void ApplyLanguage()
+    {
+        var language = GuiText.ResolveLanguage(WorkspaceService.Settings.UiLanguage);
+        if (appliedLanguage == language) return;
+        appliedLanguage = language;
+        Root.Language = language;
+        Navigation.OpenPaneLength = Math.Clamp((language == "en-US" ? 260 : 210) * WorkspaceService.Settings.UiFontSize / 14, 210, 380);
+        UiLocalization.Attach(Root);
+        foreach (var item in Navigation.MenuItems.Concat(Navigation.FooterMenuItems).OfType<NavigationViewItem>()) UiLocalization.Attach(item);
+        if (Navigation.SettingsItem is NavigationViewItem settingsItem)
+        { settingsItem.Content = "设置"; UiLocalization.Attach(settingsItem); }
+        UiLocalization.Watch(WorkspaceTab, TabViewItem.HeaderProperty);
+        UiLocalization.Refresh();
+        Title = ProductIdentity.DisplayName + " — " + GuiText.Translate(ProductIdentity.Subtitle);
     }
 
     private async Task ChangeTheme(ElementTheme theme)
@@ -147,7 +165,7 @@ public sealed partial class MainWindow : Window
         var family = new Microsoft.UI.Xaml.Media.FontFamily(settings.UiFontFamily);
         Navigation.FontFamily = family; PageHost.FontFamily = family; BrandTitle.FontFamily = family;
         Navigation.FontSize = PageHost.FontSize = settings.UiFontSize; BrandTitle.FontSize = 19 * settings.UiFontSize / 14;
-        Navigation.OpenPaneLength = Math.Clamp(210 * settings.UiFontSize / 14, 210, 360);
+        Navigation.OpenPaneLength = Math.Clamp((GuiText.ResolveLanguage(settings.UiLanguage) == "en-US" ? 260 : 210) * settings.UiFontSize / 14, 210, 380);
         Ui.ApplyTypeface(Root);
     }
 
@@ -254,7 +272,7 @@ public sealed partial class MainWindow : Window
         entry = entry with { Title = entry.Title.Length > 128 ? entry.Title[..128] : entry.Title };
         var tab = new TabViewItem { IsClosable = true, Content = page };
         var state = new ProjectTabState(tab, page, entry) { IsDirty = dirty };
-        ToolTipService.SetToolTip(tab, entry.Path ?? "未保存项目");
+        Ui.ToolTip(tab, entry.Path ?? "未保存项目");
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(tab, "ProjectTab_" + entry.Id[..Math.Min(8, entry.Id.Length)]);
         projectTabs[entry.Id] = state;
         page.DirtyChanged += changed =>
@@ -280,7 +298,7 @@ public sealed partial class MainWindow : Window
     private static void UpdateProjectTab(ProjectTabState state)
     {
         state.Tab.Header = (state.IsDirty ? "● " : "") + state.Entry.Title;
-        ToolTipService.SetToolTip(state.Tab, state.Entry.Path ?? "尚未保存到文件");
+        Ui.ToolTip(state.Tab, state.Entry.Path ?? "尚未保存到文件");
     }
 
     private void OnProjectTabSelectionChanged(object sender, Microsoft.UI.Xaml.Controls.SelectionChangedEventArgs args)
@@ -320,7 +338,7 @@ public sealed partial class MainWindow : Window
             };
             showingCloseDialog = true;
             ContentDialogResult choice;
-            try { choice = await dialog.ShowAsync(); }
+            try { choice = await Ui.ShowDialog(dialog, localizeContent: false); }
             finally { showingCloseDialog = false; }
             if (choice == ContentDialogResult.None) return;
             if (choice == ContentDialogResult.Primary)
@@ -359,7 +377,7 @@ public sealed partial class MainWindow : Window
             if (dirty.Length > 0)
             {
                 var dialog = new ContentDialog { XamlRoot = Root.XamlRoot, Title = "保存未保存的项目？", Content = $"还有 {dirty.Length} 个项目未保存。", PrimaryButtonText = "全部保存", SecondaryButtonText = "保留恢复并退出", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Primary };
-                var choice = await dialog.ShowAsync();
+                var choice = await Ui.ShowDialog(dialog);
                 if (choice == ContentDialogResult.None) return;
                 foreach (var state in dirty)
                 {
@@ -510,7 +528,7 @@ public sealed partial class MainWindow : Window
         var p = Ui.Stack(12); p.Children.Add(Ui.AsyncButton("打开项目", PickProject, true));
         foreach (var path in WorkspaceService.Settings.RecentFiles ?? [])
         {
-            var file = path; var row = Ui.Stack(6); row.Children.Add(Ui.Text(Path.GetFileNameWithoutExtension(file), 17)); row.Children.Add(Ui.Text(file, 12, true));
+            var file = path; var row = Ui.Stack(6); row.Children.Add(Ui.Text(Path.GetFileNameWithoutExtension(file), 17, localize: false)); row.Children.Add(Ui.Text(file, 12, true, localize: false));
             var open = Ui.AsyncButton("打开", () => OpenProject(file));
             var identity = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(file.ToUpperInvariant())))[..12];
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(open, "RecentProject_" + identity);

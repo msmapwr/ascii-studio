@@ -213,7 +213,7 @@ public sealed class ResultPane : Grid
             var button = Ui.Button(text, action);
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, id);
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, name);
-            ToolTipService.SetToolTip(button, name); return button;
+            Ui.ToolTip(button, name); return button;
         }
         zoomControls.Children.Add(ZoomButton("−", "ResultZoomOut", "缩小预览", () => SetZoom(zoom / 1.1)));
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(zoomLabel, "ResultZoomValue");
@@ -249,7 +249,7 @@ public sealed class ResultPane : Grid
     private void ApplySettings(StudioSettings settings)
     {
         if (appliedSettings?.PreviewFontSize != settings.PreviewFontSize) fontSize.Value = settings.PreviewFontSize;
-        if (appliedSettings?.DefaultExportFormat != settings.DefaultExportFormat) format.SelectedItem = settings.DefaultExportFormat;
+        if (appliedSettings?.DefaultExportFormat != settings.DefaultExportFormat) format.SelectedIndex = Enumerable.Range(0, format.Items.Count).FirstOrDefault(i => (format.Items[i] as ComboBoxItem)?.Tag?.ToString() == settings.DefaultExportFormat);
         if (appliedSettings?.ExportScale != settings.ExportScale) exportScale.SelectedIndex = settings.ExportScale - 1;
         if (appliedSettings?.PreviewZoom != settings.PreviewZoom) { zoom = settings.PreviewZoom; ApplyVisualZoom(); }
         editor.TextWrapping = settings.WordWrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
@@ -629,7 +629,7 @@ public sealed class ResultPane : Grid
     {
         var next = candidate ?? throw new ArgumentException("没有等待保存的新结果。");
         var picker = new FileSavePicker { SuggestedFileName = SafeName(next.Project.Document.Title) + "-version", SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
-        picker.FileTypeChoices.Add("Charloom 项目", [".asciiproj"]); App.Window.InitializePicker(picker);
+        picker.FileTypeChoices.Add(GuiText.Translate("Charloom 项目"), [".asciiproj"]); App.Window.InitializePicker(picker);
         var file = await picker.PickSaveFileAsync(); if (file is null) return;
         await WorkspaceService.SaveProject(file.Path, next.Project);
         App.Window.Message("新版本已保存；当前手工编辑结果仍保留。可从作品库打开新版本。");
@@ -648,7 +648,7 @@ public sealed class ResultPane : Grid
         {
             if (Document is null) throw new ArgumentException("先生成或输入一些内容。");
             if (Document != wrapped) original = Document;
-            var text = CommentTools.Wrap(original!.Text, language.SelectedItem?.ToString() ?? "C", style.SelectedIndex == 1);
+            var text = CommentTools.Wrap(original!.Text, Ui.ChoiceValue(language) ?? "C", style.SelectedIndex == 1);
             sample.Text = text.Length > 64000 ? DocumentViewIndex.Prefix(text, 64000) + "\n（预览节选，复制和替换使用完整内容）" : text; prepared = text;
         }
         void Invalidate() { prepared = null; sample.Text = ""; }
@@ -663,7 +663,7 @@ public sealed class ResultPane : Grid
             await FlushEditor();
             Prepare();
             var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "用注释替换结果？", Content = "本次原文可通过“恢复注释前原文”恢复。", PrimaryButtonText = "替换", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+            if (await Ui.ShowDialog(dialog) != ContentDialogResult.Primary) return;
             var next = AsciiDocument.FromText(prepared!, original!.Title) with { FontFamily = original.FontFamily, CellWidth = original.CellWidth, CellHeight = original.CellHeight };
             await SetDocument(next, "已套注释", preserveEdits: false); wrapped = Document;
         }));
@@ -718,7 +718,7 @@ public sealed class ResultPane : Grid
         if (path is null)
         {
             var picker = new FileSavePicker { SuggestedFileName = SafeName(Document?.Title ?? "Untitled"), SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
-            picker.FileTypeChoices.Add("Charloom 项目", [".asciiproj"]); App.Window.InitializePicker(picker);
+            picker.FileTypeChoices.Add(GuiText.Translate("Charloom 项目"), [".asciiproj"]); App.Window.InitializePicker(picker);
             var file = await picker.PickSaveFileAsync(); if (file is null) return false;
             path = file.Path;
         }
@@ -740,7 +740,7 @@ public sealed class ResultPane : Grid
     {
         await FlushEditor();
         if (Document is null) { App.Window.Message("先生成或输入一些内容。"); return; }
-        var doc = Document; var kind = format.SelectedItem?.ToString() ?? "TXT";
+        var doc = Document; var kind = Ui.ChoiceValue(format) ?? "TXT";
         var ext = kind switch { "JPEG" => ".jpg", "ANSI" => ".ans", "Markdown" => ".md", _ => "." + kind.ToLowerInvariant() };
         var picker = new FileSavePicker { SuggestedFileName = SafeName(WorkspaceService.Settings.FilePrefix + doc.Title), SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
         picker.FileTypeChoices.Add(kind, [ext]); App.Window.InitializePicker(picker);

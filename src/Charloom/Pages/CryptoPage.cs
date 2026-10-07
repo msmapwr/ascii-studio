@@ -88,7 +88,7 @@ public sealed class CryptoPage : Grid
     }
     private void UpdateMode()
     {
-        var name = algorithm.SelectedItem?.ToString() ?? ""; keys.Visibility = name.StartsWith("RSA-") ? Visibility.Visible : Visibility.Collapsed;
+        var name = Ui.ChoiceValue(algorithm) ?? ""; keys.Visibility = name.StartsWith("RSA-") ? Visibility.Visible : Visibility.Collapsed;
         decrypt.IsEnabled = category.SelectedIndex != 1 && TextProcessing.CanReverse(name);
         encodingOptions.Visibility = category.SelectedIndex == 4 ? Visibility.Visible : Visibility.Collapsed;
         bom.Visibility = name is "UTF-8" or "UTF-16LE" or "UTF-16BE" ? Visibility.Visible : Visibility.Collapsed;
@@ -123,7 +123,7 @@ public sealed class CryptoPage : Grid
         var version = ++operationVersion;
         try
         {
-            var name = algorithm.SelectedItem?.ToString() ?? ""; var text = input.Text; var password = secret.Password;
+            var name = Ui.ChoiceValue(algorithm) ?? ""; var text = input.Text; var password = secret.Password;
             var pem = reverse ? privateKey.Text : publicKey.Text;
             var options = new TextProcessingOptions(byteFormat.SelectedIndex == 1, bom.IsOn);
             var result = await Task.Run(() => CryptoTools.Apply(name, text, password, reverse, pem, options));
@@ -138,10 +138,10 @@ public sealed class CryptoPage : Grid
         if (isPrivate)
         {
             var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "导出未加密私钥？", Content = "此 PEM 文件可以解密对应密文。请保存到安全位置，不要分享或提交到 Git。", PrimaryButtonText = "导出私钥", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+            if (await Ui.ShowDialog(dialog) != ContentDialogResult.Primary) return;
         }
         var picker = new FileSavePicker { SuggestedFileName = isPrivate ? "Charloom-private" : "Charloom-public" };
-        picker.FileTypeChoices.Add("PEM 密钥", [".pem"]); App.Window.InitializePicker(picker);
+        picker.FileTypeChoices.Add(GuiText.Translate("PEM 密钥"), [".pem"]); App.Window.InitializePicker(picker);
         var file = await picker.PickSaveFileAsync(); if (file is not null) await File.WriteAllTextAsync(file.Path, value);
     }
 }

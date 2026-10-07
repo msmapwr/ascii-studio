@@ -15,7 +15,7 @@ Windows 原生、离线、高质量 ASCII / ANSI 字符艺术创作工具。
 Windows x64 / ARM64：完整解压对应架构的 ZIP，运行桌面端或 CLI。便携版包含运行时，无需开发 SDK。新品牌的入口为 `Charloom.exe` 和 `charloom-cli.exe`；旧版本仍使用原文件名。
 Charloom 原名 AsciiStudio。正式版本仍为 **0.9.0**（旧名发行）；当前源码为 **1.0.0-alpha.6**（最新公开预发布为 [alpha.5](https://github.com/msmapwr/charloom/releases/tag/v1.0.0-alpha.5)），正式 1.0.0 尚未发布。新品牌预发布包使用 `Charloom.exe` 和 `charloom-cli.exe`；另保留 `asciistudio-cli.exe` 兼容入口一个公开预发布周期。预发布下载以 [GitHub Releases](https://github.com/msmapwr/charloom/releases) 为准。
 
-源码版 CLI 提供 71 个命令（包含 Unreleased 几何历史及设置搜索／收藏入口）及逐级中英文 `--help`，支持持久编辑历史、Unicode 选区、独立工作区、候选结果管理、显式剪贴板命令和独立几何历史。设置页支持双语搜索、收藏及偏好导入导出，详见 [设置说明](docs/SETTINGS.md)、[命令行详细教程](docs/CLI_TUTORIAL.md) 与 [功能覆盖表](docs/CLI.md)。尚未覆盖全部桌面功能；全界面双语、扩展动效、工具栏收藏、配方和平台助手继续开发。
+源码版 CLI 提供 71 个命令（包含 Unreleased 几何历史及设置搜索／收藏入口）及逐级中英文 `--help`，支持持久编辑历史、Unicode 选区、独立工作区、候选结果管理、显式剪贴板命令和独立几何历史。桌面支持即时中文／英文界面切换，设置页支持双语搜索、收藏及偏好导入导出，详见 [设置说明](docs/SETTINGS.md)、[命令行详细教程](docs/CLI_TUTORIAL.md) 与 [功能覆盖表](docs/CLI.md)。尚未覆盖全部桌面功能；共享服务领域错误本地化、扩展动效、工具栏收藏、配方和平台助手继续开发。
 
 官网提供产品介绍。完整静态网站位于 [`website/dist`](website/dist)，包含[入门教程](website/dist/guide.html)、[作品展示](website/dist/gallery.html)、[下载与运行](website/dist/downloads.html)和[版本记录](website/dist/changelog.html)，可用于 GitHub Pages。
 
