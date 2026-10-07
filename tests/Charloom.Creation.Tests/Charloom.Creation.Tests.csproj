@@ -14,6 +14,7 @@
     <Compile Include="../../src/Charloom/Services/TextRasterService.cs" Link="TextRasterService.cs" />
     <Compile Include="../../src/Charloom/Services/FontCatalog.cs" Link="FontCatalog.cs" />
     <Compile Include="../../src/Charloom/Services/WorkspaceService.cs" Link="WorkspaceService.cs" />
+    <Compile Include="../../src/Charloom/Services/SettingsCatalog.cs" Link="SettingsCatalog.cs" />
     <Compile Include="../../src/Charloom/Services/ImagingService.cs" Link="ImagingService.cs" />
     <Compile Include="../../src/Charloom/Services/GlyphPainter.cs" Link="GlyphPainter.cs" />
     <Compile Include="../../src/Charloom/Services/ImageSourceState.cs" Link="ImageSourceState.cs" />

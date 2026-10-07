@@ -649,6 +649,9 @@ Ctrl+C 取消任务。为避免半个文件，写入通常通过同目录临时�
 
 ```powershell
 & $cli settings show --json
+& $cli settings list --search "font appearance" --language en-US
+& $cli settings favorite --key Theme --enabled true
+& $cli settings list --favorites
 & $cli settings set --set Theme=Light --set PreviewZoom=1.5 --set BeginnerMode=true
 & $cli settings export --output preferences.json
 & $cli settings import --input preferences.json
@@ -656,6 +659,8 @@ Ctrl+C 取消任务。为避免半个文件，写入通常通过同目录临时�
 ```
 
 主题、动画、窗口和新手模式等是保存的偏好，**不会给终端创建图形界面**。CLI 显示／导出参数仍以各命令为准，例如位图字号使用 `--font-size`，不是把 `PreviewFontSize` 当作导出字号。设置会按桌面相同规则归一化；导出不含最近项目路径，重置／导入保留已有最近路径。
+
+设置搜索支持中文／英文名称、分类和稳定键，多词同时匹配。收藏通过 `settings favorite --key NAME` 切换；显式 `--enabled true/false` 可重复执行。收藏随偏好导出和导入，重置时清空。详见 [设置搜索与迁移](SETTINGS.md)。
 
 明确操作桌面偏好：
 

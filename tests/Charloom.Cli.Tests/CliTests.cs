@@ -194,6 +194,36 @@ public sealed class CliTests(CliFixture fixture)
         Assert.Equal(0, (await Run(["settings", "import", "--input", path])).Exit); Assert.Equal("Light", WorkspaceService.Settings.Theme); Assert.Equal(2, WorkspaceService.Settings.PreviewZoom);
     }
     [Fact]
+    public async Task SettingsSearchAndFavoriteAreBilingualPersistentAndIdempotent()
+    {
+        await WorkspaceService.SetSettings(new(RecentFiles: ["private-project.asciiproj"]));
+        foreach (var language in new[] { "en-US", "zh-CN" })
+        {
+            var query = await Run(["settings", "list", "--search", "font appearance", "--language", language]);
+            Assert.Equal(0, query.Exit);
+            using var response = JsonDocument.Parse(query.Out);
+            var entries = response.RootElement.GetProperty("result"); Assert.Equal(2, entries.GetArrayLength());
+            Assert.Equal(language == "en-US" ? "Interface font" : "界面字体", entries[0].GetProperty("name").GetString());
+            Assert.DoesNotContain("private-project.asciiproj", query.Out);
+        }
+        for (var i = 0; i < 2; i++) Assert.Equal(0, (await Run(["settings", "favorite", "--key", "theme", "--enabled", "true"])).Exit);
+        Assert.Equal(["Theme"], Assert.IsType<string[]>(WorkspaceService.Settings.FavoriteSettings));
+        var favorite = await Run(["settings", "list", "--favorites"]);
+        using (var response = JsonDocument.Parse(favorite.Out))
+            Assert.Equal("Theme", Assert.Single(response.RootElement.GetProperty("result").EnumerateArray()).GetProperty("key").GetString());
+        var saved = await File.ReadAllBytesAsync(Path.Combine(WorkspaceService.DataDirectory, "settings.json"));
+        var invalid = await Run(["settings", "favorite", "--key", "unknown", "--language", "zh-CN", "--json"]);
+        Assert.Equal(2, invalid.Exit); Assert.Contains("usage", invalid.Error);
+        Assert.Equal(2, (await Run(["settings", "favorite", "--key", "Theme", "--enabled", "invalid"])).Exit);
+        Assert.Equal(saved, await File.ReadAllBytesAsync(Path.Combine(WorkspaceService.DataDirectory, "settings.json")));
+        for (var i = 0; i < 2; i++) Assert.Equal(0, (await Run(["settings", "favorite", "--key", "Theme", "--enabled", "false"])).Exit);
+        Assert.Empty(WorkspaceService.Settings.FavoriteSettings!);
+        Assert.Equal(0, (await Run(["settings", "favorite", "--key", "Theme"])).Exit);
+        Assert.Equal(0, (await Run(["settings", "favorite", "--key", "Theme"])).Exit);
+        Assert.Empty(WorkspaceService.Settings.FavoriteSettings!);
+        Assert.Equal(["private-project.asciiproj"], Assert.IsType<string[]>(WorkspaceService.Settings.RecentFiles));
+    }
+    [Fact]
     public async Task ManualProjectIsProtectedDuringRegeneration()
     {
         var path = fixture.PathFor("edited.asciiproj"); var recipe = new GeneratorRecipe(Kind: 1);

@@ -132,26 +132,48 @@ public static partial class CliHost
                     await Emit(AsciiDocument.FromText(sample)); break;
                 }
                 case "settings show": await Report(WorkspaceService.Settings); break;
+                case "settings list":
+                {
+                    var settings = WorkspaceService.Settings; var chinese = CliCatalog.Chinese(args);
+                    await Report(SettingsCatalog.Search(args.Get("search"), settings, args.Flag("favorites")).Select(entry => new
+                    {
+                        key = entry.Key, name = chinese ? entry.Name : entry.EnglishName,
+                        group = chinese ? entry.Group : entry.EnglishGroup,
+                        favorite = settings.FavoriteSettings?.Contains(entry.Key) == true,
+                        value = typeof(StudioSettings).GetProperty(entry.Key)!.GetValue(settings)
+                    }).ToArray()); break;
+                }
+                case "settings favorite":
+                {
+                    var key = args.Require("key");
+                    if (!SettingsCatalog.Entries.Any(entry => entry.Key.Equals(key, StringComparison.OrdinalIgnoreCase)))
+                        throw new CliUsageException(CliCatalog.Chinese(args) ? "未知设置键，请用 settings list 查询。" : "Unknown setting key; use settings list.");
+                    if (args.Has("enabled") && !bool.TryParse(args.Get("enabled"), out _))
+                        throw new CliUsageException(CliCatalog.Chinese(args) ? "enabled 需要 true 或 false。" : "enabled requires true or false.");
+                    await WorkspaceService.UpdateSettings(settings => SettingsCatalog.SetFavorite(settings, key,
+                        args.Has("enabled") ? args.Flag("enabled") : !SettingsCatalog.NormalizeFavorites(settings.FavoriteSettings).Contains(SettingsCatalog.Get(key).Key)));
+                    await Report(new { key = SettingsCatalog.Get(key).Key, favorite = WorkspaceService.Settings.FavoriteSettings!.Contains(SettingsCatalog.Get(key).Key) }); break;
+                }
                 case "settings set":
                     if (!args.Has("set")) throw new CliUsageException("Provide at least one --set Name=Value.");
                     args.ValidateAssignments(); await WorkspaceService.SetSettings(args.Model(WorkspaceService.Settings with { })); await Report(WorkspaceService.Settings); break;
                 case "settings reset":
-                    await WorkspaceService.SetSettings(new StudioSettings(RecentFiles: WorkspaceService.Settings.RecentFiles)); await Report(WorkspaceService.Settings); break;
+                    await WorkspaceService.ResetPreferences(); await Report(WorkspaceService.Settings); break;
                 case "settings export":
-                    await Write(args.Require("output"), JsonSerializer.SerializeToUtf8Bytes(WorkspaceService.Settings with { RecentFiles = [] }, CliArguments.Json));
+                    WorkspaceService.ValidatePreferencesExportPath(args.Require("output"));
+                    await Write(args.Require("output"), WorkspaceService.ExportPreferences());
                     await Report(new { path = Path.GetFullPath(args.Require("output")) }); break;
                 case "settings import":
                 {
-                    var settings = JsonSerializer.Deserialize<StudioSettings>(BoundedFile.JsonBytes(await BoundedFile.ReadAsync(args.Require("input"), 1_000_000, token)).Span, CliArguments.Json)
-                        ?? throw new ArgumentException("Settings cannot be null.");
-                    await WorkspaceService.SetSettings(settings with { RecentFiles = WorkspaceService.Settings.RecentFiles }); await Report(WorkspaceService.Settings); break;
+                    var bytes = await BoundedFile.ReadAsync(args.Require("input"), 1_000_000, token);
+                    token.ThrowIfCancellationRequested(); await WorkspaceService.ImportPreferences(bytes); await Report(WorkspaceService.Settings); break;
                 }
                 case "batch image": return await Batch();
                 case "capabilities": await Report(new
                 {
                     schema = 1, version = "1.0.0-alpha.6", status = "prerelease", commands = CliCatalog.Commands.Select(c => c.Name).ToArray(),
-                    complete = new[] { "image-quality-options", "image-geometry", "geometry-history", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery", "candidate-result-management", "clipboard" },
-                    pending = new[] { "viewport-selection-and-comparison", "settings-search-and-favorites", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
+                    complete = new[] { "image-quality-options", "image-geometry", "geometry-history", "figlet-layout", "system-text-raster", "ansi-sauce", "generators", "nine-export-formats", "text-tools", "all-existing-crypto-methods", "font-library", "current-settings", "settings-search-and-favorites", "bounded-image-batch", "command-help", "persistent-edit-history", "unicode-edit-selections", "workspace-tabs-and-recovery", "explicit-tool-apply", "external-change-recovery", "candidate-result-management", "clipboard" },
+                    pending = new[] { "viewport-selection-and-comparison", "recipes-and-platform-assistant", "code-variable-wrapping", "tutorial", "GUI-zh-CN-en-US", "new-personalization-settings", "extended-motion", "localized-domain-errors" },
                     desktopParityComplete = false, formal100Authorized = false
                 }); break;
                 default:

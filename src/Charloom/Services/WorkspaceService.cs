@@ -8,7 +8,8 @@ public sealed record StudioSettings(string Theme = "Dark", double PreviewFontSiz
     bool Animations = true, bool WordWrap = false, bool ShowStats = true, bool CompactLayout = false,
     string DefaultExportFormat = "TXT", int ExportScale = 1, string FilePrefix = "",
     bool AutoConvert = true, int ConversionDelay = 180, int DefaultColumns = 120, bool RememberWindow = true,
-    double PreviewZoom = 1, bool BeginnerMode = false, string UiFontFamily = "Segoe UI", double UiFontSize = 14);
+    double PreviewZoom = 1, bool BeginnerMode = false, string UiFontFamily = "Segoe UI", double UiFontSize = 14,
+    string[]? FavoriteSettings = null);
 
 public static class WorkspaceService
 {
@@ -73,6 +74,30 @@ public static class WorkspaceService
 
     public static Task SetSettings(StudioSettings settings) => UpdateSettings(_ => settings);
 
+    private static readonly JsonSerializerOptions preferencesJson = new()
+    {
+        WriteIndented = true, PropertyNameCaseInsensitive = true,
+        UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow
+    };
+
+    public static byte[] ExportPreferences() => JsonSerializer.SerializeToUtf8Bytes(Settings with { RecentFiles = [] }, preferencesJson);
+
+    public static void ValidatePreferencesExportPath(string path)
+    {
+        if (Path.GetFullPath(path).Equals(Path.Combine(DataDirectory, "settings.json"), StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("请将偏好导出到另一个文件 / Export preferences to a different file.");
+    }
+
+    public static Task ImportPreferences(byte[] bytes)
+    {
+        if (bytes.Length > 1_000_000) throw new InvalidDataException("偏好文件超过 1 MB / Preferences exceed 1 MB.");
+        var imported = JsonSerializer.Deserialize<StudioSettings>(BoundedFile.JsonBytes(bytes).Span, preferencesJson)
+            ?? throw new InvalidDataException("偏好文件不能为空 / Preferences cannot be null.");
+        return UpdateSettings(current => imported with { RecentFiles = current.RecentFiles });
+    }
+
+    public static Task ResetPreferences() => UpdateSettings(current => new StudioSettings(RecentFiles: current.RecentFiles));
+
     public static async Task UpdateSettings(Func<StudioSettings, StudioSettings> update)
     {
         StudioSettings next;
@@ -97,6 +122,7 @@ public static class WorkspaceService
         ExportScale = Math.Clamp(settings.ExportScale, 1, 4),
         DefaultColumns = Math.Clamp(settings.DefaultColumns, 8, ImageResourceLimits.GridSide),
         ConversionDelay = Math.Clamp(settings.ConversionDelay, 0, 1000),
+        FavoriteSettings = SettingsCatalog.NormalizeFavorites(settings.FavoriteSettings),
         DefaultExportFormat = new[] { "TXT", "PNG", "JPEG", "GIF", "HTML", "SVG", "ANSI", "JSON", "Markdown" }.Contains(settings.DefaultExportFormat) ? settings.DefaultExportFormat : "TXT",
         FilePrefix = new string((settings.FilePrefix ?? "").Where(c => !Path.GetInvalidFileNameChars().Contains(c)).Take(32).ToArray()),
         RecentFiles = (settings.RecentFiles ?? []).Where(p => !string.IsNullOrWhiteSpace(p) && p.Length <= 32767 && !p.Contains('\0')).Distinct(StringComparer.OrdinalIgnoreCase).Take(15).ToArray()
