@@ -19,7 +19,7 @@
 .\charloom-cli.exe capabilities --json
 ```
 
-每个命令和命令组支持 `--help`，包括参数、默认值、范围、枚举、示例、资源限制和退出码。帮助不分页，可重定向到文件。`--language system|zh-CN|en-US` 切换帮助语言；部分共享服务错误与分析内容暂保留原语言，固定机器错误码不随语言改变。
+每个命令和命令组支持 `--help`，包括参数、默认值、范围、枚举、示例、资源限制和退出码。帮助不分页，可重定向到文件。`--language system|zh-CN|en-US` 切换帮助、参数解析和配置赋值校验的诊断语言；解析失败时也识别位于错误参数之后的语言选项。部分共享服务错误、JSON 反序列化错误与分析内容暂保留原语言，固定机器错误码不随语言改变。
 
 ## 当前功能覆盖
 
@@ -90,6 +90,19 @@
 ## 输出与退出码
 
 作品默认直接写 stdout，错误写 stderr。查询命令返回 JSON；`--json` 使作品输出和错误也使用结构化封装。`--quiet` 关闭可选警告，不隐藏错误。Ctrl+C 取消。
+
+顶层错误 JSON 保留 `ok:false`、原有 `code`、`message`，新增 `detailCode`。已有错误类别与退出码不变；尚未细分的错误使用原 `code` 作为 `detailCode`。程序应根据错误码判断，不能依赖本地化后的 `message`。被拒绝的配置值、整条赋值和未知命令原文不会写入诊断。
+
+| 参数／配置细分码 | 含义 |
+| --- | --- |
+| `missing_option` / `missing_option_value` | 缺少必需选项／选项值 |
+| `unknown_option` / `duplicate_option` / `unsupported_option` | 未知／重复／当前命令不支持的选项 |
+| `invalid_boolean` / `invalid_integer` / `invalid_number` | 布尔／整数／有限数值无效 |
+| `invalid_language` / `unknown_command` | 语言值无效／未知命令 |
+| `data_directory_conflict` | 桌面目录与隔离目录选项冲突 |
+| `configuration_object` / `configuration_null` | 配置不是对象／为空 |
+| `invalid_assignment` / `unsupported_assignment` | 赋值格式无效／分组不支持 |
+| `unknown_property` / `readonly_setting` / `invalid_value` | 属性未知／不允许赋值／属性值无效 |
 
 | 退出码 | 含义 |
 |---|---|

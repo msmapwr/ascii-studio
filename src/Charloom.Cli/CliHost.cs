@@ -24,15 +24,23 @@ public static partial class CliHost
         }
         catch (Exception failure) when (failure is not OutOfMemoryException and not StackOverflowException)
         {
-            var code = failure is OperationCanceledException ? "canceled" : failure is ClipboardBusyException ? "clipboard_busy" : failure is ClipboardContentException ? "clipboard_format" : failure is CliConflictException ? "conflict" : failure is CliUsageException ? "usage"
-                : failure is IOException or UnauthorizedAccessException ? "io" : "conversion";
-            var exit = code switch { "canceled" => 130, "usage" => 2, "io" or "conflict" or "clipboard_busy" => 4, _ => 3 };
-            var json = args?.Flag("json") ?? raw.Any(value => value is "--json" or "--json=true");
-            var message = code == "canceled" ? (args is not null && CliCatalog.Chinese(args) ? "任务已取消。" : "Operation canceled.") : failure.Message;
-            // No command arguments, text, passwords or private keys in diagnostics.
-            await error.WriteLineAsync(json ? JsonSerializer.Serialize(new { ok = false, code, message }) : code + ": " + message);
-            return exit;
+            return await ReportFailure(raw, error, failure);
         }
+    }
+
+    internal static async Task<int> ReportFailure(string[] raw, TextWriter error, Exception failure)
+    {
+        var code = failure is OperationCanceledException ? "canceled" : failure is ClipboardBusyException ? "clipboard_busy" : failure is ClipboardContentException ? "clipboard_format" : failure is CliConflictException ? "conflict" : failure is CliUsageException ? "usage"
+            : failure is IOException or UnauthorizedAccessException ? "io" : "conversion";
+        var exit = code switch { "canceled" => 130, "usage" => 2, "io" or "conflict" or "clipboard_busy" => 4, _ => 3 };
+        var diagnostic = CliDiagnostics.Options(raw);
+        var json = diagnostic.Json;
+        var detailCode = failure is CliUsageException usage ? usage.DetailCode ?? code : code;
+        var message = code == "canceled" ? (diagnostic.Chinese ? "任务已取消。" : "Operation canceled.")
+            : diagnostic.Chinese && failure is CliUsageException { ChineseMessage: { } chinese } ? chinese : failure.Message;
+        // No command arguments, text, passwords or private keys in diagnostics.
+        await error.WriteLineAsync(json ? JsonSerializer.Serialize(new { ok = false, code, detailCode, message }) : code + ": " + message);
+        return exit;
     }
 
     private sealed partial class Invocation(CliArguments args, TextWriter output, TextWriter error, TextReader input, CancellationToken token, IClipboardService clipboard)

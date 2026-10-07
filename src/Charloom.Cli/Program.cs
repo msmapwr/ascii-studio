@@ -10,7 +10,7 @@ try
 {
     // Configure isolation before any shared workspace/font static is initialized.
     var parsed = CliArguments.Parse(args);
-    if (parsed.Flag("desktop-data") && parsed.Has("data-directory")) throw new CliUsageException("--desktop-data conflicts with --data-directory.");
+    if (parsed.Flag("desktop-data") && parsed.Has("data-directory")) throw CliDiagnostics.Usage("data_directory_conflict");
     var desktop = ProductIdentity.DesktopDataDirectory;
     Environment.SetEnvironmentVariable("CHARLOOM_DATA_DIRECTORY", parsed.Flag("desktop-data") ? desktop : parsed.Get("data-directory", Path.Combine(desktop, "Cli")));
     Environment.SetEnvironmentVariable("CHARLOOM_FONT_DIRECTORY", parsed.Get("font-directory", Path.Combine(desktop, "fonts")));
@@ -18,7 +18,5 @@ try
 }
 catch (CliUsageException error)
 {
-    var json = args.Any(value => value is "--json" or "--json=true");
-    await Console.Error.WriteLineAsync(json ? System.Text.Json.JsonSerializer.Serialize(new { ok = false, code = "usage", message = error.Message }) : "usage: " + error.Message);
-    return 2;
+    return await CliHost.ReportFailure(args, Console.Error, error);
 }
